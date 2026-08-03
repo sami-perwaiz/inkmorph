@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter, Poppins } from "next/font/google";
 
 import { Analytics } from "@/components/Analytics/Analytics";
+import { MicrosoftClarity } from "@/components/Analytics/MicrosoftClarity";
 import "./globals.css";
 
 const poppins = Poppins({
@@ -102,6 +103,7 @@ export default function RootLayout({
       >
         {children}
         <Analytics />
+        <MicrosoftClarity />
       </body>
     </html>
   );

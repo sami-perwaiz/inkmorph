@@ -14,6 +14,7 @@
     "ingest-illustrations": "node scripts/ingest-illustrations.mjs"
   },
   "dependencies": {
+    "@microsoft/clarity": "^1.0.2",
     "@next/third-parties": "^15.5.22",
     "next": "^15.1.0",
     "react": "^19.0.0",
