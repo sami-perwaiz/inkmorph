@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { memo, useCallback, useState } from "react";
 
 import { ContentContainer } from "@/components/ContentContainer/ContentContainer";
 import { FilterTabs } from "@/components/FilterTabs/FilterTabs";
@@ -42,8 +42,9 @@ function Logo({
       >
         <Image
           src="/logo.png"
-          alt="Site logo"
+          alt="InkMorph"
           fill
+          sizes={`${size}px`}
           className="object-cover"
           priority
         />
@@ -67,8 +68,9 @@ function Logo({
       >
         <Image
           src="/logo.png"
-          alt="Site logo"
+          alt="InkMorph"
           fill
+          sizes={`${size}px`}
           className="object-cover"
           priority
         />
@@ -77,13 +79,19 @@ function Logo({
   );
 }
 
-export function Navbar({ activeFilter, onFilterChange }: NavbarProps) {
+export const Navbar = memo(function Navbar({
+  activeFilter,
+  onFilterChange,
+}: NavbarProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  const handleFilterChange = (filter: FilterValue) => {
-    onFilterChange(filter);
-    setIsMenuOpen(false);
-  };
+  const handleFilterChange = useCallback(
+    (filter: FilterValue) => {
+      onFilterChange(filter);
+      setIsMenuOpen(false);
+    },
+    [onFilterChange]
+  );
 
   return (
     <header className="fixed inset-x-0 top-0 z-50 bg-white">
@@ -109,6 +117,7 @@ export function Navbar({ activeFilter, onFilterChange }: NavbarProps) {
             <FilterTabs
               activeFilter={activeFilter}
               onFilterChange={onFilterChange}
+              idPrefix="desktop-filter"
             />
           </div>
         </div>
@@ -151,7 +160,7 @@ export function Navbar({ activeFilter, onFilterChange }: NavbarProps) {
                 }
                 aria-expanded={isMenuOpen}
                 onClick={() => setIsMenuOpen((open) => !open)}
-                className="motion-menu-toggle-button relative flex shrink-0 items-center justify-center"
+                className="motion-menu-toggle-button relative flex shrink-0 items-center justify-center rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-900/30 focus-visible:ring-offset-2"
                 style={{
                   width: NAVBAR.menuIconSize,
                   height: NAVBAR.menuIconSize,
@@ -183,6 +192,7 @@ export function Navbar({ activeFilter, onFilterChange }: NavbarProps) {
                   activeFilter={activeFilter}
                   onFilterChange={handleFilterChange}
                   variant="stacked"
+                  idPrefix="mobile-filter"
                 />
               </div>
             </div>
@@ -191,4 +201,4 @@ export function Navbar({ activeFilter, onFilterChange }: NavbarProps) {
       </div>
     </header>
   );
-}
+});

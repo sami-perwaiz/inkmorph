@@ -1,13 +1,19 @@
 export type ActionButtonVariant = "copy" | "download";
 
-export type ActionButtonState = "default" | "hover" | "loading" | "success";
+export type ActionButtonState =
+  | "default"
+  | "hover"
+  | "loading"
+  | "success"
+  | "error";
 
 export type CardActionState =
   | "idle"
   | "copying"
   | "copied"
   | "downloading"
-  | "downloaded";
+  | "downloaded"
+  | "error";
 
 export const ACTION_BUTTON_LABELS: Record<
   ActionButtonVariant,
@@ -18,34 +24,20 @@ export const ACTION_BUTTON_LABELS: Record<
     hover: "Copy Image",
     loading: "Copying...",
     success: "Copied",
+    error: "Copy failed",
   },
   download: {
     default: "Download PNG",
     hover: "Download PNG",
     loading: "Downloading...",
     success: "Downloaded",
+    error: "Download failed",
   },
 };
 
-export function mapCardStateToActionButton(
-  actionState: CardActionState
-): { variant: ActionButtonVariant; state: ActionButtonState } | null {
-  switch (actionState) {
-    case "copying":
-      return { variant: "copy", state: "loading" };
-    case "copied":
-      return { variant: "copy", state: "success" };
-    case "downloading":
-      return { variant: "download", state: "loading" };
-    case "downloaded":
-      return { variant: "download", state: "success" };
-    default:
-      return null;
-  }
-}
-
 export function getCopyButtonState(
-  actionState: CardActionState
+  actionState: CardActionState,
+  failedAction: "copy" | "download" | null = null
 ): ActionButtonState {
   if (actionState === "copying") {
     return "loading";
@@ -55,11 +47,16 @@ export function getCopyButtonState(
     return "success";
   }
 
+  if (actionState === "error" && failedAction === "copy") {
+    return "error";
+  }
+
   return "default";
 }
 
 export function getDownloadButtonState(
-  actionState: CardActionState
+  actionState: CardActionState,
+  failedAction: "copy" | "download" | null = null
 ): ActionButtonState {
   if (actionState === "downloading") {
     return "loading";
@@ -67,6 +64,10 @@ export function getDownloadButtonState(
 
   if (actionState === "downloaded") {
     return "success";
+  }
+
+  if (actionState === "error" && failedAction === "download") {
+    return "error";
   }
 
   return "default";

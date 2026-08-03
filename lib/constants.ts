@@ -39,7 +39,7 @@ export const FOOTER = {
   logoRadius: 4,
   logoBrandGap: 6,
   brandName: "InkMorph",
-  copyright: "© 2025 inkmorph. All Rights Reserved.",
+  copyright: "© 2025 Ink Morph. All rights reserved.",
 } as const;
 
 export const FILTERS = [

@@ -2,22 +2,33 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { useDownloadLimit } from "@/components/DownloadLimitProvider/DownloadLimitProvider";
 import {
   copyImageToClipboard,
   downloadImage,
-  getDownloadFilename,
 } from "@/lib/illustrationActions";
 import { ACTION } from "@/lib/constants";
 import type { CardActionState } from "@/types/action";
 import type { Illustration } from "@/types/illustration";
 
 const SUCCESS_RESET_MS = ACTION.successResetMs;
+const ERROR_RESET_MS = 1800;
 
 export function useCardAction(illustration: Illustration) {
-  const { id, src, filename } = illustration;
+  const { id, src } = illustration;
+  const { requestDownloadSlot, commitDownloadSlot } = useDownloadLimit();
   const [actionState, setActionState] = useState<CardActionState>("idle");
+  const [failedAction, setFailedAction] = useState<"copy" | "download" | null>(
+    null
+  );
   const [isHovered, setIsHovered] = useState(false);
+  const [statusMessage, setStatusMessage] = useState("");
   const resetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const actionStateRef = useRef(actionState);
+
+  useEffect(() => {
+    actionStateRef.current = actionState;
+  }, [actionState]);
 
   const clearResetTimer = useCallback(() => {
     if (resetTimerRef.current) {
@@ -26,55 +37,83 @@ export function useCardAction(illustration: Illustration) {
     }
   }, []);
 
-  const scheduleReset = useCallback(() => {
-    clearResetTimer();
-    resetTimerRef.current = setTimeout(() => {
-      setActionState("idle");
-    }, SUCCESS_RESET_MS);
-  }, [clearResetTimer]);
+  const scheduleReset = useCallback(
+    (delay: number = SUCCESS_RESET_MS) => {
+      clearResetTimer();
+      resetTimerRef.current = setTimeout(() => {
+        setActionState("idle");
+        setFailedAction(null);
+        setStatusMessage("");
+      }, delay);
+    },
+    [clearResetTimer]
+  );
 
   useEffect(() => clearResetTimer, [clearResetTimer]);
 
   const handleCopy = useCallback(async () => {
-    if (actionState !== "idle") {
+    if (actionStateRef.current !== "idle" && actionStateRef.current !== "error") {
       return;
     }
 
+    setFailedAction(null);
     setActionState("copying");
+    setStatusMessage("Copying image");
 
     try {
       await copyImageToClipboard(src, id);
       setActionState("copied");
+      setStatusMessage("Image copied to clipboard");
       scheduleReset();
     } catch {
-      setActionState("idle");
+      setFailedAction("copy");
+      setActionState("error");
+      setStatusMessage("Unable to copy image");
+      scheduleReset(ERROR_RESET_MS);
     }
-  }, [actionState, id, scheduleReset, src]);
+  }, [id, scheduleReset, src]);
 
   const handleDownload = useCallback(async () => {
-    if (actionState !== "idle") {
+    if (actionStateRef.current !== "idle" && actionStateRef.current !== "error") {
       return;
     }
 
+    if (!requestDownloadSlot()) {
+      return;
+    }
+
+    setFailedAction(null);
     setActionState("downloading");
+    setStatusMessage("Downloading PNG");
 
     try {
-      await downloadImage(src, getDownloadFilename(id, filename));
+      await downloadImage(src, `${id}.png`);
+      commitDownloadSlot();
       setActionState("downloaded");
+      setStatusMessage("Downloaded PNG");
       scheduleReset();
     } catch {
-      setActionState("idle");
+      setFailedAction("download");
+      setActionState("error");
+      setStatusMessage("Unable to download image");
+      scheduleReset(ERROR_RESET_MS);
     }
-  }, [actionState, filename, id, scheduleReset, src]);
+  }, [commitDownloadSlot, id, requestDownloadSlot, scheduleReset, src]);
 
   const showOverlay =
-    isHovered || actionState === "copying" || actionState === "downloading" ||
-    actionState === "copied" || actionState === "downloaded";
+    isHovered ||
+    actionState === "copying" ||
+    actionState === "downloading" ||
+    actionState === "copied" ||
+    actionState === "downloaded" ||
+    actionState === "error";
 
   return {
     actionState,
+    failedAction,
     isHovered,
     showOverlay,
+    statusMessage,
     setIsHovered,
     handleCopy,
     handleDownload,

@@ -12,7 +12,9 @@ import {
 
 interface ActionOverlayProps {
   actionState: CardActionState;
+  failedAction?: "copy" | "download" | null;
   visible: boolean;
+  statusMessage?: string;
   onCopy: () => void;
   onDownload: () => void;
 }
@@ -29,7 +31,9 @@ function OverlayScrim() {
 
 function ActionOverlayComponent({
   actionState,
+  failedAction = null,
   visible,
+  statusMessage = "",
   onCopy,
   onDownload,
 }: ActionOverlayProps) {
@@ -46,17 +50,21 @@ function ActionOverlayComponent({
       >
         <ActionButton
           variant="copy"
-          state={getCopyButtonState(actionState)}
+          state={getCopyButtonState(actionState, failedAction)}
           onClick={onCopy}
           className="motion-overlay-button"
         />
         <ActionButton
           variant="download"
-          state={getDownloadButtonState(actionState)}
+          state={getDownloadButtonState(actionState, failedAction)}
           onClick={onDownload}
           className="motion-overlay-button"
         />
       </div>
+
+      <span className="sr-only" aria-live="polite">
+        {statusMessage}
+      </span>
     </div>
   );
 }

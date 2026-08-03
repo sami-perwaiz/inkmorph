@@ -13,5 +13,6 @@ export const MOTION = {
     mobileMenu: 280,
     menuIcon: 280,
     menuItemStagger: 40,
+    limitModal: 300,
   },
 } as const;

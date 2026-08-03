@@ -1,24 +1,42 @@
 import { mixIllustrations } from "@/lib/mixIllustrations";
 import type { FilterValue, Illustration } from "@/types/illustration";
 
+export type IllustrationFilterLists = Record<FilterValue, Illustration[]>;
+
 function sortBySrc(items: Illustration[]): Illustration[] {
-  return [...items].sort((a, b) => a.src.localeCompare(b.src, undefined, { numeric: true }));
+  return [...items].sort((a, b) =>
+    a.src.localeCompare(b.src, undefined, { numeric: true })
+  );
+}
+
+/**
+ * Precompute every tab's illustration list once.
+ * Tab switches should only look up a stable array reference.
+ */
+export function buildIllustrationFilterLists(
+  items: Illustration[]
+): IllustrationFilterLists {
+  const threeDAvatar: Illustration[] = [];
+  const blackWhite: Illustration[] = [];
+
+  for (const item of items) {
+    if (item.category === "3d-avatar") {
+      threeDAvatar.push(item);
+    } else {
+      blackWhite.push(item);
+    }
+  }
+
+  return {
+    all: mixIllustrations(threeDAvatar, blackWhite),
+    "3d-avatar": sortBySrc(threeDAvatar),
+    "black-white": sortBySrc(blackWhite),
+  };
 }
 
 export function filterIllustrations(
   items: Illustration[],
   filter: FilterValue
 ): Illustration[] {
-  const threeDAvatar = items.filter((item) => item.category === "3d-avatar");
-  const blackWhite = items.filter((item) => item.category === "black-white");
-
-  if (filter === "all") {
-    return mixIllustrations(threeDAvatar, blackWhite);
-  }
-
-  if (filter === "3d-avatar") {
-    return sortBySrc(threeDAvatar);
-  }
-
-  return sortBySrc(blackWhite);
+  return buildIllustrationFilterLists(items)[filter];
 }

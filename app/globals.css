@@ -106,10 +106,28 @@
     transition-delay: 0ms;
   }
 
-  /* Gallery filter crossfade */
+  /* Gallery filter crossfade — applied to a veil, not the image grid */
   .motion-gallery-grid {
     transition: opacity 250ms cubic-bezier(0.22, 1, 0.36, 1);
     will-change: opacity;
+  }
+
+  /* Keep decoded gallery bitmaps on their own layer; avoid scroll blanking */
+  .gallery-card-image {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+  }
+
+  .gallery-card-skeleton {
+    background-color: #f3f3f3;
+  }
+
+  /* Safari 15–16.3 lazy-load gray border workaround */
+  @supports (font: -apple-system-body) and (-webkit-appearance: none) {
+    img[loading="lazy"] {
+      clip-path: inset(0.6px);
+    }
   }
 
   /* Mobile navigation */
@@ -298,6 +316,41 @@
     transform: translate3d(-50%, -50%, 0) scale(1);
   }
 
+  /* Daily download limit modal — Figma 40004571:9074 */
+  .motion-limit-modal-root {
+    pointer-events: none;
+  }
+
+  .motion-limit-modal-root[data-visible="true"] {
+    pointer-events: auto;
+  }
+
+  .motion-limit-modal-backdrop {
+    background-color: rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(1px);
+    -webkit-backdrop-filter: blur(1px);
+    opacity: 0;
+    transition: opacity 300ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .motion-limit-modal-root[data-visible="true"] .motion-limit-modal-backdrop {
+    opacity: 1;
+  }
+
+  .motion-limit-modal-card {
+    opacity: 0;
+    transform: translate3d(0, 4px, 0) scale(0.98);
+    transition:
+      opacity 300ms cubic-bezier(0.22, 1, 0.36, 1),
+      transform 300ms cubic-bezier(0.22, 1, 0.36, 1);
+    will-change: opacity, transform;
+  }
+
+  .motion-limit-modal-root[data-visible="true"] .motion-limit-modal-card {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .motion-filter-tab,
     .motion-action-button,
@@ -316,9 +369,25 @@
     .motion-menu-toggle-line,
     .motion-preview-modal-root,
     .motion-preview-modal-backdrop,
-    .motion-preview-modal-card {
+    .motion-preview-modal-card,
+    .motion-limit-modal-root,
+    .motion-limit-modal-backdrop,
+    .motion-limit-modal-card {
       transition: none !important;
       animation: none !important;
+    }
+
+    .motion-overlay-button,
+    .motion-mobile-menu-items .motion-filter-tab,
+    .motion-menu-toggle-line {
+      transform: none !important;
+    }
+
+    .motion-preview-modal-card {
+      transform: translate3d(-50%, -50%, 0) !important;
+    }
+
+    .motion-limit-modal-card {
       transform: none !important;
     }
 
@@ -344,7 +413,12 @@
     .motion-menu-toggle[data-open="false"] .motion-menu-toggle-close {
       opacity: 0 !important;
     }
+
     .motion-preview-modal-root[data-visible="true"] .motion-preview-modal-card {
+      opacity: 1 !important;
+    }
+
+    .motion-limit-modal-root[data-visible="true"] .motion-limit-modal-card {
       opacity: 1 !important;
     }
 
