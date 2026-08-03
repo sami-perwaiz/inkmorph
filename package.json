@@ -1,0 +1,32 @@
+{
+  "name": "illustration-gallery",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "dev:clean": "rm -rf .next && next dev --turbopack",
+    "prebuild": "node scripts/ingest-illustrations.mjs",
+    "build": "next build",
+    "predev": "node scripts/ingest-illustrations.mjs",
+    "start": "next start",
+    "lint": "next lint",
+    "generate-placeholders": "node scripts/generate-placeholders.mjs",
+    "ingest-illustrations": "node scripts/ingest-illustrations.mjs"
+  },
+  "dependencies": {
+    "next": "^15.1.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "^15.1.0",
+    "postcss": "^8",
+    "tailwindcss": "^3.4.1",
+    "typescript": "^5"
+  }
+}

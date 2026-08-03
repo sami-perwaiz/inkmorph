@@ -1,0 +1,355 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer utilities {
+  .motion-ease-premium {
+    transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  /* Filter tabs — color only */
+  .motion-filter-tab {
+    transition-property: color, background-color, border-color;
+    transition-duration: 240ms;
+    transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  /* Action button chrome */
+  .motion-action-button {
+    transition-property: color, background-color, border-color, box-shadow;
+    transition-duration: 220ms;
+    transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .motion-action-content {
+    transition: opacity 220ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .motion-action-content-visible {
+    opacity: 1;
+  }
+
+  .motion-action-content-hidden {
+    opacity: 0;
+  }
+
+  .motion-action-button[data-state="success"] .motion-action-content {
+    transition-duration: 250ms;
+  }
+
+  /* Image hover overlay */
+  .motion-overlay-root {
+    visibility: hidden;
+    pointer-events: none;
+  }
+
+  .motion-overlay-root[data-visible="true"] {
+    visibility: visible;
+    pointer-events: auto;
+  }
+
+  .motion-overlay-scrim {
+    transition:
+      opacity 300ms cubic-bezier(0.22, 1, 0.36, 1),
+      backdrop-filter 300ms cubic-bezier(0.22, 1, 0.36, 1),
+      -webkit-backdrop-filter 300ms cubic-bezier(0.22, 1, 0.36, 1);
+    opacity: 0;
+    backdrop-filter: blur(0);
+    -webkit-backdrop-filter: blur(0);
+  }
+
+  .motion-overlay-root[data-visible="true"] .motion-overlay-scrim {
+    opacity: 1;
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+  }
+
+  .motion-overlay-panel {
+    transition: opacity 280ms cubic-bezier(0.22, 1, 0.36, 1);
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .motion-overlay-root[data-visible="true"] .motion-overlay-panel {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .motion-overlay-panel-hidden {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .motion-overlay-panel-visible {
+    opacity: 1;
+  }
+
+  .motion-overlay-button {
+    transition:
+      opacity 300ms cubic-bezier(0.22, 1, 0.36, 1),
+      transform 300ms cubic-bezier(0.22, 1, 0.36, 1);
+    opacity: 0;
+    transform: translate3d(0, 3px, 0);
+    will-change: opacity, transform;
+  }
+
+  .motion-overlay-root[data-visible="true"] .motion-overlay-button {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+
+  .motion-overlay-root[data-visible="true"] .motion-overlay-button:nth-child(2) {
+    transition-delay: 50ms;
+  }
+
+  .motion-overlay-root[data-visible="false"] .motion-overlay-button {
+    transition-delay: 0ms;
+  }
+
+  /* Gallery filter crossfade */
+  .motion-gallery-grid {
+    transition: opacity 250ms cubic-bezier(0.22, 1, 0.36, 1);
+    will-change: opacity;
+  }
+
+  /* Mobile navigation */
+  .motion-mobile-backdrop {
+    position: fixed;
+    inset: 0;
+    top: 66px;
+    z-index: -1;
+    background-color: hsla(0, 0%, 0%, 0.04);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 280ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .motion-mobile-nav[data-open="true"] .motion-mobile-backdrop {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .motion-mobile-panel {
+    transition:
+      background-color 280ms cubic-bezier(0.22, 1, 0.36, 1),
+      border-radius 280ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .motion-mobile-nav[data-open="true"] .motion-mobile-panel {
+    background-color: #ffffff;
+    border-bottom-left-radius: 12px;
+    border-bottom-right-radius: 12px;
+  }
+
+  .motion-mobile-header {
+    height: 66px;
+    padding-top: 20px;
+    box-sizing: border-box;
+    flex-shrink: 0;
+  }
+
+  .motion-mobile-header-row {
+    transform: translate3d(0, 0, 0);
+  }
+
+  .motion-mobile-menu-body {
+    display: grid;
+    grid-template-rows: 0fr;
+    opacity: 0;
+    transform: translate3d(0, -4px, 0);
+    padding-top: 0;
+    padding-bottom: 0;
+    transition:
+      grid-template-rows 280ms cubic-bezier(0.22, 1, 0.36, 1),
+      opacity 280ms cubic-bezier(0.22, 1, 0.36, 1),
+      transform 280ms cubic-bezier(0.22, 1, 0.36, 1),
+      padding-top 280ms cubic-bezier(0.22, 1, 0.36, 1),
+      padding-bottom 280ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .motion-mobile-nav[data-open="true"] .motion-mobile-menu-body {
+    grid-template-rows: 1fr;
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+    padding-top: 20px;
+    padding-bottom: 20px;
+  }
+
+  .motion-mobile-menu-body-inner {
+    overflow: hidden;
+    min-height: 0;
+  }
+
+  .motion-mobile-menu-items .motion-filter-tab {
+    opacity: 0;
+    transform: translate3d(0, 3px, 0);
+    transition:
+      opacity 280ms cubic-bezier(0.22, 1, 0.36, 1),
+      transform 280ms cubic-bezier(0.22, 1, 0.36, 1),
+      color 240ms cubic-bezier(0.22, 1, 0.36, 1),
+      background-color 240ms cubic-bezier(0.22, 1, 0.36, 1),
+      border-color 240ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .motion-mobile-nav[data-open="true"] .motion-mobile-menu-items .motion-filter-tab:nth-child(1) {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+    transition-delay: 40ms;
+  }
+
+  .motion-mobile-nav[data-open="true"] .motion-mobile-menu-items .motion-filter-tab:nth-child(2) {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+    transition-delay: 80ms;
+  }
+
+  .motion-mobile-nav[data-open="true"] .motion-mobile-menu-items .motion-filter-tab:nth-child(3) {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+    transition-delay: 120ms;
+  }
+
+  .motion-mobile-nav[data-open="false"] .motion-mobile-menu-items .motion-filter-tab {
+    transition-delay: 0ms;
+  }
+
+  /* Hamburger ↔ close — morph hamburger lines, crossfade to exact Figma close.svg */
+  .motion-menu-toggle {
+    transform: translate3d(0, 0, 0);
+  }
+
+  .motion-menu-toggle-button {
+    transform: translate3d(0, 0, 0);
+  }
+
+  .motion-menu-toggle-hamburger {
+    opacity: 1;
+    transition: opacity 280ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .motion-menu-toggle-close {
+    opacity: 0;
+    transition: opacity 280ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .motion-menu-toggle[data-open="true"] .motion-menu-toggle-hamburger {
+    opacity: 0;
+  }
+
+  .motion-menu-toggle[data-open="true"] .motion-menu-toggle-close {
+    opacity: 1;
+  }
+
+  .motion-menu-toggle-line {
+    transition: transform 280ms cubic-bezier(0.22, 1, 0.36, 1);
+    will-change: transform;
+  }
+
+  .motion-menu-toggle-line-top {
+    transform-box: view-box;
+    transform-origin: 12px 8px;
+  }
+
+  .motion-menu-toggle-line-bottom {
+    transform-box: view-box;
+    transform-origin: 12px 16px;
+  }
+
+  .motion-menu-toggle[data-open="true"] .motion-menu-toggle-line-top {
+    transform: translateY(4px) rotate(45deg);
+  }
+
+  .motion-menu-toggle[data-open="true"] .motion-menu-toggle-line-bottom {
+    transform: translateY(-4px) rotate(-45deg);
+  }
+
+  /* Mobile/tablet image preview modal — Figma 40004539:8025 */
+  .motion-preview-modal-root {
+    pointer-events: none;
+  }
+
+  .motion-preview-modal-root[data-visible="true"] {
+    pointer-events: auto;
+  }
+
+  .motion-preview-modal-backdrop {
+    background-color: rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(1px);
+    -webkit-backdrop-filter: blur(1px);
+    opacity: 0;
+    transition: opacity 300ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .motion-preview-modal-root[data-visible="true"] .motion-preview-modal-backdrop {
+    opacity: 1;
+  }
+
+  .motion-preview-modal-card {
+    opacity: 0;
+    transform: translate3d(-50%, calc(-50% + 4px), 0) scale(0.98);
+    transition:
+      opacity 300ms cubic-bezier(0.22, 1, 0.36, 1),
+      transform 300ms cubic-bezier(0.22, 1, 0.36, 1);
+    will-change: opacity, transform;
+  }
+
+  .motion-preview-modal-root[data-visible="true"] .motion-preview-modal-card {
+    opacity: 1;
+    transform: translate3d(-50%, -50%, 0) scale(1);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .motion-filter-tab,
+    .motion-action-button,
+    .motion-action-content,
+    .motion-overlay-root,
+    .motion-overlay-scrim,
+    .motion-overlay-panel,
+    .motion-overlay-button,
+    .motion-gallery-grid,
+    .motion-mobile-backdrop,
+    .motion-mobile-panel,
+    .motion-mobile-menu-body,
+    .motion-mobile-menu-items .motion-filter-tab,
+    .motion-menu-toggle-hamburger,
+    .motion-menu-toggle-close,
+    .motion-menu-toggle-line,
+    .motion-preview-modal-root,
+    .motion-preview-modal-backdrop,
+    .motion-preview-modal-card {
+      transition: none !important;
+      animation: none !important;
+      transform: none !important;
+    }
+
+    .motion-overlay-root[data-visible="true"] .motion-overlay-scrim {
+      backdrop-filter: blur(2px);
+      -webkit-backdrop-filter: blur(2px);
+    }
+
+    .motion-overlay-button,
+    .motion-mobile-nav[data-open="true"] .motion-mobile-menu-items .motion-filter-tab,
+    .motion-menu-toggle[data-open="true"] .motion-menu-toggle-close {
+      opacity: 1 !important;
+    }
+
+    .motion-menu-toggle[data-open="true"] .motion-menu-toggle-hamburger {
+      opacity: 0 !important;
+    }
+
+    .motion-menu-toggle[data-open="false"] .motion-menu-toggle-hamburger {
+      opacity: 1 !important;
+    }
+
+    .motion-menu-toggle[data-open="false"] .motion-menu-toggle-close {
+      opacity: 0 !important;
+    }
+    .motion-preview-modal-root[data-visible="true"] .motion-preview-modal-card {
+      opacity: 1 !important;
+    }
+
+    .animate-spin {
+      animation: none !important;
+    }
+  }
+}
