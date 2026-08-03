@@ -71,7 +71,7 @@ export const Footer = memo(function Footer({
       }}
     >
       <ContentContainer className="px-5 tablet:px-8">
-        <div className="flex w-full flex-wrap items-start justify-between gap-6">
+        <div className="flex w-full flex-col items-center gap-6 tablet:flex-row tablet:flex-wrap tablet:items-start tablet:justify-between">
           <div
             className="flex items-center"
             style={{ gap: FOOTER.logoBrandGap }}
@@ -83,7 +83,7 @@ export const Footer = memo(function Footer({
           </div>
 
           <nav
-            className="flex flex-wrap items-center"
+            className="flex flex-wrap items-center justify-center"
             style={{ gap: FOOTER.linkGap }}
             aria-label="Footer categories"
           >

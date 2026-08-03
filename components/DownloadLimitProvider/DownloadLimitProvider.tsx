@@ -10,6 +10,7 @@ import {
 } from "react";
 
 import { DailyDownloadLimitModal } from "@/components/DailyDownloadLimitModal/DailyDownloadLimitModal";
+import { trackDownloadLimitPopup } from "@/lib/analytics";
 import {
   canDownloadToday,
   recordSuccessfulDownload,
@@ -32,6 +33,7 @@ export function DownloadLimitProvider({ children }: { children: ReactNode }) {
   const requestDownloadSlot = useCallback(() => {
     if (!canDownloadToday()) {
       setIsLimitOpen(true);
+      trackDownloadLimitPopup();
       return false;
     }
 

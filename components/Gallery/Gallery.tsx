@@ -10,6 +10,7 @@ import { ImagePreviewModal } from "@/components/ImagePreviewModal/ImagePreviewMo
 import { Navbar } from "@/components/Navbar/Navbar";
 import { useImagePreviewModal } from "@/hooks/useImagePreviewModal";
 import { useIsDesktop } from "@/hooks/useIsDesktop";
+import { trackCategoryChange } from "@/lib/analytics";
 import type { IllustrationFilterLists } from "@/lib/filterIllustrations";
 import type { FilterValue } from "@/types/illustration";
 
@@ -52,6 +53,7 @@ export function Gallery({ lists }: GalleryProps) {
     }
 
     scrollToGalleryTop();
+    trackCategoryChange(activeFilter);
   }, [activeFilter]);
 
   const activeFilterLabel =

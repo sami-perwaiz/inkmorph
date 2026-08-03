@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Poppins } from "next/font/google";
+
+import { Analytics } from "@/components/Analytics/Analytics";
 import "./globals.css";
 
 const poppins = Poppins({
@@ -99,6 +101,7 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         {children}
+        <Analytics />
       </body>
     </html>
   );

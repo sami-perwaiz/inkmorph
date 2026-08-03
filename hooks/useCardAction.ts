@@ -7,6 +7,7 @@ import {
   copyImageToClipboard,
   downloadImage,
 } from "@/lib/illustrationActions";
+import { trackImageCopy, trackImageDownload } from "@/lib/analytics";
 import { ACTION } from "@/lib/constants";
 import type { CardActionState } from "@/types/action";
 import type { Illustration } from "@/types/illustration";
@@ -15,7 +16,7 @@ const SUCCESS_RESET_MS = ACTION.successResetMs;
 const ERROR_RESET_MS = 1800;
 
 export function useCardAction(illustration: Illustration) {
-  const { id, src } = illustration;
+  const { id, src, category } = illustration;
   const { requestDownloadSlot, commitDownloadSlot } = useDownloadLimit();
   const [actionState, setActionState] = useState<CardActionState>("idle");
   const [failedAction, setFailedAction] = useState<"copy" | "download" | null>(
@@ -62,6 +63,7 @@ export function useCardAction(illustration: Illustration) {
 
     try {
       await copyImageToClipboard(src, id);
+      trackImageCopy(id, category);
       setActionState("copied");
       setStatusMessage("Image copied to clipboard");
       scheduleReset();
@@ -71,7 +73,7 @@ export function useCardAction(illustration: Illustration) {
       setStatusMessage("Unable to copy image");
       scheduleReset(ERROR_RESET_MS);
     }
-  }, [id, scheduleReset, src]);
+  }, [category, id, scheduleReset, src]);
 
   const handleDownload = useCallback(async () => {
     if (actionStateRef.current !== "idle" && actionStateRef.current !== "error") {
@@ -89,6 +91,7 @@ export function useCardAction(illustration: Illustration) {
     try {
       await downloadImage(src, `${id}.png`);
       commitDownloadSlot();
+      trackImageDownload(id, category);
       setActionState("downloaded");
       setStatusMessage("Downloaded PNG");
       scheduleReset();
@@ -98,7 +101,14 @@ export function useCardAction(illustration: Illustration) {
       setStatusMessage("Unable to download image");
       scheduleReset(ERROR_RESET_MS);
     }
-  }, [commitDownloadSlot, id, requestDownloadSlot, scheduleReset, src]);
+  }, [
+    category,
+    commitDownloadSlot,
+    id,
+    requestDownloadSlot,
+    scheduleReset,
+    src,
+  ]);
 
   const showOverlay =
     isHovered ||
