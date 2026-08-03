@@ -13,6 +13,7 @@
     "generate-placeholders": "node scripts/generate-placeholders.mjs",
     "ingest-illustrations": "node scripts/ingest-illustrations.mjs"
   },
+
   "dependencies": {
     "next": "^15.1.0",
     "react": "^19.0.0",

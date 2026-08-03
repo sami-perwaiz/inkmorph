@@ -1,16 +1,30 @@
-import { copyFile, mkdir, readdir, rm, stat } from "fs/promises";
+import { access, copyFile, mkdir, readdir, rm, stat } from "fs/promises";
 import { join } from "path";
 
 import { assignAssetEntries } from "./inkmorph-asset-registry.mjs";
 
 const DEST_ROOT = join(process.cwd(), "public", "illustrations");
 
+/** Project-relative source folders. Override with env vars when needed. */
 const SOURCES = {
-  "3d-avatar": "/Users/m1pro/Downloads/3D Images",
-  "black-white": "/Users/m1pro/Downloads/Black & White Images",
+  "3d-avatar":
+    process.env.INKMORPH_SOURCE_3D_AVATAR ??
+    join(process.cwd(), "source-images", "3d-avatar"),
+  "black-white":
+    process.env.INKMORPH_SOURCE_BLACK_WHITE ??
+    join(process.cwd(), "source-images", "black-white"),
 };
 
 const IMAGE_PATTERN = /\.(png|jpe?g|webp|svg)$/i;
+
+async function pathExists(targetPath) {
+  try {
+    await access(targetPath);
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 async function listImageFiles(sourceDir) {
   const entries = await readdir(sourceDir);
@@ -49,9 +63,38 @@ async function copyToCategory(category, sourceDir) {
 
 async function main() {
   const counts = {};
+  let ingestedAny = false;
 
   for (const [category, sourceDir] of Object.entries(SOURCES)) {
+    if (!(await pathExists(sourceDir))) {
+      console.warn(
+        `Skipping "${category}" ingestion: source folder not found at ${sourceDir}`
+      );
+      counts[category] = 0;
+      continue;
+    }
+
+    const info = await stat(sourceDir);
+    if (!info.isDirectory()) {
+      console.warn(
+        `Skipping "${category}" ingestion: path is not a directory (${sourceDir})`
+      );
+      counts[category] = 0;
+      continue;
+    }
+
     counts[category] = await copyToCategory(category, sourceDir);
+    ingestedAny = true;
+    console.log(
+      `Ingested ${counts[category]} ${category} illustrations from ${sourceDir}.`
+    );
+  }
+
+  if (!ingestedAny) {
+    console.warn(
+      "No source image folders found. Skipping ingestion and keeping existing public/illustrations assets."
+    );
+    return;
   }
 
   console.log(`Ingested ${counts["3d-avatar"]} 3D avatar illustrations.`);
