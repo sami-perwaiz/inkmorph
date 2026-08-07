@@ -3,13 +3,14 @@ export const LAYOUT = {
 } as const;
 
 export const NAV = {
-  desktopTabletHeight: 98,
-  mobileHeight: 66,
-  desktopTabletPaddingX: 50,
-  desktopTabletPaddingY: 16,
+  desktopTabletHeight: 90,
+  tabletHeight: 70,
+  mobileHeight: 70,
+  desktopTabletPaddingX: 30,
+  desktopTabletPaddingY: 0,
   mobilePaddingX: 16,
-  logoDesktopTablet: 66,
-  logoMobile: 46,
+  logoDesktopTablet: 46,
+  logoMobile: 40,
   logoToFiltersGap: 24,
   filterGap: 20,
   filterPillPx: 16,
@@ -17,44 +18,53 @@ export const NAV = {
   filterPillRadius: 40,
   mobileMenuGap: 20,
   mobileMenuPaddingX: 12,
+  searchWidth: 217,
+  profileSize: 44,
 } as const;
 
 export const GALLERY = {
   gap: 20,
   mobilePaddingX: 16,
   tabletDesktopPaddingX: 50,
-  mobileTopOffset: 86,
-  tabletDesktopTopOffset: 148,
+  /** Figma content top: mobile 100 / tablet 120 / desktop chrome (laptop+) 138 */
+  mobileTopOffset: 100,
+  tabletTopOffset: 120,
+  desktopTopOffset: 138,
 } as const;
 
 export const FOOTER = {
   pt: 64,
   pb: 48,
+  mobilePy: 48,
   sectionGap: 64,
   dividerGap: 32,
-  innerPaddingX: 32,
-  mobilePaddingX: 20,
-  linkGap: 32,
+  innerPaddingX: 50,
+  mobilePaddingX: 16,
+  linkGap: 16,
   logoSize: 40,
   logoRadius: 4,
   logoBrandGap: 6,
   brandName: "InkMorph",
-  copyright: "© 2025 Ink Morph. All rights reserved.",
+  copyright: "© 2026 InkMorph. All Rights Reserved.",
 } as const;
 
 export const FILTERS = [
   { value: "all" as const, label: "All" },
-  { value: "3d-avatar" as const, label: "3D Avatar" },
-  { value: "black-white" as const, label: "Black & White" },
+  { value: "avatar" as const, label: "Avatar" },
+  { value: "character" as const, label: "Character" },
+  { value: "object" as const, label: "Object" },
+  { value: "abstract" as const, label: "Abstract" },
 ];
 
 export const FOOTER_FILTERS = [
-  { value: "3d-avatar" as const, label: "3D Avatars" },
-  { value: "black-white" as const, label: "Black & White" },
+  { value: "avatar" as const, label: "Avatar" },
+  { value: "character" as const, label: "Character" },
+  { value: "object" as const, label: "Object" },
+  { value: "abstract" as const, label: "Abstract" },
 ];
 
 export const ACTION = {
-  overlayBlur: 4,
+  overlayBlur: 2,
   overlayTint: "rgba(0,0,0,0.04)",
   buttonGap: 20,
   buttonWidth: 150,
@@ -66,4 +76,17 @@ export const ACTION = {
   iconSize: 20,
   spinnerSize: 20,
   successResetMs: 1200,
+  /** Compact hover controls — Figma 40004699:9280 */
+  compactGap: 12,
+  compactInset: 16,
+  compactRadius: 8,
+  compactPx: 12,
+  compactPy: 10,
+  compactDividerGap: 12,
+  premiumBadgeSize: 28,
+  premiumBadgeRadius: 6,
+  premiumBadgePad: 6,
+  premiumCrownSize: 16,
 } as const;
+
+export type DownloadSize = "1x" | "2x";

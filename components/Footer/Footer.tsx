@@ -1,53 +1,18 @@
 "use client";
 
-import Image from "next/image";
+import Link from "next/link";
 import { memo, useMemo } from "react";
 
 import { ContentContainer } from "@/components/ContentContainer/ContentContainer";
+import { InkMorphLogo } from "@/components/InkMorphLogo/InkMorphLogo";
 import { FOOTER, FOOTER_FILTERS } from "@/lib/constants";
 import type { FilterValue } from "@/types/illustration";
 
 interface FooterProps {
-  activeFilter: FilterValue;
   onFilterChange: (filter: FilterValue) => void;
 }
 
-function FooterLogo() {
-  return (
-    <div
-      className="relative shrink-0 overflow-hidden"
-      style={{
-        width: FOOTER.logoSize,
-        height: FOOTER.logoSize,
-        borderRadius: FOOTER.logoRadius,
-      }}
-    >
-      <div
-        className="absolute inset-0 bg-white/20"
-        style={{ borderRadius: FOOTER.logoRadius }}
-        aria-hidden
-      />
-      <div
-        className="absolute inset-0 overflow-hidden backdrop-blur-[5px] [-webkit-backdrop-filter:blur(5px)]"
-        style={{ borderRadius: FOOTER.logoRadius }}
-      >
-        <Image
-          src="/logo.png"
-          alt=""
-          fill
-          sizes="40px"
-          className="object-cover"
-          aria-hidden
-        />
-      </div>
-    </div>
-  );
-}
-
-export const Footer = memo(function Footer({
-  activeFilter,
-  onFilterChange,
-}: FooterProps) {
+export const Footer = memo(function Footer({ onFilterChange }: FooterProps) {
   const filterClickHandlers = useMemo(() => {
     const handlers = {} as Record<
       (typeof FOOTER_FILTERS)[number]["value"],
@@ -62,61 +27,54 @@ export const Footer = memo(function Footer({
   }, [onFilterChange]);
 
   return (
-    <footer
-      className="flex flex-col items-center bg-white"
-      style={{
-        paddingTop: FOOTER.pt,
-        paddingBottom: FOOTER.pb,
-        gap: FOOTER.sectionGap,
-      }}
-    >
-      <ContentContainer className="px-5 tablet:px-8">
-        <div className="flex w-full flex-col items-center gap-6 tablet:flex-row tablet:flex-wrap tablet:items-start tablet:justify-between">
+    <footer className="flex flex-col items-center gap-16 bg-white px-4 py-12 tablet:gap-16 tablet:px-[50px] tablet:pb-12 tablet:pt-16">
+      <ContentContainer>
+        <div className="flex w-full flex-col items-center gap-8 tablet:flex-row tablet:items-start tablet:justify-between tablet:gap-6">
           <div
             className="flex items-center"
             style={{ gap: FOOTER.logoBrandGap }}
           >
-            <FooterLogo />
+            <InkMorphLogo
+              size={FOOTER.logoSize}
+              radius={FOOTER.logoRadius}
+              alt=""
+            />
             <span className="whitespace-nowrap font-poppins text-lg font-medium leading-6 text-gray-900">
               {FOOTER.brandName}
             </span>
           </div>
 
           <nav
-            className="flex flex-wrap items-center justify-center"
-            style={{ gap: FOOTER.linkGap }}
+            className="flex w-full flex-col items-center gap-4 tablet:w-auto tablet:flex-row tablet:flex-wrap tablet:justify-end"
             aria-label="Footer categories"
           >
-            {FOOTER_FILTERS.map(({ value, label }) => {
-              const isActive = activeFilter === value;
-
-              return (
-                <button
-                  key={value}
-                  type="button"
-                  aria-pressed={isActive}
-                  onClick={filterClickHandlers[value]}
-                  className={[
-                    "whitespace-nowrap font-inter text-base font-normal leading-6 transition-colors",
-                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-900/30 focus-visible:ring-offset-2 rounded-sm",
-                    isActive
-                      ? "text-gray-900"
-                      : "text-gray-600 hover:text-gray-900",
-                  ].join(" ")}
-                >
-                  {label}
-                </button>
-              );
-            })}
+            {FOOTER_FILTERS.map(({ value, label }) => (
+              <button
+                key={value}
+                type="button"
+                onClick={filterClickHandlers[value]}
+                className="whitespace-nowrap rounded-sm bg-white px-[15px] py-2 font-inter text-base font-normal leading-6 text-gray-600 opacity-50 transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-900/30 focus-visible:ring-offset-2"
+              >
+                {label}
+              </button>
+            ))}
           </nav>
         </div>
       </ContentContainer>
 
-      <ContentContainer className="flex w-full flex-col gap-8 px-5 tablet:px-8">
+      <ContentContainer className="flex w-full flex-col gap-8">
         <div className="h-px w-full bg-gray-200" aria-hidden />
-        <p className="min-h-6 w-full text-center font-inter text-base font-normal leading-6 text-gray-500">
-          {FOOTER.copyright}
-        </p>
+        <div className="flex w-full flex-col items-center gap-8 tablet:flex-row tablet:items-center tablet:justify-between">
+          <p className="min-h-6 w-full text-center font-inter text-base font-normal leading-6 text-gray-500 tablet:flex-1 tablet:text-left">
+            {FOOTER.copyright}
+          </p>
+          <Link
+            href="/privacy"
+            className="shrink-0 font-poppins text-base font-normal leading-6 text-gray-500 underline decoration-solid underline-offset-[from-font] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-900/30 focus-visible:ring-offset-2"
+          >
+            Privacy Policy
+          </Link>
+        </div>
       </ContentContainer>
     </footer>
   );

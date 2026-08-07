@@ -2,6 +2,20 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  html,
+  body {
+    width: 100%;
+    min-width: 0;
+    overflow-x: hidden;
+  }
+
+  /* Dev-only Next.js overlay badge overlaps gallery icons */
+  nextjs-portal {
+    display: none !important;
+  }
+}
+
 @layer utilities {
   .motion-ease-premium {
     transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
@@ -130,11 +144,18 @@
     }
   }
 
-  /* Mobile navigation */
+  .motion-mobile-header {
+    height: 70px;
+    padding-top: 14px;
+    padding-bottom: 14px;
+    box-sizing: border-box;
+    flex-shrink: 0;
+  }
+
   .motion-mobile-backdrop {
     position: fixed;
     inset: 0;
-    top: 66px;
+    top: 70px;
     z-index: -1;
     background-color: hsla(0, 0%, 0%, 0.04);
     opacity: 0;
@@ -157,13 +178,6 @@
     background-color: #ffffff;
     border-bottom-left-radius: 12px;
     border-bottom-right-radius: 12px;
-  }
-
-  .motion-mobile-header {
-    height: 66px;
-    padding-top: 20px;
-    box-sizing: border-box;
-    flex-shrink: 0;
   }
 
   .motion-mobile-header-row {
@@ -210,21 +224,39 @@
   }
 
   .motion-mobile-nav[data-open="true"] .motion-mobile-menu-items .motion-filter-tab:nth-child(1) {
-    opacity: 1;
+    opacity: 0.5;
     transform: translate3d(0, 0, 0);
     transition-delay: 40ms;
   }
 
   .motion-mobile-nav[data-open="true"] .motion-mobile-menu-items .motion-filter-tab:nth-child(2) {
-    opacity: 1;
+    opacity: 0.5;
     transform: translate3d(0, 0, 0);
     transition-delay: 80ms;
   }
 
   .motion-mobile-nav[data-open="true"] .motion-mobile-menu-items .motion-filter-tab:nth-child(3) {
-    opacity: 1;
+    opacity: 0.5;
     transform: translate3d(0, 0, 0);
     transition-delay: 120ms;
+  }
+
+  .motion-mobile-nav[data-open="true"] .motion-mobile-menu-items .motion-filter-tab:nth-child(4) {
+    opacity: 0.5;
+    transform: translate3d(0, 0, 0);
+    transition-delay: 160ms;
+  }
+
+  .motion-mobile-nav[data-open="true"] .motion-mobile-menu-items .motion-filter-tab:nth-child(5) {
+    opacity: 0.5;
+    transform: translate3d(0, 0, 0);
+    transition-delay: 200ms;
+  }
+
+  .motion-mobile-nav[data-open="true"]
+    .motion-mobile-menu-items
+    .motion-filter-tab[aria-selected="true"] {
+    opacity: 1;
   }
 
   .motion-mobile-nav[data-open="false"] .motion-mobile-menu-items .motion-filter-tab {
@@ -281,7 +313,7 @@
     transform: translateY(-4px) rotate(-45deg);
   }
 
-  /* Mobile/tablet image preview modal — Figma 40004539:8025 */
+  /* Image preview modal — Figma Images Open State 40004858:12327 */
   .motion-preview-modal-root {
     pointer-events: none;
   }
@@ -291,15 +323,16 @@
   }
 
   .motion-preview-modal-backdrop {
-    background-color: rgba(0, 0, 0, 0.1);
-    backdrop-filter: blur(1px);
-    -webkit-backdrop-filter: blur(1px);
-    opacity: 0;
-    transition: opacity 300ms cubic-bezier(0.22, 1, 0.36, 1);
+    /* Fill + blur set inline (same as purchase modal: blur 3, 10% black). */
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+    visibility: hidden;
+    pointer-events: none;
   }
 
   .motion-preview-modal-root[data-visible="true"] .motion-preview-modal-backdrop {
-    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
   }
 
   .motion-preview-modal-card {
@@ -326,9 +359,9 @@
   }
 
   .motion-limit-modal-backdrop {
-    background-color: rgba(0, 0, 0, 0.1);
-    backdrop-filter: blur(1px);
-    -webkit-backdrop-filter: blur(1px);
+    background-color: hsla(0, 0%, 0%, 0.1);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
     opacity: 0;
     transition: opacity 300ms cubic-bezier(0.22, 1, 0.36, 1);
   }
@@ -349,6 +382,81 @@
   .motion-limit-modal-root[data-visible="true"] .motion-limit-modal-card {
     opacity: 1;
     transform: translate3d(0, 0, 0) scale(1);
+  }
+
+  /* Pricing — Sign in to Purchase Pro modal (Figma 40004878:12611) */
+  .motion-purchase-signin-modal-backdrop {
+    /* Fill + blur values are set inline from Figma (blur 3, 10% black). */
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+  }
+
+  .motion-purchase-signin-modal-card {
+    opacity: 0;
+    transform: translate3d(0, 12px, 0) scale(0.98);
+    transition:
+      opacity 300ms cubic-bezier(0.22, 1, 0.36, 1),
+      transform 300ms cubic-bezier(0.22, 1, 0.36, 1);
+    will-change: opacity, transform;
+  }
+
+  .motion-purchase-signin-modal-root[data-visible="true"] .motion-purchase-signin-modal-card {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+
+  /* Pricing page — first-visit reveal (hero + plans) */
+  .motion-pricing-hero-bg,
+  .motion-pricing-hero-copy,
+  .motion-pricing-hero-body,
+  .motion-pricing-plans-copy,
+  .motion-pricing-plan-card {
+    transition:
+      opacity 700ms cubic-bezier(0.22, 1, 0.36, 1),
+      transform 700ms cubic-bezier(0.22, 1, 0.36, 1);
+    will-change: opacity, transform;
+  }
+
+  .motion-pricing-hero-body {
+    transition-delay: 90ms;
+  }
+
+  .motion-pricing-plans-copy {
+    transition-delay: 220ms;
+  }
+
+  .motion-pricing-plan-card {
+    transition-delay: 340ms;
+  }
+
+  .motion-pricing-plan-card:nth-child(2) {
+    transition-delay: 460ms;
+  }
+
+  .motion-pricing-page[data-animate="true"] .motion-pricing-hero-bg {
+    opacity: 0;
+    transform: scale(1.04);
+  }
+
+  .motion-pricing-page[data-animate="true"] .motion-pricing-hero-copy,
+  .motion-pricing-page[data-animate="true"] .motion-pricing-hero-body,
+  .motion-pricing-page[data-animate="true"] .motion-pricing-plans-copy,
+  .motion-pricing-page[data-animate="true"] .motion-pricing-plan-card {
+    opacity: 0;
+    transform: translate3d(0, 22px, 0);
+  }
+
+  .motion-pricing-page[data-animate="true"][data-visible="true"] .motion-pricing-hero-bg {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  .motion-pricing-page[data-animate="true"][data-visible="true"] .motion-pricing-hero-copy,
+  .motion-pricing-page[data-animate="true"][data-visible="true"] .motion-pricing-hero-body,
+  .motion-pricing-page[data-animate="true"][data-visible="true"] .motion-pricing-plans-copy,
+  .motion-pricing-page[data-animate="true"][data-visible="true"] .motion-pricing-plan-card {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -372,7 +480,14 @@
     .motion-preview-modal-card,
     .motion-limit-modal-root,
     .motion-limit-modal-backdrop,
-    .motion-limit-modal-card {
+    .motion-limit-modal-card,
+    .motion-purchase-signin-modal-root,
+    .motion-purchase-signin-modal-card,
+    .motion-pricing-hero-bg,
+    .motion-pricing-hero-copy,
+    .motion-pricing-hero-body,
+    .motion-pricing-plans-copy,
+    .motion-pricing-plan-card {
       transition: none !important;
       animation: none !important;
     }
@@ -391,14 +506,37 @@
       transform: none !important;
     }
 
+    .motion-purchase-signin-modal-card {
+      opacity: 1 !important;
+      transform: none !important;
+    }
+
+    .motion-pricing-hero-bg,
+    .motion-pricing-hero-copy,
+    .motion-pricing-hero-body,
+    .motion-pricing-plans-copy,
+    .motion-pricing-plan-card {
+      opacity: 1 !important;
+      transform: none !important;
+    }
+
     .motion-overlay-root[data-visible="true"] .motion-overlay-scrim {
       backdrop-filter: blur(2px);
       -webkit-backdrop-filter: blur(2px);
     }
 
     .motion-overlay-button,
-    .motion-mobile-nav[data-open="true"] .motion-mobile-menu-items .motion-filter-tab,
     .motion-menu-toggle[data-open="true"] .motion-menu-toggle-close {
+      opacity: 1 !important;
+    }
+
+    .motion-mobile-nav[data-open="true"] .motion-mobile-menu-items .motion-filter-tab {
+      opacity: 0.5 !important;
+    }
+
+    .motion-mobile-nav[data-open="true"]
+      .motion-mobile-menu-items
+      .motion-filter-tab[aria-selected="true"] {
       opacity: 1 !important;
     }
 
@@ -419,6 +557,10 @@
     }
 
     .motion-limit-modal-root[data-visible="true"] .motion-limit-modal-card {
+      opacity: 1 !important;
+    }
+
+    .motion-purchase-signin-modal-root[data-visible="true"] .motion-purchase-signin-modal-card {
       opacity: 1 !important;
     }
 

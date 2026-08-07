@@ -7,13 +7,12 @@ const DEST_ROOT = join(process.cwd(), "public", "illustrations");
 
 /** Project-relative source folders. Override with env vars when needed. */
 const SOURCES = {
-  "3d-avatar":
-    process.env.INKMORPH_SOURCE_3D_AVATAR ??
-    join(process.cwd(), "source-images", "3d-avatar"),
-  "black-white":
-    process.env.INKMORPH_SOURCE_BLACK_WHITE ??
-    join(process.cwd(), "source-images", "black-white"),
+  "3d-icon":
+    process.env.INKMORPH_SOURCE_3D_ICON ??
+    join(process.cwd(), "source-images", "3d-icon"),
 };
+
+const LEGACY_CATEGORIES = ["3d-avatar", "black-white"];
 
 const IMAGE_PATTERN = /\.(png|jpe?g|webp|svg)$/i;
 
@@ -61,6 +60,16 @@ async function copyToCategory(category, sourceDir) {
   return files.length;
 }
 
+async function removeLegacyCategories() {
+  for (const category of LEGACY_CATEGORIES) {
+    const destDir = join(DEST_ROOT, category);
+    if (await pathExists(destDir)) {
+      await rm(destDir, { recursive: true, force: true });
+      console.log(`Removed legacy illustrations folder: ${category}`);
+    }
+  }
+}
+
 async function main() {
   const counts = {};
   let ingestedAny = false;
@@ -97,8 +106,8 @@ async function main() {
     return;
   }
 
-  console.log(`Ingested ${counts["3d-avatar"]} 3D avatar illustrations.`);
-  console.log(`Ingested ${counts["black-white"]} black & white illustrations.`);
+  await removeLegacyCategories();
+  console.log(`Ingested ${counts["3d-icon"] ?? 0} 3D icon illustrations.`);
 }
 
 main().catch((error) => {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 
 import { ContentContainer } from "@/components/ContentContainer/ContentContainer";
 import { DownloadLimitProvider } from "@/components/DownloadLimitProvider/DownloadLimitProvider";
@@ -8,9 +9,12 @@ import { Footer } from "@/components/Footer/Footer";
 import { GalleryGrid } from "@/components/GalleryGrid/GalleryGrid";
 import { ImagePreviewModal } from "@/components/ImagePreviewModal/ImagePreviewModal";
 import { Navbar } from "@/components/Navbar/Navbar";
+import { PremiumBanner } from "@/components/PremiumBanner/PremiumBanner";
+import { UnlockLibraryCta } from "@/components/PremiumBanner/UnlockLibraryCta";
 import { useImagePreviewModal } from "@/hooks/useImagePreviewModal";
 import { useIsDesktop } from "@/hooks/useIsDesktop";
 import { trackCategoryChange } from "@/lib/analytics";
+import { FILTERS } from "@/lib/constants";
 import type { IllustrationFilterLists } from "@/lib/filterIllustrations";
 import type { FilterValue } from "@/types/illustration";
 
@@ -26,7 +30,6 @@ function prefersReducedMotion(): boolean {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
-/** Always return to the top of the page/gallery when switching categories. */
 function scrollToGalleryTop() {
   const behavior: ScrollBehavior = prefersReducedMotion() ? "auto" : "smooth";
 
@@ -36,8 +39,16 @@ function scrollToGalleryTop() {
   });
 }
 
+function resolveFilterParam(value: string | null): FilterValue {
+  const match = FILTERS.find((filter) => filter.value === value);
+  return match?.value ?? "all";
+}
+
 export function Gallery({ lists }: GalleryProps) {
-  const [activeFilter, setActiveFilter] = useState<FilterValue>("all");
+  const searchParams = useSearchParams();
+  const [activeFilter, setActiveFilter] = useState<FilterValue>(() =>
+    resolveFilterParam(searchParams.get("filter"))
+  );
   const isDesktop = useIsDesktop();
   const preview = useImagePreviewModal(isDesktop);
   const skipScrollOnMountRef = useRef(true);
@@ -45,6 +56,11 @@ export function Gallery({ lists }: GalleryProps) {
   const handleFilterChange = useCallback((filter: FilterValue) => {
     setActiveFilter((current) => (current === filter ? current : filter));
   }, []);
+
+  useEffect(() => {
+    const next = resolveFilterParam(searchParams.get("filter"));
+    setActiveFilter((current) => (current === next ? current : next));
+  }, [searchParams]);
 
   useEffect(() => {
     if (skipScrollOnMountRef.current) {
@@ -57,15 +73,12 @@ export function Gallery({ lists }: GalleryProps) {
   }, [activeFilter]);
 
   const activeFilterLabel =
-    activeFilter === "all"
-      ? "all illustrations"
-      : activeFilter === "3d-avatar"
-        ? "3D avatar illustrations"
-        : "black and white illustrations";
+    FILTERS.find((filter) => filter.value === activeFilter)?.label ??
+    "illustrations";
 
   return (
     <DownloadLimitProvider>
-      <div className="min-h-screen bg-white">
+      <div className="min-h-screen w-full bg-white">
         <a
           href="#illustration-gallery"
           className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[60] focus:rounded-lg focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:text-gray-900 focus:shadow-action-hover focus:outline-none focus:ring-2 focus:ring-gray-900/30"
@@ -78,21 +91,25 @@ export function Gallery({ lists }: GalleryProps) {
           onFilterChange={handleFilterChange}
         />
 
-        <main className="pt-[86px] tablet:pt-[148px]">
-          <ContentContainer>
-            <GalleryGrid
-              lists={lists}
-              activeFilter={activeFilter}
-              isDesktop={isDesktop}
-              onPreview={preview.open}
-            />
-          </ContentContainer>
+        <main className="flex w-full flex-col gap-[50px] pt-[100px] tablet:pt-[120px] laptop:pt-[138px]">
+          {/* Figma 40004712:10295 — grid + fade, then unlock CTA (gap 50) */}
+          <div className="flex w-full flex-col gap-[50px]">
+            <ContentContainer>
+              <GalleryGrid
+                lists={lists}
+                activeFilter={activeFilter}
+                isDesktop={isDesktop}
+                onPreview={preview.open}
+              />
+            </ContentContainer>
+
+            <UnlockLibraryCta />
+          </div>
+
+          <PremiumBanner />
         </main>
 
-        <Footer
-          activeFilter={activeFilter}
-          onFilterChange={handleFilterChange}
-        />
+        <Footer onFilterChange={handleFilterChange} />
 
         <div className="sr-only" aria-live="polite" aria-atomic="true">
           Showing {activeFilterLabel}

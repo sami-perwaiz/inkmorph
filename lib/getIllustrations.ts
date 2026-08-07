@@ -9,7 +9,7 @@ import type { Illustration, IllustrationCategory } from "@/types/illustration";
 
 const IMAGE_EXTENSIONS = new Set([".png", ".jpg", ".jpeg", ".webp", ".svg"]);
 
-const CATEGORIES: IllustrationCategory[] = ["3d-avatar", "black-white"];
+const CATEGORIES: IllustrationCategory[] = ["3d-icon"];
 
 function isImageFile(filename: string): boolean {
   const ext = filename.slice(filename.lastIndexOf(".")).toLowerCase();
@@ -28,11 +28,8 @@ function loadAssetRegistry(): AssetRegistry {
   return parsed;
 }
 
-function toAltText(id: string, category: IllustrationCategory): string {
-  const categoryLabel =
-    category === "3d-avatar" ? "3D avatar" : "black and white illustration";
-
-  return `${categoryLabel} ${id}`;
+function toAltText(id: string): string {
+  return `3D icon ${id}`;
 }
 
 export function getIllustrations(): Illustration[] {
@@ -68,7 +65,7 @@ export function getIllustrations(): Illustration[] {
         category,
         src: `/illustrations/${category}/${filename}`,
         filename,
-        alt: toAltText(entry.id, category),
+        alt: toAltText(entry.id),
       });
     }
   }

@@ -14,5 +14,7 @@ export const MOTION = {
     menuIcon: 280,
     menuItemStagger: 40,
     limitModal: 300,
+    pricingReveal: 700,
+    pricingRevealStagger: 120,
   },
 } as const;

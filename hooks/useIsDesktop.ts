@@ -2,6 +2,7 @@
 
 import { useLayoutEffect, useState } from "react";
 
+/** Figma desktop gallery / hover — 1440px */
 const DESKTOP_QUERY = "(min-width: 1440px)";
 
 export function useIsDesktop(): boolean | null {

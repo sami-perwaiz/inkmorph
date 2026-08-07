@@ -8,7 +8,7 @@ import { FILTER_VALUE_TO_VARIANT } from "@/lib/filterButtonTokens";
 import type { FilterValue } from "@/types/illustration";
 
 interface FilterTabsProps {
-  activeFilter: FilterValue;
+  activeFilter: FilterValue | null;
   onFilterChange: (filter: FilterValue) => void;
   variant?: "inline" | "stacked";
   controlsId?: string;
@@ -45,19 +45,16 @@ export function FilterTabs({
       const currentIndex = FILTERS.findIndex(
         (filter) => filter.value === activeFilter
       );
+      const startIndex = currentIndex === -1 ? 0 : currentIndex;
 
-      if (currentIndex === -1) {
-        return;
-      }
-
-      let nextIndex = currentIndex;
+      let nextIndex = startIndex;
 
       if (event.key === "ArrowRight" || event.key === "ArrowDown") {
         event.preventDefault();
-        nextIndex = (currentIndex + 1) % FILTERS.length;
+        nextIndex = (startIndex + 1) % FILTERS.length;
       } else if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
         event.preventDefault();
-        nextIndex = (currentIndex - 1 + FILTERS.length) % FILTERS.length;
+        nextIndex = (startIndex - 1 + FILTERS.length) % FILTERS.length;
       } else if (event.key === "Home") {
         event.preventDefault();
         nextIndex = 0;
@@ -78,7 +75,7 @@ export function FilterTabs({
     <div
       className={
         isStacked
-          ? "flex w-full flex-col items-center gap-5"
+          ? "flex w-full flex-col items-stretch gap-5"
           : "flex items-center"
       }
       style={isStacked ? undefined : { gap: NAV.filterGap }}

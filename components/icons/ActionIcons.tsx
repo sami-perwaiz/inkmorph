@@ -80,3 +80,57 @@ export function SpinnerIcon(props: IconProps) {
     </svg>
   );
 }
+
+/** Figma lock — node inset in 20×20 icon box. */
+export function LockIcon(props: IconProps) {
+  return (
+    <svg {...baseProps} viewBox="0 0 20 20" {...props}>
+      <g transform="translate(3.6667 2)">
+        <path
+          d="M3 7.16667V3.83333C3 2.94928 3.35119 2.10143 3.97631 1.47631C4.60143 0.851189 5.44928 0.5 6.33333 0.5C7.21739 0.5 8.06524 0.851189 8.69036 1.47631C9.31548 2.10143 9.66667 2.94928 9.66667 3.83333V7.16667M0.5 8.83333C0.5 8.39131 0.675595 7.96738 0.988155 7.65482C1.30072 7.34226 1.72464 7.16667 2.16667 7.16667H10.5C10.942 7.16667 11.366 7.34226 11.6785 7.65482C11.9911 7.96738 12.1667 8.39131 12.1667 8.83333V13.8333C12.1667 14.2754 11.9911 14.6993 11.6785 15.0118C11.366 15.3244 10.942 15.5 10.5 15.5H2.16667C1.72464 15.5 1.30072 15.3244 0.988155 15.0118C0.675595 14.6993 0.5 14.2754 0.5 13.8333V8.83333ZM5.5 11.3333C5.5 11.5543 5.5878 11.7663 5.74408 11.9226C5.90036 12.0789 6.11232 12.1667 6.33333 12.1667C6.55435 12.1667 6.76631 12.0789 6.92259 11.9226C7.07887 11.7663 7.16667 11.5543 7.16667 11.3333C7.16667 11.1123 7.07887 10.9004 6.92259 10.7441C6.76631 10.5878 6.55435 10.5 6.33333 10.5C6.11232 10.5 5.90036 10.5878 5.74408 10.7441C5.5878 10.9004 5.5 11.1123 5.5 11.3333Z"
+          stroke="currentColor"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </g>
+    </svg>
+  );
+}
+
+export function ChevronDownIcon(props: IconProps) {
+  return (
+    <svg {...baseProps} viewBox="0 0 20 20" {...props}>
+      <path
+        d="M5 7.5 10 12.5 15 7.5"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+/** Gold outline crown for 2x dropdown item — Figma 40004706:9928 */
+export function CrownGoldIcon(props: IconProps) {
+  return (
+    <svg
+      width={14}
+      height={14}
+      viewBox="0 0 14 14"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden
+      focusable="false"
+      {...props}
+    >
+      <path
+        d="M7.00002 3.1L9.33335 6.6L12.25 4.26667L11.0834 10.1H2.91669L1.75002 4.26667L4.66669 6.6L7.00002 3.1Z"
+        stroke="#F5C400"
+        strokeWidth="0.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}

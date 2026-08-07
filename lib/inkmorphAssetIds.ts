@@ -1,14 +1,12 @@
 import type { IllustrationCategory } from "@/types/illustration";
 
 export const ASSET_PREFIX: Record<IllustrationCategory, string> = {
-  "3d-avatar": "IM3D",
-  "black-white": "IMBW",
+  "3d-icon": "IM3D",
 };
 
 /** First five codes per category — fixed premium seed set. */
 export const ASSET_CODE_SEEDS: Record<IllustrationCategory, string[]> = {
-  "3d-avatar": ["KPX", "QRT", "BLM", "NWF", "ZTA"],
-  "black-white": ["XHD", "TPA", "RKE", "LMQ", "VSN"],
+  "3d-icon": ["KPX", "QRT", "BLM", "NWF", "ZTA"],
 };
 
 const CODE_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -36,18 +34,16 @@ export function formatAssetId(
 }
 
 export function generateUniqueCode(
-  categoryCount: number,
   used: Set<string>,
   category: IllustrationCategory
 ): string {
   const seeds = ASSET_CODE_SEEDS[category];
 
-  if (categoryCount < seeds.length) {
-    return seeds[categoryCount];
+  for (const seed of seeds) {
+    if (!used.has(seed)) {
+      return seed;
+    }
   }
-
-  const target = categoryCount - seeds.length;
-  let count = 0;
 
   for (let i = 0; i < CODE_ALPHABET.length ** 3; i += 1) {
     const a = CODE_ALPHABET[Math.floor(i / 676) % CODE_ALPHABET.length];
@@ -59,11 +55,7 @@ export function generateUniqueCode(
       continue;
     }
 
-    if (count === target) {
-      return code;
-    }
-
-    count += 1;
+    return code;
   }
 
   throw new Error(`Unable to generate unique asset code for ${category}.`);

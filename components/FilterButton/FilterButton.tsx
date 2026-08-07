@@ -36,9 +36,6 @@ export const FilterButton = forwardRef<HTMLButtonElement, FilterButtonProps>(
     ref
   ) {
     const isStacked = layout === "stacked";
-    const colorClasses = active
-      ? FILTER_ACTIVE_CLASSES[variant]
-      : FILTER_INACTIVE_CLASSES;
 
     return (
       <button
@@ -48,15 +45,19 @@ export const FilterButton = forwardRef<HTMLButtonElement, FilterButtonProps>(
         role="tab"
         data-category={category}
         data-variant={variant}
+        data-layout={layout}
         aria-selected={active}
         aria-controls={controlsId}
         tabIndex={active ? 0 : -1}
         onClick={onClick}
         className={[
-          "motion-filter-tab box-border inline-flex shrink-0 items-center justify-center border border-solid font-poppins font-normal leading-[18px] rounded-[40px]",
+          "motion-filter-tab box-border border-b border-solid font-poppins text-base font-normal leading-[18px]",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-900/30 focus-visible:ring-offset-2",
-          isStacked ? "text-base" : "text-xl",
-          colorClasses,
+          isStacked
+            ? "flex w-full items-center justify-start text-left"
+            : "inline-flex shrink-0 items-center justify-center",
+          active ? FILTER_ACTIVE_CLASSES : FILTER_INACTIVE_CLASSES,
+          active ? "border-[#202020]" : "border-transparent",
         ].join(" ")}
         style={{
           minHeight: FILTER_BUTTON.height,
@@ -64,12 +65,19 @@ export const FilterButton = forwardRef<HTMLButtonElement, FilterButtonProps>(
           paddingBottom: FILTER_BUTTON.paddingY,
           paddingLeft: FILTER_BUTTON.paddingX,
           paddingRight: FILTER_BUTTON.paddingX,
-          gap: FILTER_BUTTON.iconTextGap,
-          borderRadius: FILTER_BUTTON.radius,
-          borderWidth: FILTER_BUTTON.borderWidth,
         }}
       >
-        {label}
+        {isStacked && active ? (
+          <span className="inline-flex items-center gap-2">
+            <span
+              aria-hidden
+              className="size-1.5 shrink-0 rounded-full bg-black"
+            />
+            {label}
+          </span>
+        ) : (
+          label
+        )}
       </button>
     );
   }

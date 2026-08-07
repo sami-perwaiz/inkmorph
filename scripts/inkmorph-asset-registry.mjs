@@ -4,13 +4,11 @@ import { join } from "path";
 const REGISTRY_PATH = join(process.cwd(), "lib", "asset-registry.json");
 
 const ASSET_PREFIX = {
-  "3d-avatar": "IM3D",
-  "black-white": "IMBW",
+  "3d-icon": "IM3D",
 };
 
 const ASSET_CODE_SEEDS = {
-  "3d-avatar": ["KPX", "QRT", "BLM", "NWF", "ZTA"],
-  "black-white": ["XHD", "TPA", "RKE", "LMQ", "VSN"],
+  "3d-icon": ["KPX", "QRT", "BLM", "NWF", "ZTA"],
 };
 
 const CODE_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -26,15 +24,14 @@ function formatAssetId(category, code, sequence) {
   return `${ASSET_PREFIX[category]}-${code}-${String(sequence).padStart(3, "0")}`;
 }
 
-function generateUniqueCode(categoryCount, used, category) {
+function generateUniqueCode(used, category) {
   const seeds = ASSET_CODE_SEEDS[category];
 
-  if (categoryCount < seeds.length) {
-    return seeds[categoryCount];
+  for (const seed of seeds) {
+    if (!used.has(seed)) {
+      return seed;
+    }
   }
-
-  const target = categoryCount - seeds.length;
-  let count = 0;
 
   for (let i = 0; i < CODE_ALPHABET.length ** 3; i += 1) {
     const a = CODE_ALPHABET[Math.floor(i / 676) % CODE_ALPHABET.length];
@@ -46,11 +43,7 @@ function generateUniqueCode(categoryCount, used, category) {
       continue;
     }
 
-    if (count === target) {
-      return code;
-    }
-
-    count += 1;
+    return code;
   }
 
   throw new Error(`Unable to generate unique asset code for ${category}.`);
@@ -122,25 +115,30 @@ export function assignAssetEntries(category, sourceFilenames) {
   const categoryEntries = registry.entries.filter(
     (entry) => entry.category === category
   );
+  const keptBySource = new Map(
+    categoryEntries
+      .filter((entry) => sourceFilenames.includes(entry.sourceFilename))
+      .map((entry) => [entry.sourceFilename, entry])
+  );
+
+  // Reserve codes / sequences / dest numbers from entries we will keep, so new
+  // files never collide when source order puts newcomers before existing ones.
+  for (const entry of keptBySource.values()) {
+    entries.push(entry);
+  }
 
   for (const sourceFilename of sourceFilenames) {
-    const existing = categoryEntries.find(
-      (entry) => entry.sourceFilename === sourceFilename
-    );
+    const existing = keptBySource.get(sourceFilename);
 
     if (existing) {
       assigned.push(existing);
-      entries.push(existing);
       continue;
     }
 
     const usedCodes = getUsedCodes(entries, category);
-    const categoryCount = entries.filter(
-      (entry) => entry.category === category
-    ).length;
     const sequence = getNextSequence(entries, category);
     const destNumber = getNextDestNumber(entries, category);
-    const code = generateUniqueCode(categoryCount, usedCodes, category);
+    const code = generateUniqueCode(usedCodes, category);
 
     const entry = {
       id: formatAssetId(category, code, sequence),
@@ -155,7 +153,11 @@ export function assignAssetEntries(category, sourceFilenames) {
     assigned.push(entry);
   }
 
-  registry.entries = entries;
+  // Keep assigned order aligned with sourceFilenames for copyToCategory.
+  registry.entries = [
+    ...registry.entries.filter((entry) => entry.category !== category),
+    ...assigned,
+  ];
   saveRegistry(registry);
 
   return assigned;

@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 168 168" fill="none" role="img" aria-label="InkMorph">
+  <!-- Exact geometry traced from Figma logo mark (node 40004712:10265) -->
+  <rect width="168" height="168" fill="#FFFFFF"/>
+  <!-- Left column -->
+  <rect x="31" y="31" width="53" height="106" fill="#000000"/>
+  <!-- Bottom foot -->
+  <rect x="84" y="84" width="26" height="53" fill="#000000"/>
+  <!-- Top-right horizontal bar -->
+  <rect x="97" y="31" width="40" height="26" fill="#000000"/>
+  <!-- Top-right vertical stem -->
+  <rect x="115" y="57" width="22" height="23" fill="#000000"/>
+  <!-- Small floating square -->
+  <rect x="120" y="93" width="17" height="17" fill="#000000"/>
+</svg>

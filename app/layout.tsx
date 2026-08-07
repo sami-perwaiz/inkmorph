@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Poppins } from "next/font/google";
+import { Inter, Lora, Poppins } from "next/font/google";
 
 import { Analytics } from "@/components/Analytics/Analytics";
 import { MicrosoftClarity } from "@/components/Analytics/MicrosoftClarity";
@@ -7,7 +7,7 @@ import "./globals.css";
 
 const poppins = Poppins({
   subsets: ["latin"],
-  weight: ["400", "500"],
+  weight: ["400", "500", "600"],
   variable: "--font-poppins",
   display: "swap",
 });
@@ -16,6 +16,13 @@ const inter = Inter({
   subsets: ["latin"],
   weight: ["400", "500", "600"],
   variable: "--font-inter",
+  display: "swap",
+});
+
+const lora = Lora({
+  subsets: ["latin"],
+  weight: ["400"],
+  variable: "--font-lora",
   display: "swap",
 });
 
@@ -40,14 +47,15 @@ export const metadata: Metadata = {
     template: "%s · InkMorph",
   },
   description:
-    "Browse and download premium 3D avatar and black & white illustrations from InkMorph.",
+    "Browse and download premium 3D assets — avatars, characters, objects, and abstract elements from InkMorph.",
   applicationName: "InkMorph",
   authors: [{ name: "InkMorph" }],
   keywords: [
     "InkMorph",
     "illustration gallery",
-    "3D avatars",
-    "black and white illustrations",
+    "3D assets",
+    "avatars",
+    "characters",
     "download PNG",
   ],
   robots: {
@@ -61,7 +69,7 @@ export const metadata: Metadata = {
     siteName: "InkMorph",
     title: "InkMorph — Illustration Gallery",
     description:
-      "Browse and download premium 3D avatar and black & white illustrations from InkMorph.",
+      "Browse and download premium 3D assets — avatars, characters, objects, and abstract elements from InkMorph.",
     images: [
       {
         url: "/logo.png",
@@ -75,7 +83,7 @@ export const metadata: Metadata = {
     card: "summary",
     title: "InkMorph — Illustration Gallery",
     description:
-      "Browse and download premium 3D avatar and black & white illustrations from InkMorph.",
+      "Browse and download premium 3D assets — avatars, characters, objects, and abstract elements from InkMorph.",
     images: ["/logo.png"],
   },
   icons: {
@@ -98,7 +106,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${poppins.variable} ${inter.variable} bg-white font-poppins antialiased`}
+        className={`${poppins.variable} ${inter.variable} ${lora.variable} bg-white font-poppins antialiased`}
         suppressHydrationWarning
       >
         {children}

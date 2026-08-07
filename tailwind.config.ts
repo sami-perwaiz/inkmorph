@@ -35,9 +35,13 @@ const config: Config = {
       fontFamily: {
         poppins: ["var(--font-poppins)", "sans-serif"],
         inter: ["var(--font-inter)", "sans-serif"],
+        lora: ["var(--font-lora)", "serif"],
       },
       screens: {
         tablet: "834px",
+        /** Desktop chrome (filters / profile) — fits ~1280+ laptops */
+        laptop: "1280px",
+        /** 5-column gallery — Figma Abstract Desktop 1440 */
         desktop: "1440px",
       },
     },

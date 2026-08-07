@@ -1,10 +1,7 @@
 import { mkdir, writeFile } from "fs/promises";
 import { join } from "path";
 
-const CATEGORIES = [
-  { dir: "3d-avatar", fill: "#227A00", label: "3D" },
-  { dir: "black-white", fill: "#535862", label: "B&W" },
-];
+const CATEGORIES = [{ dir: "3d-icon", fill: "#202020", label: "3D" }];
 
 const COUNT = 10;
 
