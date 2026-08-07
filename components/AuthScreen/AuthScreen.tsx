@@ -103,6 +103,7 @@ export function AuthScreen({ copy }: AuthScreenProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isAuthenticating, setIsAuthenticating] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
 
   const handleGoogleSignIn = useCallback(async () => {
     if (isAuthenticating) {
@@ -110,6 +111,7 @@ export function AuthScreen({ copy }: AuthScreenProps) {
     }
 
     setIsAuthenticating(true);
+    setAuthError(null);
 
     try {
       const googleProfile = await signInWithGoogle();
@@ -131,6 +133,11 @@ export function AuthScreen({ copy }: AuthScreenProps) {
         return;
       }
       console.error(message);
+      setAuthError(
+        /GOOGLE_CLIENT_ID|Client ID/i.test(message)
+          ? "Google sign-in is not configured yet. Add NEXT_PUBLIC_GOOGLE_CLIENT_ID and redeploy."
+          : "Google sign-in failed. Please try again."
+      );
     } finally {
       setIsAuthenticating(false);
     }
@@ -219,6 +226,15 @@ export function AuthScreen({ copy }: AuthScreenProps) {
               <GoogleIcon />
               Sign in with Google
             </button>
+
+            {authError ? (
+              <p
+                role="alert"
+                className="w-full text-center font-inter text-sm font-normal leading-[22px] text-[#F04438]"
+              >
+                {authError}
+              </p>
+            ) : null}
 
             <p className="flex w-full flex-wrap items-start justify-center gap-2 text-center font-inter text-sm leading-[22px]">
               <span
