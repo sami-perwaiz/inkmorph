@@ -41,7 +41,11 @@ const TOKEN_STORAGE_KEY = "inkmorph-google-access-token";
 let scriptPromise: Promise<void> | null = null;
 
 function getClientId(): string {
-  const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID?.trim();
+  const clientId =
+    process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID?.trim() ||
+    // Public OAuth Web Client ID (restricted by Authorized JavaScript origins).
+    "754893298494-5svfh6fhlm9619a6fn2qhvljse8n4ee2.apps.googleusercontent.com";
+
   if (!clientId) {
     throw new Error(
       "Missing NEXT_PUBLIC_GOOGLE_CLIENT_ID. Add your Google OAuth Client ID to .env.local."
