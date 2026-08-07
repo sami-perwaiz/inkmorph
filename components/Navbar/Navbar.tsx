@@ -70,7 +70,7 @@ const NAVBAR = {
   menuIconSize: 24,
 } as const;
 
-const ACCOUNT_EMAIL = "samiperwaiz@gmail.com";
+const ACCOUNT_EMAIL = "";
 
 function SearchField({
   className = "",
@@ -133,7 +133,7 @@ function AccountMenuSection({ onNavigate }: { onNavigate: () => void }) {
     const syncAuth = () => {
       const next = isSignedIn();
       setSignedInState(next);
-      setAccountEmail(getAuthUser()?.email ?? ACCOUNT_EMAIL);
+      setAccountEmail(getAuthUser()?.email ?? "");
       if (!next) {
         setExpanded(false);
       }

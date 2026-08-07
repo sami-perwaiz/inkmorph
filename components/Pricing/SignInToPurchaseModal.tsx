@@ -37,7 +37,7 @@ interface SignInToPurchaseModalProps {
 function SignInToPurchaseModalComponent({
   open,
   onClose,
-  signInHref = "/signin?next=/pricing",
+  signInHref = "/signup?next=/pricing",
 }: SignInToPurchaseModalProps) {
   const [isMounted, setIsMounted] = useState(open);
   const [isVisible, setIsVisible] = useState(false);

@@ -15,13 +15,13 @@ import {
 } from "react";
 
 import { InkMorphLogo } from "@/components/InkMorphLogo/InkMorphLogo";
+import { getAuthUser } from "@/lib/authSession";
 import {
   COMPLETE_PROFILE,
   PROFILE_PRESETS,
 } from "@/lib/completeProfileTokens";
 import {
   DEFAULT_PROFILE_AVATAR,
-  DEFAULT_PROFILE_NAME,
   isCustomAvatarSrc,
   readFileAsDataUrl,
   readUserProfile,
@@ -38,14 +38,27 @@ export function CompleteProfileScreen() {
   const fileInputId = useId();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [fullName, setFullName] = useState(DEFAULT_PROFILE_NAME);
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
   const [avatarSrc, setAvatarSrc] = useState(DEFAULT_PROFILE_AVATAR);
   const [selectedPreset, setSelectedPreset] = useState<string | null>(null);
 
   useEffect(() => {
     const profile = readUserProfile();
-    setFullName(profile.fullName);
-    setAvatarSrc(profile.avatarSrc);
+    const authUser = getAuthUser();
+    const savedName = profile.fullName.trim();
+
+    setFullName(savedName || authUser?.name || "");
+    setEmail(authUser?.email ?? "");
+
+    const savedAvatar =
+      profile.avatarSrc && profile.avatarSrc !== DEFAULT_PROFILE_AVATAR
+        ? profile.avatarSrc
+        : null;
+
+    setAvatarSrc(
+      savedAvatar || authUser?.picture || DEFAULT_PROFILE_AVATAR
+    );
 
     if (
       PROFILE_PRESETS.includes(
@@ -300,7 +313,7 @@ export function CompleteProfileScreen() {
                 <input
                   type="email"
                   name="email"
-                  value="samiperwaiz@gmail.com"
+                  value={email}
                   readOnly
                   autoComplete="email"
                   className="w-full border border-solid bg-white px-3.5 py-2.5 font-inter text-base font-normal leading-7 opacity-50 outline-none"

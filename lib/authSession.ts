@@ -79,6 +79,25 @@ export function isSignedIn(): boolean {
   return window.localStorage.getItem(STORAGE_KEY) === "1";
 }
 
+/** True when at least one Google account has been registered on this device. */
+export function hasRegisteredAccounts(): boolean {
+  return Object.keys(readAccountsStore().bySub).length > 0;
+}
+
+/**
+ * First-time visitors → Create Account (/signup).
+ * Returning visitors with a saved account → Sign In (/signin).
+ */
+export function getAuthEntryHref(nextPath?: string | null): string {
+  const base = hasRegisteredAccounts() ? "/signin" : "/signup";
+
+  if (!nextPath || !nextPath.startsWith("/") || nextPath.startsWith("//")) {
+    return base;
+  }
+
+  return `${base}?next=${encodeURIComponent(nextPath)}`;
+}
+
 export function getAuthUser(): AuthUser | null {
   if (!isBrowser() || !isSignedIn()) {
     return null;

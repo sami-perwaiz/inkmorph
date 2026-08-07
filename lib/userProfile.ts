@@ -2,7 +2,7 @@ const STORAGE_KEY = "inkmorph-user-profile";
 export const PROFILE_CHANGE_EVENT = "inkmorph-profile-change";
 
 export const DEFAULT_PROFILE_AVATAR = "/home/profile-avatar.png";
-export const DEFAULT_PROFILE_NAME = "Sami Perwaiz";
+export const DEFAULT_PROFILE_NAME = "";
 
 export interface UserProfile {
   avatarSrc: string;
@@ -37,9 +37,7 @@ export function readUserProfile(): UserProfile {
           ? parsed.avatarSrc
           : DEFAULT_PROFILE_AVATAR,
       fullName:
-        typeof parsed.fullName === "string" && parsed.fullName.trim().length > 0
-          ? parsed.fullName.trim()
-          : DEFAULT_PROFILE_NAME,
+        typeof parsed.fullName === "string" ? parsed.fullName.trim() : "",
     };
   } catch {
     return {
