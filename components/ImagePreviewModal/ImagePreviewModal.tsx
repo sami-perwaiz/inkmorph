@@ -38,11 +38,13 @@ import {
 } from "@/types/action";
 import type { Illustration } from "@/types/illustration";
 
-/** Figma Images Open State — 40004699:9098 / 40004699:9408 */
+/** Figma Images Open State — 40004699:9098 / 40004699:9408 (+ tags 40004900:12643) */
 const PREVIEW_MODAL = {
   padding: 16,
   sectionGap: 24,
+  mediaGap: 12,
   actionGap: 12,
+  tagGap: 8,
   radius: 12,
   border: "#EAEAEA",
   actionBorder: "#F5F5F5",
@@ -54,7 +56,39 @@ const PREVIEW_MODAL = {
   premiumBadgePad: 8,
   premiumBadgeRadius: 6,
   premiumCrownSize: 20,
+  tagMax: 4,
+  tagPx: 6,
+  tagPy: 3,
+  tagRadius: 6,
+  tagBg: "#F5F5F5",
+  tagColor: "#5B5B5B",
 } as const;
+
+/** Figma preview hashtags — up to 4 tags (`#house`, `#3d-home`, …). */
+function getPreviewTags(illustration: Illustration): string[] {
+  const unique: string[] = [];
+
+  for (const tag of illustration.tags ?? []) {
+    const slug = tag.trim().toLowerCase().replace(/\s+/g, "-");
+    if (!slug || unique.includes(slug)) {
+      continue;
+    }
+    unique.push(slug);
+  }
+
+  const primary = unique.filter((tag) => !tag.startsWith("3d-"));
+  const with3d = unique.filter((tag) => tag.startsWith("3d-"));
+  const ordered = [
+    ...primary.slice(0, 2),
+    ...with3d.slice(0, 2),
+    ...primary.slice(2),
+    ...with3d.slice(2),
+  ];
+
+  return [...new Set(ordered)]
+    .slice(0, PREVIEW_MODAL.tagMax)
+    .map((tag) => `#${tag}`);
+}
 
 interface ImagePreviewModalProps {
   illustration: Illustration;
@@ -410,20 +444,16 @@ function ImagePreviewModalComponent({
     (size: DownloadSize) => {
       setSelectedSize(size);
       setMenuOpen(false);
-
-      if (size === "2x") {
-        handleLockedAction();
-        return;
-      }
-
       handleDownload(size);
     },
-    [handleDownload, handleLockedAction]
+    [handleDownload]
   );
 
   if (typeof document === "undefined") {
     return null;
   }
+
+  const previewTags = getPreviewTags(illustration);
 
   const rowClass =
     "box-border flex w-full items-center justify-between border border-solid border-[#F5F5F5] bg-white font-poppins text-sm text-[#202020] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-900/30 focus-visible:ring-offset-2";
@@ -467,45 +497,79 @@ function ImagePreviewModalComponent({
         onKeyDown={handleCardKeyDown}
       >
         <div
-          className="relative aspect-square w-full shrink-0 overflow-hidden border border-solid bg-white"
-          style={{
-            borderRadius: PREVIEW_MODAL.radius,
-            borderColor: PREVIEW_MODAL.actionBorder,
-            maxWidth: PREVIEW_MODAL.imageSize,
-          }}
+          className="flex w-full flex-col items-start"
+          style={{ gap: PREVIEW_MODAL.mediaGap }}
         >
-          {!isImageLoaded && (
-            <div className="gallery-card-skeleton absolute inset-0" aria-hidden />
-          )}
-          <Image
-            key={illustration.id}
-            src={illustration.src}
-            alt={illustration.alt}
-            fill
-            sizes="400px"
-            className={[
-              "gallery-card-image object-cover",
-              isImageLoaded ? "opacity-100" : "opacity-0",
-            ].join(" ")}
-            priority
-            decoding="async"
-            draggable={false}
-            onLoad={handlePreviewImageLoad}
-          />
-
-          {isLocked && (
-            <>
+          <div
+            className="relative aspect-square w-full shrink-0 overflow-hidden border border-solid bg-white"
+            style={{
+              borderRadius: PREVIEW_MODAL.radius,
+              borderColor: PREVIEW_MODAL.actionBorder,
+              maxWidth: PREVIEW_MODAL.imageSize,
+            }}
+          >
+            {!isImageLoaded && (
               <div
-                className="pointer-events-none absolute inset-0 z-[1] flex items-center justify-center overflow-hidden"
+                className="gallery-card-skeleton absolute inset-0"
                 aria-hidden
-              >
-                <span className="rotate-45 select-none whitespace-nowrap font-poppins text-[clamp(40px,19vw,76px)] font-semibold leading-none text-black/[0.05]">
-                  Ink Morph
-                </span>
-              </div>
-              <PreviewPremiumBadge />
-            </>
-          )}
+              />
+            )}
+            <Image
+              key={illustration.id}
+              src={illustration.src}
+              alt={illustration.alt}
+              fill
+              sizes="400px"
+              className={[
+                "gallery-card-image object-cover",
+                isImageLoaded ? "opacity-100" : "opacity-0",
+              ].join(" ")}
+              priority
+              decoding="async"
+              draggable={false}
+              onLoad={handlePreviewImageLoad}
+            />
+
+            {isLocked && (
+              <>
+                <div
+                  className="pointer-events-none absolute inset-0 z-[1] flex items-center justify-center overflow-hidden"
+                  aria-hidden
+                >
+                  <span className="rotate-45 select-none whitespace-nowrap font-poppins text-[clamp(40px,19vw,76px)] font-semibold leading-none text-black/[0.05]">
+                    Ink Morph
+                  </span>
+                </div>
+                <PreviewPremiumBadge />
+              </>
+            )}
+          </div>
+
+          {previewTags.length > 0 ? (
+            <ul
+              className="flex max-w-full list-none flex-wrap items-start p-0"
+              style={{ gap: PREVIEW_MODAL.tagGap }}
+              aria-label="Asset tags"
+            >
+              {previewTags.map((tag) => (
+                <li
+                  key={tag}
+                  className="inline-flex shrink-0 items-center justify-center font-inter text-xs font-medium leading-[18px]"
+                  style={{
+                    paddingLeft: PREVIEW_MODAL.tagPx,
+                    paddingRight: PREVIEW_MODAL.tagPx,
+                    paddingTop: PREVIEW_MODAL.tagPy,
+                    paddingBottom: PREVIEW_MODAL.tagPy,
+                    borderRadius: PREVIEW_MODAL.tagRadius,
+                    backgroundColor: PREVIEW_MODAL.tagBg,
+                    color: PREVIEW_MODAL.tagColor,
+                  }}
+                >
+                  {tag}
+                </li>
+              ))}
+            </ul>
+          ) : null}
         </div>
 
         <p id={titleId} className="sr-only">

@@ -1,0 +1,202 @@
+{
+  "051-icon51.png": {
+    "name": "3D File Upload",
+    "tags": ["upload", "file", "document", "arrow up", "transfer", "submit", "import", "storage", "cloud", "UI", "interface", "3D icon", "claymorphism", "data"]
+  },
+  "052-icon52.png": {
+    "name": "3D Share",
+    "tags": ["share", "network", "social", "connectivity", "nodes", "link", "forward", "distribute", "communication", "UI", "interface", "3D icon", "minimalist"]
+  },
+  "053-icon53.png": {
+    "name": "3D No Wi-Fi",
+    "tags": ["wifi", "offline", "no connection", "disconnected", "wireless", "signal", "network", "error", "status", "internet", "UI", "3D icon", "unavailable"]
+  },
+  "054-icon54.png": {
+    "name": "3D PDF File",
+    "tags": ["PDF", "document", "file", "format", "adobe", "reader", "office", "paper", "extension", "download", "UI", "3D icon", "portable document"]
+  },
+  "055-icon55.png": {
+    "name": "3D Excel Spreadsheet",
+    "tags": ["excel", "spreadsheet", "sheet", "table", "grid", "data", "microsoft", "XLSX", "cells", "office", "analytics", "UI", "3D icon", "workbook"]
+  },
+  "056-icon56.png": {
+    "name": "3D Markdown File",
+    "tags": ["markdown", "MD", "document", "file", "writing", "documentation", "text", "bullets", "readme", "markup", "developer", "UI", "3D icon", "notes"]
+  },
+  "057-icon57.png": {
+    "name": "3D Smartphone Back",
+    "tags": ["smartphone", "phone", "mobile", "device", "camera", "gadget", "electronics", "hardware", "cell phone", "technology", "UI", "3D icon", "rear view"]
+  },
+  "058-icon58.png": {
+    "name": "3D Translation",
+    "tags": ["translate", "language", "localization", "i18n", "Chinese", "alphabet", "global", "multilingual", "dictionary", "communication", "UI", "3D icon", "interpret"]
+  },
+  "059-icon59.png": {
+    "name": "3D More Options",
+    "tags": ["ellipsis", "more", "options", "menu", "dots", "overflow", "actions", "navigation", "kebab", "settings", "UI", "3D icon", "interface"]
+  },
+  "060-icon60.png": {
+    "name": "3D Sparkles",
+    "tags": ["sparkle", "stars", "magic", "AI", "new", "shine", "glimmer", "effect", "feature", "highlight", "premium", "UI", "3D icon", "decoration"]
+  },
+  "061-icon61.png": {
+    "name": "3D 404 Error",
+    "tags": ["404", "error", "not found", "browser", "page", "missing", "sad", "website", "HTTP", "broken link", "UI", "3D icon", "web"]
+  },
+  "062-icon62.png": {
+    "name": "3D Ad Block",
+    "tags": ["adblock", "no ads", "advertisement", "block", "prohibit", "filter", "privacy", "browsing", "stop", "marketing", "UI", "3D icon", "extension"]
+  },
+  "063-icon63.png": {
+    "name": "3D Blue Security Shield",
+    "tags": ["shield", "security", "protection", "verified", "checkmark", "safety", "trust", "privacy", "defense", "approved", "UI", "3D icon", "blue"]
+  },
+  "064-icon64.png": {
+    "name": "3D Purple Security Shield",
+    "tags": ["shield", "security", "protection", "verified", "checkmark", "safety", "trust", "privacy", "defense", "approved", "UI", "3D icon", "purple"]
+  },
+  "065-icon65.png": {
+    "name": "3D Chat Bubble",
+    "tags": ["chat", "message", "speech bubble", "typing", "conversation", "messenger", "communication", "dialog", "social", "notification", "UI", "3D icon", "blue"]
+  },
+  "066-icon66.png": {
+    "name": "3D Success Check",
+    "tags": ["checkmark", "success", "done", "completed", "verified", "approved", "confirm", "tick", "green", "status", "UI", "3D icon", "validation"]
+  },
+  "067-icon67.png": {
+    "name": "3D Gear",
+    "tags": ["gear", "settings", "cog", "preferences", "configuration", "options", "tools", "system", "mechanics", "admin", "UI", "3D icon", "adjust"]
+  },
+  "068-icon68.png": {
+    "name": "3D Terminal",
+    "tags": ["terminal", "console", "command line", "CLI", "coding", "developer", "prompt", "shell", "programming", "code", "UI", "3D icon", "devtools"]
+  },
+  "069-icon69.png": {
+    "name": "3D Map Location Pin",
+    "tags": ["map", "pin", "location", "GPS", "marker", "navigation", "destination", "address", "wayfinding", "travel", "UI", "3D icon", "position"]
+  },
+  "070-icon70.png": {
+    "name": "3D Offline Signal",
+    "tags": ["wifi", "offline", "no signal", "disconnected", "wireless", "network", "internet", "status", "unavailable", "error", "UI", "3D icon", "connectivity"]
+  },
+  "071-icon71.png": {
+    "name": "3D Thumbs Up",
+    "tags": ["thumbs up", "like", "approve", "hand", "gesture", "positive", "feedback", "agree", "social", "success", "UI", "3D icon", "yes"]
+  },
+  "072-icon72.png": {
+    "name": "3D Wi-Fi",
+    "tags": ["wifi", "wireless", "signal", "network", "internet", "connectivity", "online", "hotspot", "router", "status", "UI", "3D icon", "connection"]
+  },
+  "073-icon73.png": {
+    "name": "3D Close Cross",
+    "tags": ["close", "cancel", "delete", "error", "wrong", "remove", "cross", "X", "decline", "no", "UI", "3D icon", "reject"]
+  },
+  "074-icon74.png": {
+    "name": "3D Thought Bubble",
+    "tags": ["thought", "idea", "cloud", "thinking", "dream", "imagination", "brainstorm", "mind", "bubble", "concept", "UI", "3D icon", "inspiration"]
+  },
+  "075-icon75.png": {
+    "name": "3D Map Route",
+    "tags": ["map", "route", "navigation", "journey", "pins", "flag", "destination", "road", "travel", "GPS", "wayfinding", "UI", "3D icon", "tracking"]
+  },
+  "076-icon76.png": {
+    "name": "3D Unbox Export",
+    "tags": ["box", "unbox", "export", "package", "shipping", "arrow", "extract", "logistics", "delivery", "out of box", "UI", "3D icon", "parcel"]
+  },
+  "077-icon77.png": {
+    "name": "3D Email Notification",
+    "tags": ["email", "mail", "envelope", "notification", "inbox", "message", "unread", "badge", "alert", "communication", "UI", "3D icon", "letter"]
+  },
+  "078-icon78.png": {
+    "name": "3D Hamburger Menu",
+    "tags": ["hamburger", "menu", "navigation", "drawer", "bars", "list", "options", "toggle", "sidebar", "app", "UI", "3D icon", "interface"]
+  },
+  "079-icon79.png": {
+    "name": "3D Mobile Phone",
+    "tags": ["smartphone", "phone", "mobile", "device", "camera", "gadget", "electronics", "hardware", "cell phone", "technology", "UI", "3D icon", "gradient"]
+  },
+  "080-icon80.png": {
+    "name": "3D Retro Computer",
+    "tags": ["computer", "retro", "vintage", "coding", "programming", "desktop", "terminal", "developer", "hardware", "workstation", "UI", "3D icon", "tech"]
+  },
+  "081-icon81.png": {
+    "name": "3D Message Bubble",
+    "tags": ["message", "chat", "speech bubble", "text", "conversation", "comment", "communication", "dialog", "social", "feedback", "UI", "3D icon", "white"]
+  },
+  "082-icon82.png": {
+    "name": "3D Smart Taxi",
+    "tags": ["taxi", "cab", "car", "ride share", "transport", "yellow", "vehicle", "mobility", "travel", "connected", "wifi", "UI", "3D icon", "automobile"]
+  },
+  "083-icon83.png": {
+    "name": "3D Train Station",
+    "tags": ["train", "station", "railway", "transport", "platform", "building", "commute", "travel", "tracks", "architecture", "UI", "3D icon", "public transit"]
+  },
+  "084-icon84.png": {
+    "name": "3D Digital Artist",
+    "tags": ["artist", "illustrator", "designer", "drawing", "tablet", "stylus", "creative", "workspace", "graphic design", "desk", "UI", "3D icon", "creator"]
+  },
+  "085-icon85.png": {
+    "name": "3D Planet",
+    "tags": ["planet", "space", "saturn", "ring", "astronomy", "orbit", "universe", "cosmos", "science", "exploration", "UI", "3D icon", "blue"]
+  },
+  "086-icon86.png": {
+    "name": "3D Moon",
+    "tags": ["moon", "lunar", "craters", "night", "space", "astronomy", "satellite", "celestial", "sphere", "cosmos", "UI", "3D icon", "science"]
+  },
+  "087-icon87.png": {
+    "name": "3D Bookmark",
+    "tags": ["bookmark", "flag", "save", "favorite", "ribbon", "mark", "reading", "library", "pin", "later", "UI", "3D icon", "tag"]
+  },
+  "088-icon88.png": {
+    "name": "3D Leopard Cub",
+    "tags": ["leopard", "ocelot", "cub", "cat", "animal", "feline", "wildlife", "spotted", "mascot", "cute", "nature", "UI", "3D icon", "kitten"]
+  },
+  "089-icon89.png": {
+    "name": "3D Location Marker",
+    "tags": ["map", "pin", "location", "marker", "GPS", "navigation", "destination", "address", "waypoint", "travel", "UI", "3D icon", "position"]
+  },
+  "090-icon90.png": {
+    "name": "3D Game Controller",
+    "tags": ["controller", "gaming", "gamepad", "retro", "console", "play", "entertainment", "joystick", "video game", "hardware", "UI", "3D icon", "SNES"]
+  },
+  "091-icon91.png": {
+    "name": "3D Smartphone",
+    "tags": ["smartphone", "phone", "mobile", "device", "screen", "notch", "app", "gadget", "electronics", "mockup", "UI", "3D icon", "iPhone"]
+  },
+  "092-icon92.png": {
+    "name": "3D Ice Maker",
+    "tags": ["ice maker", "ice cubes", "appliance", "kitchen", "cold", "frozen", "machine", "beverage", "cooling", "household", "UI", "3D icon", "freezer"]
+  },
+  "093-icon93.png": {
+    "name": "3D Golf Green",
+    "tags": ["golf", "green", "flag", "ball", "hole", "sport", "pin", "course", "recreation", "leisure", "UI", "3D icon", "outdoors"]
+  },
+  "094-icon94.png": {
+    "name": "3D Wheelchair",
+    "tags": ["wheelchair", "accessibility", "mobility", "disability", "medical", "healthcare", "assistive", "hospital", "inclusive", "equipment", "UI", "3D icon", "aid"]
+  },
+  "095-icon95.png": {
+    "name": "3D Hand Truck",
+    "tags": ["hand truck", "dolly", "delivery", "boxes", "shipping", "logistics", "warehouse", "moving", "parcel", "cargo", "UI", "3D icon", "e-commerce"]
+  },
+  "096-icon96.png": {
+    "name": "3D Dust Bunny",
+    "tags": ["dust", "dirt", "lint", "cleaning", "mess", "allergy", "household", "vacuum", "hygiene", "debris", "UI", "3D icon", "clutter"]
+  },
+  "097-icon97.png": {
+    "name": "3D Glass Jar",
+    "tags": ["jar", "glass", "container", "storage", "lid", "kitchen", "pantry", "transparent", "empty", "preserves", "UI", "3D icon", "vessel"]
+  },
+  "098-icon98.png": {
+    "name": "3D Shopping Basket",
+    "tags": ["basket", "shopping", "cart", "retail", "grocery", "e-commerce", "checkout", "store", "buy", "marketplace", "UI", "3D icon", "purchase"]
+  },
+  "099-icon99.png": {
+    "name": "3D Book on Stand",
+    "tags": ["book", "lectern", "reading", "education", "study", "library", "knowledge", "bookstand", "learning", "literature", "UI", "3D icon", "academic"]
+  },
+  "100-icon100.png": {
+    "name": "3D Open Book",
+    "tags": ["book", "open", "reading", "heart", "bookmark", "favorite", "story", "literature", "education", "romance", "UI", "3D icon", "pages"]
+  }
+}

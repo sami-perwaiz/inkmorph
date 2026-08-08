@@ -14,6 +14,13 @@
   nextjs-portal {
     display: none !important;
   }
+
+  /* Use custom Tabler X clear control instead of the native search cancel. */
+  input[type="search"].search-field-input::-webkit-search-cancel-button,
+  input[type="search"].search-field-input::-webkit-search-decoration {
+    -webkit-appearance: none;
+    appearance: none;
+  }
 }
 
 @layer utilities {

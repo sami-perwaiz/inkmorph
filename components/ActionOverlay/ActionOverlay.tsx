@@ -150,15 +150,9 @@ function ActionOverlayComponent({
     (size: DownloadSize) => {
       setSelectedSize(size);
       setMenuOpen(false);
-
-      if (size === "2x") {
-        onLockedAction();
-        return;
-      }
-
       onDownload(size);
     },
-    [onDownload, onLockedAction]
+    [onDownload]
   );
 
   return (

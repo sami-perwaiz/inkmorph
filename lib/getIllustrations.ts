@@ -5,6 +5,7 @@ import {
   buildRegistryLookup,
   type AssetRegistry,
 } from "@/lib/inkmorphAssetIds";
+import type { AssetSearchMetadata } from "@/lib/searchIllustrations";
 import type { Illustration, IllustrationCategory } from "@/types/illustration";
 
 const IMAGE_EXTENSIONS = new Set([".png", ".jpg", ".jpeg", ".webp", ".svg"]);
@@ -28,14 +29,31 @@ function loadAssetRegistry(): AssetRegistry {
   return parsed;
 }
 
-function toAltText(id: string): string {
-  return `3D icon ${id}`;
+function loadSearchMetadata(): AssetSearchMetadata["byFilename"] {
+  try {
+    const metaPath = join(process.cwd(), "lib", "asset-search-metadata.json");
+    const raw = readFileSync(metaPath, "utf8");
+    const parsed = JSON.parse(raw) as AssetSearchMetadata;
+
+    if (parsed.version !== 1 || !parsed.byFilename) {
+      return {};
+    }
+
+    return parsed.byFilename;
+  } catch {
+    return {};
+  }
+}
+
+function toAltText(id: string, name?: string): string {
+  return name && name.trim().length > 0 ? name : `3D icon ${id}`;
 }
 
 export function getIllustrations(): Illustration[] {
   const publicDir = join(process.cwd(), "public", "illustrations");
   const registry = loadAssetRegistry();
   const lookup = buildRegistryLookup(registry);
+  const searchMeta = loadSearchMetadata();
   const illustrations: Illustration[] = [];
 
   for (const category of CATEGORIES) {
@@ -61,12 +79,16 @@ export function getIllustrations(): Illustration[] {
         continue;
       }
 
+      const meta = searchMeta[filename];
+
       illustrations.push({
         id: entry.id,
         category,
         src: `/illustrations/${category}/${filename}`,
         filename,
-        alt: toAltText(entry.id),
+        alt: toAltText(entry.id, meta?.name),
+        ...(meta?.name ? { name: meta.name } : {}),
+        ...(meta?.tags?.length ? { tags: meta.tags } : {}),
       });
     }
   }

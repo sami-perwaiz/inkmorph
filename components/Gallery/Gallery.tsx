@@ -49,12 +49,17 @@ export function Gallery({ lists }: GalleryProps) {
   const [activeFilter, setActiveFilter] = useState<FilterValue>(() =>
     resolveFilterParam(searchParams.get("filter"))
   );
+  const [searchQuery, setSearchQuery] = useState("");
   const isDesktop = useIsDesktop();
   const preview = useImagePreviewModal(isDesktop);
   const skipScrollOnMountRef = useRef(true);
 
   const handleFilterChange = useCallback((filter: FilterValue) => {
     setActiveFilter((current) => (current === filter ? current : filter));
+  }, []);
+
+  const handleSearchChange = useCallback((query: string) => {
+    setSearchQuery(query);
   }, []);
 
   useEffect(() => {
@@ -89,6 +94,8 @@ export function Gallery({ lists }: GalleryProps) {
         <Navbar
           activeFilter={activeFilter}
           onFilterChange={handleFilterChange}
+          searchQuery={searchQuery}
+          onSearchChange={handleSearchChange}
         />
 
         <main className="flex w-full flex-col gap-[50px] pt-[100px] tablet:pt-[120px] laptop:pt-[138px]">
@@ -98,6 +105,7 @@ export function Gallery({ lists }: GalleryProps) {
               <GalleryGrid
                 lists={lists}
                 activeFilter={activeFilter}
+                searchQuery={searchQuery}
                 isDesktop={isDesktop}
                 onPreview={preview.open}
               />

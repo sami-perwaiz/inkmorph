@@ -17,11 +17,13 @@ import {
   type IllustrationFilterLists,
 } from "@/lib/filterIllustrations";
 import { MOTION } from "@/lib/motion";
+import { filterIllustrationsBySearch } from "@/lib/searchIllustrations";
 import type { FilterValue, Illustration } from "@/types/illustration";
 
 interface GalleryGridProps {
   lists: IllustrationFilterLists;
   activeFilter: FilterValue;
+  searchQuery?: string;
   isDesktop: boolean | null;
   onPreview: (illustration: Illustration) => void;
   /** Soft white fade over the paid peek row (Figma 40004723:10672). */
@@ -72,6 +74,7 @@ const GRID_CLASS_NAME =
 export const GalleryGrid = memo(function GalleryGrid({
   lists,
   activeFilter,
+  searchQuery = "",
   isDesktop,
   onPreview,
   showBottomFade = true,
@@ -84,15 +87,24 @@ export const GalleryGrid = memo(function GalleryGrid({
   const columnCount = useGalleryColumnCount();
 
   const categoryItems = lists[renderedFilter];
-  const illustrations = useMemo(
-    () => getVisibleGalleryItems(categoryItems, columnCount),
-    [categoryItems, columnCount]
+  const matchedItems = useMemo(
+    () => filterIllustrationsBySearch(categoryItems, searchQuery),
+    [categoryItems, searchQuery]
   );
-  const isEmpty = categoryItems.length === 0;
+  const hasActiveSearch = searchQuery.trim().length > 0;
+  const illustrations = useMemo(
+    () =>
+      hasActiveSearch
+        ? matchedItems
+        : getVisibleGalleryItems(matchedItems, columnCount),
+    [hasActiveSearch, matchedItems, columnCount]
+  );
+  const isEmpty = matchedItems.length === 0;
   const emptyLabel =
     FILTERS.find((filter) => filter.value === renderedFilter)?.label ??
     "illustrations";
-  const hasPaidPeek = illustrations.some((item) => item.premium);
+  const hasPaidPeek =
+    !hasActiveSearch && illustrations.some((item) => item.paywalled);
 
   const priorityIds = useMemo(() => {
     const ids = new Set<string>();
@@ -170,10 +182,14 @@ export const GalleryGrid = memo(function GalleryGrid({
           ].join(" ")}
         />
         <p className="text-center font-poppins text-xl font-normal leading-6 text-[#797979]">
-          No {emptyLabel} illustrations yet
+          {hasActiveSearch
+            ? "No matching illustrations"
+            : `No ${emptyLabel} illustrations yet`}
         </p>
         <p className="mt-2 max-w-sm text-center font-poppins text-sm font-normal leading-5 text-[#A9A9A9]">
-          Check back soon — new assets are on the way.
+          {hasActiveSearch
+            ? "Try a different keyword or clear your search."
+            : "Check back soon — new assets are on the way."}
         </p>
       </div>
     );
@@ -194,7 +210,7 @@ export const GalleryGrid = memo(function GalleryGrid({
               isDesktop={isDesktop}
               onPreview={onPreview}
               priority={priorityIds.has(illustration.id)}
-              teaser={Boolean(illustration.premium)}
+              teaser={Boolean(illustration.paywalled)}
             />
           ))}
         </section>

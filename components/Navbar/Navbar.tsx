@@ -24,6 +24,8 @@ interface NavbarProps {
   activeFilter: FilterValue | null;
   onFilterChange: (filter: FilterValue) => void;
   pricingActive?: boolean;
+  searchQuery?: string;
+  onSearchChange?: (query: string) => void;
 }
 
 function PricingNavLink({
@@ -75,12 +77,17 @@ const ACCOUNT_EMAIL = "";
 function SearchField({
   className = "",
   size = "desktop",
+  value = "",
+  onChange,
 }: {
   className?: string;
   size?: "desktop" | "compact";
+  value?: string;
+  onChange?: (value: string) => void;
 }) {
   const isCompact = size === "compact";
   const iconSize = isCompact ? 20 : 24;
+  const hasQuery = value.trim().length > 0;
 
   return (
     <label
@@ -106,15 +113,47 @@ function SearchField({
       <input
         type="search"
         name="q"
+        value={value}
+        onChange={(event) => onChange?.(event.target.value)}
         placeholder="Search 3D Assets"
         className={[
-          "min-w-0 flex-1 bg-transparent font-poppins font-normal text-gray-900 outline-none placeholder:text-[#A9A9A9] placeholder:opacity-80",
+          "search-field-input min-w-0 flex-1 bg-transparent font-poppins font-normal text-gray-900 outline-none placeholder:text-[#A9A9A9] placeholder:opacity-80",
           isCompact
             ? "truncate text-sm leading-normal"
             : "text-base leading-6",
         ].join(" ")}
         aria-label="Search 3D Assets"
       />
+      {hasQuery ? (
+        <button
+          type="button"
+          aria-label="Clear search"
+          className="inline-flex shrink-0 items-center justify-center text-[#A9A9A9] transition-colors hover:text-[#202020] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-900/30 focus-visible:ring-offset-2"
+          style={{ width: iconSize, height: iconSize }}
+          onClick={(event) => {
+            event.preventDefault();
+            onChange?.("");
+          }}
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width={iconSize}
+            height={iconSize}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden
+            className="size-full"
+          >
+            <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+            <path d="M18 6l-12 12" />
+            <path d="M6 6l12 12" />
+          </svg>
+        </button>
+      ) : null}
     </label>
   );
 }
@@ -216,6 +255,8 @@ export const Navbar = memo(function Navbar({
   activeFilter,
   onFilterChange,
   pricingActive = false,
+  searchQuery = "",
+  onSearchChange,
 }: NavbarProps) {
   const pathname = usePathname();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -280,7 +321,12 @@ export const Navbar = memo(function Navbar({
 
           <div className="flex shrink-0 items-center gap-4">
             {!isPricingPage ? (
-              <SearchField className="w-[217px]" size="desktop" />
+              <SearchField
+                className="w-[217px]"
+                size="desktop"
+                value={searchQuery}
+                onChange={onSearchChange}
+              />
             ) : null}
             <GoPremiumButton />
             <ProfileMenu />
@@ -311,6 +357,8 @@ export const Navbar = memo(function Navbar({
                   <SearchField
                     size="compact"
                     className="w-[158px] shrink-0 tablet:w-[217px]"
+                    value={searchQuery}
+                    onChange={onSearchChange}
                   />
                 ) : null}
                 <button

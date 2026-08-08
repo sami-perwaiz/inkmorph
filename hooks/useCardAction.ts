@@ -89,7 +89,7 @@ export function useCardAction(illustration: Illustration) {
 
   const handleDownload = useCallback(
     async (size: DownloadSize = "1x") => {
-      if (isLocked || size === "2x") {
+      if (isLocked) {
         handleLockedAction();
         return;
       }
@@ -104,14 +104,18 @@ export function useCardAction(illustration: Illustration) {
 
       setFailedAction(null);
       setActionState("downloading");
-      setStatusMessage("Downloading PNG");
+      setStatusMessage(
+        size === "2x" ? "Downloading high-quality PNG" : "Downloading PNG"
+      );
 
       try {
-        await downloadImage(src, `${id}.png`);
+        await downloadImage(src, `${id}.png`, size);
         commitDownloadSlot();
         trackImageDownload(id, category);
         setActionState("downloaded");
-        setStatusMessage("Downloaded PNG");
+        setStatusMessage(
+          size === "2x" ? "Downloaded high-quality PNG" : "Downloaded PNG"
+        );
         scheduleReset();
       } catch {
         setFailedAction("download");

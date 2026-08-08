@@ -220,6 +220,7 @@ function areGalleryCardPropsEqual(
     prev.illustration.id === next.illustration.id &&
     prev.illustration.src === next.illustration.src &&
     prev.illustration.premium === next.illustration.premium &&
+    prev.illustration.paywalled === next.illustration.paywalled &&
     prev.isDesktop === next.isDesktop &&
     prev.onPreview === next.onPreview &&
     prev.priority === next.priority &&

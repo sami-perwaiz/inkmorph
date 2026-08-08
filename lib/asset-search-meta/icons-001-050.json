@@ -1,0 +1,202 @@
+{
+  "001-icon01.png": {
+    "name": "3D House",
+    "tags": ["house", "home", "building", "residence", "real estate", "property", "architecture", "shelter", "cottage", "housing", "isometric", "minimalist", "UI icon"]
+  },
+  "002-icon02.png": {
+    "name": "3D Coffee Mug",
+    "tags": ["mug", "cup", "coffee", "tea", "beverage", "drink", "ceramic", "kitchenware", "drinkware", "office", "white", "minimalist", "UI icon"]
+  },
+  "003-icon03.png": {
+    "name": "3D Male Avatar",
+    "tags": ["avatar", "user", "profile", "person", "man", "character", "account", "member", "identity", "portrait", "bust", "UI icon", "interface"]
+  },
+  "004-icon04.png": {
+    "name": "3D Magnifying Glass",
+    "tags": ["search", "magnifying glass", "find", "zoom", "lens", "explore", "research", "discovery", "investigation", "looking glass", "UI icon", "tool"]
+  },
+  "005-icon05.png": {
+    "name": "3D Padlock",
+    "tags": ["padlock", "lock", "security", "privacy", "protection", "safety", "keyhole", "authentication", "access", "cybersecurity", "locked", "yellow", "UI icon"]
+  },
+  "006-icon06.png": {
+    "name": "3D Calendar",
+    "tags": ["calendar", "date", "schedule", "event", "agenda", "reminder", "appointment", "planning", "deadline", "productivity", "organization", "UI icon"]
+  },
+  "007-icon07.png": {
+    "name": "3D Wall Clock",
+    "tags": ["clock", "time", "watch", "timer", "schedule", "deadline", "appointment", "productivity", "office", "chronometer", "minimalist", "UI icon"]
+  },
+  "008-icon08.png": {
+    "name": "3D Shopping Bag",
+    "tags": ["shopping", "bag", "retail", "ecommerce", "purchase", "commerce", "store", "sale", "market", "carrier", "gift bag", "UI icon"]
+  },
+  "009-icon09.png": {
+    "name": "3D Money Bag",
+    "tags": ["money", "finance", "dollar", "cash", "wealth", "savings", "currency", "banking", "profit", "investment", "sack", "business", "UI icon"]
+  },
+  "010-icon10.png": {
+    "name": "3D Clipboard Checklist",
+    "tags": ["clipboard", "checklist", "todo", "tasks", "productivity", "progress", "organization", "planning", "office", "management", "done", "UI icon"]
+  },
+  "011-icon11.png": {
+    "name": "3D File Folder",
+    "tags": ["folder", "file", "directory", "documents", "storage", "archive", "organization", "office", "paperwork", "data", "yellow", "UI icon"]
+  },
+  "012-icon12.png": {
+    "name": "3D Trash Bin",
+    "tags": ["trash", "bin", "delete", "remove", "discard", "waste", "cancel", "red", "cleanup", "garbage", "UI icon", "destructive"]
+  },
+  "013-icon13.png": {
+    "name": "3D Refresh Arrows",
+    "tags": ["refresh", "reload", "sync", "update", "cycle", "loop", "rotate", "arrows", "synchronize", "blue", "UI icon", "process"]
+  },
+  "014-icon14.png": {
+    "name": "3D Headphones",
+    "tags": ["headphones", "headset", "audio", "music", "sound", "listening", "podcast", "electronics", "gadget", "entertainment", "multimedia", "UI icon"]
+  },
+  "015-icon15.png": {
+    "name": "3D Checkmark",
+    "tags": ["checkmark", "check", "tick", "success", "done", "complete", "approved", "confirmation", "checkbox", "green", "positive", "UI icon"]
+  },
+  "016-icon16.png": {
+    "name": "3D Seaplane",
+    "tags": ["seaplane", "floatplane", "airplane", "aircraft", "aviation", "travel", "transport", "tourism", "adventure", "propeller", "flight", "UI icon"]
+  },
+  "017-icon17.png": {
+    "name": "3D Ink Bottle",
+    "tags": ["ink", "bottle", "stationery", "writing", "calligraphy", "fountain pen", "art", "creative", "design", "office supply", "glass", "UI icon"]
+  },
+  "018-icon18.png": {
+    "name": "3D Metal Trash Can",
+    "tags": ["trash can", "garbage", "bin", "waste", "delete", "disposal", "metal", "silver", "refuse", "cleanup", "recycle", "UI icon"]
+  },
+  "019-icon19.png": {
+    "name": "3D Crown",
+    "tags": ["crown", "royalty", "king", "queen", "gold", "premium", "luxury", "winner", "VIP", "achievement", "reward", "ranking", "UI icon"]
+  },
+  "020-icon20.png": {
+    "name": "3D Leaf",
+    "tags": ["leaf", "nature", "eco", "green", "sustainability", "environment", "growth", "organic", "ecology", "plant", "botany", "UI icon"]
+  },
+  "021-icon21.png": {
+    "name": "3D Latte Cup",
+    "tags": ["coffee", "latte", "cappuccino", "cafe", "beverage", "drink", "latte art", "saucer", "spoon", "breakfast", "caffeine", "UI icon"]
+  },
+  "022-icon22.png": {
+    "name": "3D Espresso Cup",
+    "tags": ["espresso", "coffee", "cafe", "beverage", "drink", "crema", "saucer", "caffeine", "breakfast", "morning", "ceramic", "UI icon"]
+  },
+  "023-icon23.png": {
+    "name": "3D Mouse Cursor",
+    "tags": ["cursor", "pointer", "arrow", "mouse", "click", "navigation", "selection", "interface", "UI", "UX", "interactive", "web"]
+  },
+  "024-icon24.png": {
+    "name": "3D Stacked Cubes",
+    "tags": ["cubes", "blocks", "stack", "modules", "building blocks", "hierarchy", "structure", "organization", "geometry", "isometric", "minimalist", "UI icon"]
+  },
+  "025-icon25.png": {
+    "name": "3D Trash Bag",
+    "tags": ["trash bag", "garbage", "waste", "rubbish", "disposal", "plastic", "refuse", "cleaning", "junk", "black", "sack", "UI icon"]
+  },
+  "026-icon26.png": {
+    "name": "3D Duck",
+    "tags": ["duck", "bird", "animal", "waterfowl", "wildlife", "cute", "mascot", "nature", "poultry", "farm", "walking", "UI icon"]
+  },
+  "027-icon27.png": {
+    "name": "3D Pull-Up Workout",
+    "tags": ["fitness", "workout", "gym", "exercise", "pull-up", "strength", "athlete", "training", "health", "sports", "wellness", "bodyweight", "UI icon"]
+  },
+  "028-icon28.png": {
+    "name": "3D Milk Carton",
+    "tags": ["milk", "dairy", "carton", "beverage", "drink", "grocery", "breakfast", "food", "packaging", "container", "calcium", "UI icon"]
+  },
+  "029-icon29.png": {
+    "name": "3D Playing Cards Hand",
+    "tags": ["cards", "poker", "gambling", "casino", "game", "playing cards", "hand", "win", "luck", "stars", "entertainment", "UI icon"]
+  },
+  "030-icon30.png": {
+    "name": "3D Superhero",
+    "tags": ["superhero", "hero", "character", "armor", "cape", "toy", "figurine", "gaming", "mascot", "champion", "avatar", "sci-fi", "UI icon"]
+  },
+  "031-icon31.png": {
+    "name": "3D Chess Pawn",
+    "tags": ["chess", "pawn", "strategy", "game", "piece", "competition", "board game", "black", "tactics", "starting", "minimalist", "UI icon"]
+  },
+  "032-icon32.png": {
+    "name": "3D Squished Smiley",
+    "tags": ["smiley", "emoji", "happy", "face", "yellow", "expression", "emotion", "squished", "playful", "character", "fun", "UI icon"]
+  },
+  "033-icon33.png": {
+    "name": "3D Detective Avatar",
+    "tags": ["detective", "investigator", "Sherlock", "avatar", "character", "pipe", "deerstalker", "mystery", "profile", "man", "mustache", "UI icon"]
+  },
+  "034-icon34.png": {
+    "name": "3D Rubik's Cube",
+    "tags": ["Rubik's cube", "puzzle", "cube", "game", "logic", "brain teaser", "strategy", "toy", "colorful", "challenge", "problem solving", "UI icon"]
+  },
+  "035-icon35.png": {
+    "name": "3D Folder Document",
+    "tags": ["document", "file", "folder", "page", "storage", "archive", "data", "office", "organization", "paperwork", "directory", "UI icon"]
+  },
+  "036-icon36.png": {
+    "name": "3D Sync Document",
+    "tags": ["document", "file", "sync", "refresh", "update", "reload", "backup", "transfer", "data", "cloud", "exchange", "UI icon"]
+  },
+  "037-icon37.png": {
+    "name": "3D Verified Document",
+    "tags": ["document", "file", "verified", "checkmark", "approved", "success", "completed", "done", "task", "confirmation", "green", "UI icon"]
+  },
+  "038-icon38.png": {
+    "name": "3D Mystery Box",
+    "tags": ["mystery", "box", "question mark", "help", "FAQ", "unknown", "surprise", "secret", "package", "quiz", "support", "UI icon"]
+  },
+  "039-icon39.png": {
+    "name": "3D Great Mosque of Djenné",
+    "tags": ["mosque", "Djenné", "Mali", "landmark", "architecture", "Africa", "monument", "travel", "tourism", "Sudano-Sahelian", "heritage", "isometric", "UI icon"]
+  },
+  "040-icon40.png": {
+    "name": "3D Rainbow Puffer Jacket",
+    "tags": ["jacket", "puffer", "coat", "clothing", "apparel", "fashion", "rainbow", "winter", "outerwear", "colorful", "pride", "UI icon"]
+  },
+  "041-icon41.png": {
+    "name": "3D Diamond",
+    "tags": ["diamond", "gem", "jewel", "gemstone", "luxury", "premium", "crystal", "wealth", "jewelry", "precious", "reward", "sparkle", "UI icon"]
+  },
+  "042-icon42.png": {
+    "name": "3D Hamburger",
+    "tags": ["hamburger", "burger", "food", "fast food", "meal", "restaurant", "sesame", "lettuce", "tomato", "snack", "cuisine", "UI icon"]
+  },
+  "043-icon43.png": {
+    "name": "3D Play Button",
+    "tags": ["play", "button", "media", "video", "music", "start", "player", "multimedia", "controls", "triangle", "interface", "UI icon"]
+  },
+  "044-icon44.png": {
+    "name": "3D Tuk-Tuk",
+    "tags": ["tuk-tuk", "rickshaw", "auto-rickshaw", "vehicle", "transport", "taxi", "travel", "commute", "public transit", "three-wheeler", "city", "UI icon"]
+  },
+  "045-icon45.png": {
+    "name": "3D Globe",
+    "tags": ["globe", "earth", "world", "planet", "geography", "map", "global", "international", "travel", "environment", "climate", "UI icon"]
+  },
+  "046-icon46.png": {
+    "name": "3D Orange User Icon",
+    "tags": ["user", "profile", "account", "avatar", "person", "member", "orange", "identity", "human", "interface", "minimalist", "UI icon"]
+  },
+  "047-icon47.png": {
+    "name": "3D Blue User Icon",
+    "tags": ["user", "profile", "account", "avatar", "person", "member", "blue", "identity", "human", "interface", "minimalist", "UI icon"]
+  },
+  "048-icon48.png": {
+    "name": "3D Pause Button",
+    "tags": ["pause", "button", "media", "playback", "video", "audio", "controls", "player", "multimedia", "orange", "interface", "UI icon"]
+  },
+  "049-icon49.png": {
+    "name": "3D Chain Link",
+    "tags": ["link", "chain", "hyperlink", "connection", "URL", "attachment", "network", "bond", "integration", "web", "url", "UI icon"]
+  },
+  "050-icon50.png": {
+    "name": "3D Blue Superhero",
+    "tags": ["superhero", "hero", "character", "armor", "cape", "robot", "toy", "figurine", "gaming", "mascot", "avatar", "warrior", "UI icon"]
+  }
+}

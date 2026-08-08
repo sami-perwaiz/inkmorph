@@ -2,12 +2,23 @@ import type { FilterValue, Illustration } from "@/types/illustration";
 
 export type IllustrationFilterLists = Record<FilterValue, Illustration[]>;
 
-/** Free item counts per category (remaining items are paid/locked). */
+/** Free item counts per category (remaining items stay behind the paywall peek). */
 export const FREE_COUNTS = {
   avatar: 10,
   character: 40,
   object: 50,
   abstract: 27,
+} as const;
+
+/**
+ * How many of the currently visible free-plan items are premium-locked
+ * (crown badge, no download) — evenly spaced through the free set.
+ */
+export const LOCKED_IN_FREE_COUNTS = {
+  avatar: 5,
+  character: 6,
+  object: 6,
+  abstract: 6,
 } as const;
 
 function sortBySrc(items: Illustration[]): Illustration[] {
@@ -28,24 +39,52 @@ function isAvatarIllustration(item: Illustration): boolean {
   return /avatar/i.test(item.filename);
 }
 
+/** Evenly spaced indices within `length` (e.g. 6 locks across 50 free items). */
+function pickEvenIndices(length: number, count: number): Set<number> {
+  const lockCount = Math.min(Math.max(count, 0), length);
+  const indices = new Set<number>();
+
+  if (lockCount === 0 || length === 0) {
+    return indices;
+  }
+
+  if (lockCount === 1) {
+    indices.add(Math.floor((length - 1) / 2));
+    return indices;
+  }
+
+  for (let i = 0; i < lockCount; i++) {
+    indices.add(Math.round((i * (length - 1)) / (lockCount - 1)));
+  }
+
+  return indices;
+}
+
 /**
- * First `freeCount` items (existing sort order) stay free and list first;
- * remaining items are paid/locked and follow after.
+ * First `freeCount` items stay on the free-plan gallery (order unchanged).
+ * Within those, `lockedInFreeCount` are marked premium (locked) but still visible.
+ * Remaining items are paywalled (premium + faded peek only).
  */
 function applyFreePaidSplit(
   items: Illustration[],
-  freeCount: number
+  freeCount: number,
+  lockedInFreeCount: number
 ): Illustration[] {
   const sorted = sortBySrc(items);
   const freeLimit = Math.min(Math.max(freeCount, 0), sorted.length);
+  const freeSlice = sorted.slice(0, freeLimit);
+  const paidSlice = sorted.slice(freeLimit);
+  const lockedIndices = pickEvenIndices(freeSlice.length, lockedInFreeCount);
 
-  const free = sorted.slice(0, freeLimit).map((item) => ({
+  const free = freeSlice.map((item, index) => ({
     ...item,
-    premium: false,
+    premium: lockedIndices.has(index),
+    paywalled: false,
   }));
-  const paid = sorted.slice(freeLimit).map((item) => ({
+  const paid = paidSlice.map((item) => ({
     ...item,
     premium: true,
+    paywalled: true,
   }));
 
   return [...free, ...paid];
@@ -54,22 +93,25 @@ function applyFreePaidSplit(
 /**
  * Precompute every tab's illustration list once.
  * Tagged sets appear on their own tabs; All combines every category.
- * Within a tab: free items first, then paid/locked.
+ * Within a tab: free-plan items first (some premium-locked), then paywalled.
  */
 export function buildIllustrationFilterLists(
   items: Illustration[]
 ): IllustrationFilterLists {
   const abstract = applyFreePaidSplit(
     items.filter(isAbstractIllustration),
-    FREE_COUNTS.abstract
+    FREE_COUNTS.abstract,
+    LOCKED_IN_FREE_COUNTS.abstract
   );
   const character = applyFreePaidSplit(
     items.filter(isCharacterIllustration),
-    FREE_COUNTS.character
+    FREE_COUNTS.character,
+    LOCKED_IN_FREE_COUNTS.character
   );
   const avatar = applyFreePaidSplit(
     items.filter(isAvatarIllustration),
-    FREE_COUNTS.avatar
+    FREE_COUNTS.avatar,
+    LOCKED_IN_FREE_COUNTS.avatar
   );
   const object = applyFreePaidSplit(
     items.filter(
@@ -78,19 +120,25 @@ export function buildIllustrationFilterLists(
         !isCharacterIllustration(item) &&
         !isAvatarIllustration(item)
     ),
-    FREE_COUNTS.object
+    FREE_COUNTS.object,
+    LOCKED_IN_FREE_COUNTS.object
   );
 
-  // All: free items across categories first, then paid.
+  const visible = (list: Illustration[]) =>
+    list.filter((item) => !item.paywalled);
+  const paywalled = (list: Illustration[]) =>
+    list.filter((item) => item.paywalled);
+
+  // All: free-plan items across categories first, then paywalled peek pool.
   const all = [
-    ...avatar.filter((item) => !item.premium),
-    ...character.filter((item) => !item.premium),
-    ...object.filter((item) => !item.premium),
-    ...abstract.filter((item) => !item.premium),
-    ...avatar.filter((item) => item.premium),
-    ...character.filter((item) => item.premium),
-    ...object.filter((item) => item.premium),
-    ...abstract.filter((item) => item.premium),
+    ...visible(avatar),
+    ...visible(character),
+    ...visible(object),
+    ...visible(abstract),
+    ...paywalled(avatar),
+    ...paywalled(character),
+    ...paywalled(object),
+    ...paywalled(abstract),
   ];
 
   return {
@@ -109,29 +157,29 @@ export function filterIllustrations(
   return buildIllustrationFilterLists(items)[filter];
 }
 
-/** Visible gallery slice: all free items + paid peek for the faded bottom row.
- *  When free items don't fill the last row, include enough paid items to
+/** Visible gallery slice: free-plan items + paywalled peek for the faded bottom row.
+ *  When free-plan items don't fill the last row, include enough paywalled items to
  *  complete that row and still leave a full paid preview row under the fade.
  */
 export function getVisibleGalleryItems(
   items: Illustration[],
   columnCount: number
 ): Illustration[] {
-  const free: Illustration[] = [];
-  const paid: Illustration[] = [];
+  const freePlan: Illustration[] = [];
+  const paywalled: Illustration[] = [];
 
   for (const item of items) {
-    if (item.premium) {
-      paid.push(item);
+    if (item.paywalled) {
+      paywalled.push(item);
     } else {
-      free.push(item);
+      freePlan.push(item);
     }
   }
 
   const cols = Math.max(1, columnCount);
-  const remainder = free.length % cols;
+  const remainder = freePlan.length % cols;
   const fillPartialRow = remainder === 0 ? 0 : cols - remainder;
   const peekCount = fillPartialRow + cols;
 
-  return [...free, ...paid.slice(0, peekCount)];
+  return [...freePlan, ...paywalled.slice(0, peekCount)];
 }
