@@ -55,9 +55,10 @@ export function getIllustrations(): Illustration[] {
       const entry = lookup.get(`${category}/${filename}`);
 
       if (!entry) {
-        throw new Error(
-          `Missing InkMorph Asset ID for ${category}/${filename}. Run npm run ingest-illustrations.`
+        console.warn(
+          `Missing InkMorph Asset ID for ${category}/${filename}. Skipping.`
         );
+        continue;
       }
 
       illustrations.push({

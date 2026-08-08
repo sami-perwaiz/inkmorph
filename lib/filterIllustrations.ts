@@ -53,13 +53,12 @@ function applyFreePaidSplit(
 
 /**
  * Precompute every tab's illustration list once.
- * Each tagged set only appears on its own tab. All stays empty.
+ * Tagged sets appear on their own tabs; All combines every category.
  * Within a tab: free items first, then paid/locked.
  */
 export function buildIllustrationFilterLists(
   items: Illustration[]
 ): IllustrationFilterLists {
-  const empty: Illustration[] = [];
   const abstract = applyFreePaidSplit(
     items.filter(isAbstractIllustration),
     FREE_COUNTS.abstract
@@ -82,8 +81,20 @@ export function buildIllustrationFilterLists(
     FREE_COUNTS.object
   );
 
+  // All: free items across categories first, then paid.
+  const all = [
+    ...avatar.filter((item) => !item.premium),
+    ...character.filter((item) => !item.premium),
+    ...object.filter((item) => !item.premium),
+    ...abstract.filter((item) => !item.premium),
+    ...avatar.filter((item) => item.premium),
+    ...character.filter((item) => item.premium),
+    ...object.filter((item) => item.premium),
+    ...abstract.filter((item) => item.premium),
+  ];
+
   return {
-    all: empty,
+    all,
     avatar,
     character,
     object,
