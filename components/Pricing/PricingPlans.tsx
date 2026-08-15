@@ -6,6 +6,7 @@ import { useCallback, useState } from "react";
 
 import { SignInToPurchaseModal } from "@/components/Pricing/SignInToPurchaseModal";
 import { isSignedIn } from "@/lib/authSession";
+import { grantPremiumAccess } from "@/lib/premiumAccess";
 import { PRICING_PLANS, type PricingPlan } from "@/lib/pricingPlans";
 
 /** Figma check instance — 20×20 with stroke mark. */
@@ -152,7 +153,8 @@ export function PricingPlans() {
       return;
     }
 
-    // Signed-in purchase flow can be wired to checkout later.
+    // Checkout stub — persists premium access for the signed-in account.
+    grantPremiumAccess();
   }, []);
 
   const closeSignInModal = useCallback(() => {

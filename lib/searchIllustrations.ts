@@ -34,12 +34,21 @@ export function illustrationMatchesQuery(
 
 export function filterIllustrationsBySearch(
   items: Illustration[],
-  query: string
+  query: string,
+  options?: { hasPremiumAccess?: boolean }
 ): Illustration[] {
   const normalized = query.trim();
   if (!normalized) {
     return items;
   }
 
-  return items.filter((item) => illustrationMatchesQuery(item, normalized));
+  const hasPremiumAccess = options?.hasPremiumAccess ?? false;
+
+  return items.filter((item) => {
+    if (!hasPremiumAccess && item.premium) {
+      return false;
+    }
+
+    return illustrationMatchesQuery(item, normalized);
+  });
 }

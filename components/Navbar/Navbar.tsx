@@ -10,6 +10,7 @@ import { FilterTabs } from "@/components/FilterTabs/FilterTabs";
 import { GoPremiumButton } from "@/components/GoPremiumButton/GoPremiumButton";
 import { InkMorphLogo } from "@/components/InkMorphLogo/InkMorphLogo";
 import { MenuToggleIcon } from "@/components/MenuToggleIcon/MenuToggleIcon";
+import { PacksNavMenu } from "@/components/Navbar/PacksNavMenu";
 import { ProfileMenu } from "@/components/ProfileMenu/ProfileMenu";
 import {
   AUTH_CHANGE_EVENT,
@@ -18,12 +19,14 @@ import {
   signOut,
 } from "@/lib/authSession";
 import { NAV } from "@/lib/constants";
+import { getNavTabClassName, getNavTabStyle } from "@/lib/navTokens";
 import type { FilterValue } from "@/types/illustration";
 
 interface NavbarProps {
   activeFilter: FilterValue | null;
   onFilterChange: (filter: FilterValue) => void;
   pricingActive?: boolean;
+  packsActive?: boolean;
   searchQuery?: string;
   onSearchChange?: (query: string) => void;
 }
@@ -45,15 +48,9 @@ function PricingNavLink({
       aria-current={active ? "page" : undefined}
       onClick={onNavigate}
       className={[
-        "box-border border-b border-solid font-poppins text-base font-normal leading-[18px] text-black transition-opacity",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-900/30 focus-visible:ring-offset-2",
-        isStacked
-          ? "flex w-full items-center justify-start bg-white px-4 py-3 text-left"
-          : "inline-flex shrink-0 items-center justify-center px-4 py-3",
-        active
-          ? "border-[#202020] opacity-100"
-          : "border-transparent opacity-50 hover:opacity-80",
+        getNavTabClassName({ active, layout: isStacked ? "stacked" : "inline" }),
       ].join(" ")}
+      style={getNavTabStyle()}
     >
       Pricing
     </Link>
@@ -61,11 +58,8 @@ function PricingNavLink({
 }
 
 /**
- * Desktop: 40004600:8136 / 40004712:10263
- * Tablet:  40004712:10296 / 40004712:10391
- * Mobile:  40004723:10673 / 40004794:11552
- * Open menu: 40004727:10913
- * Open + account: 40004794:11951
+ * Desktop/tablet: Figma 40004968:9151
+ * Mobile menu: 40004794:11552 / 40004794:11951
  */
 const NAVBAR = {
   logoRadius: 6,
@@ -255,12 +249,17 @@ export const Navbar = memo(function Navbar({
   activeFilter,
   onFilterChange,
   pricingActive = false,
+  packsActive = false,
   searchQuery = "",
   onSearchChange,
 }: NavbarProps) {
   const pathname = usePathname();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const isPricingPage = pricingActive || pathname === "/pricing";
+  const isPacksPage =
+    packsActive || pathname === "/packs" || pathname === "/wallpapers";
+  const showSearch = !isPricingPage;
+  const showGalleryFilters = !isPricingPage && !isPacksPage;
 
   const closeMenu = useCallback(() => setIsMenuOpen(false), []);
 
@@ -289,8 +288,8 @@ export const Navbar = memo(function Navbar({
 
   return (
     <header className="fixed inset-x-0 top-0 z-50 w-full border-b border-solid border-[#F5F5F5] bg-white">
-      {/* Desktop chrome — Figma 40004712:10263 (shown from laptop width up) */}
-      <ContentContainer className="relative hidden laptop:block">
+      {/* Desktop/tablet chrome — Figma 40004968:9151 */}
+      <ContentContainer className="relative hidden tablet:block">
         <div
           className="flex items-center justify-between"
           style={{
@@ -311,16 +310,17 @@ export const Navbar = memo(function Navbar({
             />
             <div className="flex items-center" style={{ gap: NAV.filterGap }}>
               <FilterTabs
-                activeFilter={isPricingPage ? null : galleryFilter}
+                activeFilter={showGalleryFilters ? galleryFilter : null}
                 onFilterChange={onFilterChange}
                 idPrefix="desktop-filter"
               />
+              <PacksNavMenu />
               <PricingNavLink active={isPricingPage} />
             </div>
           </div>
 
           <div className="flex shrink-0 items-center gap-4">
-            {!isPricingPage ? (
+            {showSearch ? (
               <SearchField
                 className="w-[217px]"
                 size="desktop"
@@ -334,9 +334,9 @@ export const Navbar = memo(function Navbar({
         </div>
       </ContentContainer>
 
-      {/* Mobile + Tablet — closed: 40004794:11552 / open: 40004794:11951 */}
+      {/* Mobile — closed: 40004794:11552 / open: 40004794:11951 */}
       <div
-        className="motion-mobile-nav relative bg-white laptop:hidden"
+        className="motion-mobile-nav relative bg-white tablet:hidden"
         data-open={isMenuOpen ? "true" : "false"}
       >
         <button
@@ -353,7 +353,7 @@ export const Navbar = memo(function Navbar({
               <InkMorphLogo size={42} radius={NAVBAR.logoRadius} />
 
               <div className="flex min-w-0 items-center gap-4">
-                {!isMenuOpen && !isPricingPage ? (
+                {!isMenuOpen && showSearch ? (
                   <SearchField
                     size="compact"
                     className="w-[158px] shrink-0 tablet:w-[217px]"
@@ -392,11 +392,12 @@ export const Navbar = memo(function Navbar({
                 <div className="flex w-full flex-col items-stretch px-3">
                   <div className="flex w-full flex-col items-stretch gap-5">
                     <FilterTabs
-                      activeFilter={isPricingPage ? null : galleryFilter}
+                      activeFilter={showGalleryFilters ? galleryFilter : null}
                       onFilterChange={handleFilterChange}
                       variant="stacked"
                       idPrefix="compact-filter"
                     />
+                    <PacksNavMenu layout="stacked" onNavigate={closeMenu} />
                     <PricingNavLink
                       active={isPricingPage}
                       layout="stacked"

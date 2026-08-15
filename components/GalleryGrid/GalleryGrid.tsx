@@ -11,6 +11,7 @@ import {
 } from "react";
 
 import { GalleryCard } from "@/components/GalleryCard/GalleryCard";
+import { usePremiumAccess } from "@/hooks/usePremiumAccess";
 import { FILTERS } from "@/lib/constants";
 import {
   getVisibleGalleryItems,
@@ -85,11 +86,15 @@ export const GalleryGrid = memo(function GalleryGrid({
   const activeFilterRef = useRef(activeFilter);
   const swapTimeoutRef = useRef<number | null>(null);
   const columnCount = useGalleryColumnCount();
+  const hasPremiumAccess = usePremiumAccess();
 
   const categoryItems = lists[renderedFilter];
   const matchedItems = useMemo(
-    () => filterIllustrationsBySearch(categoryItems, searchQuery),
-    [categoryItems, searchQuery]
+    () =>
+      filterIllustrationsBySearch(categoryItems, searchQuery, {
+        hasPremiumAccess,
+      }),
+    [categoryItems, searchQuery, hasPremiumAccess]
   );
   const hasActiveSearch = searchQuery.trim().length > 0;
   const illustrations = useMemo(
