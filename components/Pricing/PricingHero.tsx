@@ -33,9 +33,9 @@ export function PricingHero() {
           </h1>
           <p className="motion-pricing-hero-body w-full font-poppins text-base font-normal leading-6 text-[#797979]">
             Choose the plan that fits your creative workflow. Start free with
-            daily credits or upgrade to Pro for unlimited downloads, transparent
-            PNG exports, high-resolution assets, and full access to every
-            illustration.
+            daily credits or unlock the full library with a one-time purchase
+            for unlimited downloads, transparent PNG exports, high-resolution
+            assets, and lifetime updates.
           </p>
         </div>
       </div>

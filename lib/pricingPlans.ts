@@ -1,5 +1,5 @@
 export interface PricingPlan {
-  id: "basic" | "pro";
+  id: "basic" | "full-pack" | "lifetime";
   name: string;
   description: string;
   price: string;
@@ -15,37 +15,55 @@ export const PRICING_PLANS: PricingPlan[] = [
     id: "basic",
     name: "Basic",
     description:
-      "Perfect for exploring InkMorph and using illustrations in personal or small projects.",
+      "Perfect for exploring InkMorph and using free 3D assets in your projects.",
     price: "Free",
     ctaLabel: "Get Started Free",
     ctaVariant: "secondary",
     includesLabel: "What’s included:",
     features: [
-      "5 free credits every day",
+      "Access to selected free 3D assets",
+      "5 Copy or Downloads per day",
       "Each Copy or Download uses 1 credit",
-      "Access to a limited illustration library",
-      "PNG downloads in 1× quality",
-      "New credits refresh every 24 hours",
-      "1 transparent PNG download per day",
+      "Free Avatars, Characters, Objects & Abstracts",
+      "PNG downloads",
+      "Credits refresh every 24 hours",
     ],
   },
   {
-    id: "pro",
-    name: "Pro",
-    description:
-      "Unlock the complete InkMorph experience for creators and professionals.",
-    price: "$9.99",
-    priceSuffix: "/month",
-    ctaLabel: "Purchase plan",
+    id: "full-pack",
+    name: "Full Pack",
+    description: "Unlock the complete InkMorph library available today.",
+    price: "$29",
+    priceSuffix: "/ one-time",
+    ctaLabel: "Get Full Pack",
     ctaVariant: "primary",
-    includesLabel: "Everything in Basic, plus:",
+    includesLabel: "Everything in Free, plus:",
     features: [
-      "Unlimited credits",
+      "Access to all current 3D assets",
+      "Full Avatar, Character & Object library",
+      "Full Abstract library",
       "Unlimited Copy & Download",
-      "Access to the entire illustration library",
-      "PNG downloads in 2× quality",
-      "Unlimited transparent background PNG downloads",
+      "High-resolution & transparent PNG",
       "Commercial license",
+    ],
+  },
+  {
+    id: "lifetime",
+    name: "Full Pack + Lifetime Updates",
+    description:
+      "Get everything in InkMorph today, plus all future assets and updates.",
+    price: "$49",
+    priceSuffix: "/ one-time",
+    ctaLabel: "Get Lifetime Access",
+    ctaVariant: "primary",
+    includesLabel: "Everything in Full Pack, plus:",
+    features: [
+      "All future 3D assets",
+      "All future library expansions",
+      "Lifetime library updates",
+      "Unlimited Copy & Download",
+      "High-resolution & transparent PNG",
+      "No additional payments",
     ],
   },
 ];

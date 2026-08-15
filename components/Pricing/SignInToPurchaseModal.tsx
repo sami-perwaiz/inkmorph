@@ -8,7 +8,7 @@ import { InkMorphLogo } from "@/components/InkMorphLogo/InkMorphLogo";
 import { getModalBackdropStyle } from "@/lib/modalBackdrop";
 import { MOTION } from "@/lib/motion";
 
-/** Figma 40004878:12611 — Sign in to Purchase Pro (pricing only). */
+/** Figma 40004878:12611 — Sign in to purchase (pricing only). */
 const PURCHASE_SIGN_IN_MODAL = {
   maxWidth: 461,
   padding: 24,
@@ -167,7 +167,7 @@ function SignInToPurchaseModalComponent({
                 className="w-full font-inter text-xl font-semibold leading-7"
                 style={{ color: PURCHASE_SIGN_IN_MODAL.titleColor }}
               >
-                Sign in to Purchase Pro
+                Sign in to Purchase
               </h2>
               <p
                 id={descriptionId}

@@ -163,7 +163,7 @@ export function PricingPlans() {
     <>
       <section
         id="pricing-plans"
-        className="relative flex w-full flex-col items-center gap-[50px]"
+        className="relative mx-auto flex w-full max-w-[1260px] flex-col items-center gap-[50px] laptop:px-[50px]"
         aria-labelledby="pricing-plans-heading"
       >
         <div className="motion-pricing-plans-copy flex w-full max-w-[660px] flex-col items-center gap-[18px] px-4 text-center tablet:px-0">
@@ -176,11 +176,11 @@ export function PricingPlans() {
           <p className="w-full font-poppins text-base font-normal leading-6 text-[#797979]">
             Start free with daily credits or unlock unlimited access to every
             illustration, high-resolution downloads, and transparent PNG exports
-            with InkMorph Pro.
+            with InkMorph.
           </p>
         </div>
 
-        <div className="flex w-full max-w-[768px] flex-col items-stretch gap-6 px-4 tablet:flex-row tablet:gap-6 tablet:px-0">
+        <div className="flex w-full max-w-[1160px] flex-col items-stretch gap-6 px-4 tablet:px-[50px] laptop:flex-row laptop:items-stretch laptop:gap-6 laptop:px-0">
           {PRICING_PLANS.map((plan) => (
             <PricingCard
               key={plan.id}
