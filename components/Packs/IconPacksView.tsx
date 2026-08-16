@@ -28,7 +28,7 @@ export function IconPacksView() {
         packsActive
       />
 
-      <main className="flex w-full flex-col gap-[50px] pt-[100px] tablet:pt-[120px] laptop:pt-[138px]">
+      <main className="flex w-full flex-col pt-[100px] tablet:pt-[120px] desktop:pt-[138px]">
         <IconPacksGrid />
         <PremiumBanner />
       </main>

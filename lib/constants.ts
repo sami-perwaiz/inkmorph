@@ -22,15 +22,41 @@ export const NAV = {
   profileSize: 44,
 } as const;
 
+/** Vertical spacing from preceding content to any CTA section (PremiumBanner). */
+export const CTA = {
+  sectionGap: 100,
+  sectionGapClass: "mt-cta-section",
+} as const;
+
 export const GALLERY = {
   gap: 20,
   mobilePaddingX: 16,
   tabletDesktopPaddingX: 50,
-  /** Figma content top: mobile 100 / tablet 120 / desktop chrome (laptop+) 138 */
+  /** Figma content top: mobile 100 / tablet 120 / desktop chrome 138 */
   mobileTopOffset: 100,
   tabletTopOffset: 120,
   desktopTopOffset: 138,
 } as const;
+
+/** Pack detail toolbar — flush under fixed navbar (bar height + 1px border). */
+export const PACK_DETAIL = {
+  headerClearance: 71,
+  headerClearanceDesktop: 91,
+  /** Toolbar block: 44px row + vertical padding (py-3 mobile / py-5 desktop). */
+  toolbarHeight: 68,
+  toolbarHeightDesktop: 84,
+  toolbarGridGap: 30,
+} as const;
+
+/** Shared responsive grid for pack + wallpaper listing pages. */
+export const PACK_WALLPAPER_GRID_CLASS =
+  "grid w-full min-w-0 grid-cols-1 gap-8 px-4 tablet:grid-cols-2 tablet:px-[50px]";
+
+/** Figma pack/wallpaper thumbnail — 654×400 at desktop two-column width. */
+export const PACK_WALLPAPER_THUMB_ASPECT = "654 / 400" as const;
+
+export const PACK_WALLPAPER_THUMB_IMAGE_SIZES =
+  "(max-width: 767px) 100vw, 50vw";
 
 export const FOOTER = {
   pt: 64,

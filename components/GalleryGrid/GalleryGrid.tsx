@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import {
   memo,
   startTransition,
@@ -12,13 +13,14 @@ import {
 
 import { GalleryCard } from "@/components/GalleryCard/GalleryCard";
 import { usePremiumAccess } from "@/hooks/usePremiumAccess";
+import { MEDIA_QUERIES } from "@/lib/breakpoints";
 import { FILTERS } from "@/lib/constants";
 import {
   getVisibleGalleryItems,
   type IllustrationFilterLists,
 } from "@/lib/filterIllustrations";
 import { MOTION } from "@/lib/motion";
-import { filterIllustrationsBySearch } from "@/lib/searchIllustrations";
+import { searchGalleryIllustrations } from "@/lib/searchIllustrations";
 import type { FilterValue, Illustration } from "@/types/illustration";
 
 interface GalleryGridProps {
@@ -39,16 +41,16 @@ function prefersReducedMotion(): boolean {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
-/** Matches Tailwind screens: tablet 834 / desktop 1440. */
+/** Matches Tailwind screens: tablet 768 / desktop 1200 / wide 1440. */
 function useGalleryColumnCount(): number {
   const [columns, setColumns] = useState(3);
 
   useLayoutEffect(() => {
-    const tabletQuery = window.matchMedia("(min-width: 834px)");
-    const desktopQuery = window.matchMedia("(min-width: 1440px)");
+    const tabletQuery = window.matchMedia(MEDIA_QUERIES.tablet);
+    const wideQuery = window.matchMedia(MEDIA_QUERIES.wide);
 
     const update = () => {
-      if (desktopQuery.matches) {
+      if (wideQuery.matches) {
         setColumns(5);
       } else if (tabletQuery.matches) {
         setColumns(4);
@@ -59,10 +61,10 @@ function useGalleryColumnCount(): number {
 
     update();
     tabletQuery.addEventListener("change", update);
-    desktopQuery.addEventListener("change", update);
+    wideQuery.addEventListener("change", update);
     return () => {
       tabletQuery.removeEventListener("change", update);
-      desktopQuery.removeEventListener("change", update);
+      wideQuery.removeEventListener("change", update);
     };
   }, []);
 
@@ -70,7 +72,7 @@ function useGalleryColumnCount(): number {
 }
 
 const GRID_CLASS_NAME =
-  "grid w-full grid-cols-3 gap-5 px-4 tablet:grid-cols-4 tablet:px-[50px] desktop:grid-cols-5";
+  "grid w-full grid-cols-3 gap-5 px-4 tablet:grid-cols-4 tablet:px-[50px] desktop:grid-cols-4 wide:grid-cols-5";
 
 export const GalleryGrid = memo(function GalleryGrid({
   lists,
@@ -86,23 +88,44 @@ export const GalleryGrid = memo(function GalleryGrid({
   const activeFilterRef = useRef(activeFilter);
   const swapTimeoutRef = useRef<number | null>(null);
   const columnCount = useGalleryColumnCount();
-  const hasPremiumAccess = usePremiumAccess();
+  const { hasPremiumAccess, isReady } = usePremiumAccess();
 
   const categoryItems = lists[renderedFilter];
-  const matchedItems = useMemo(
-    () =>
-      filterIllustrationsBySearch(categoryItems, searchQuery, {
-        hasPremiumAccess,
-      }),
-    [categoryItems, searchQuery, hasPremiumAccess]
-  );
   const hasActiveSearch = searchQuery.trim().length > 0;
+  const matchedItems = useMemo(() => {
+    if (!hasActiveSearch) {
+      return categoryItems;
+    }
+
+    const effectivePremiumAccess = isReady ? hasPremiumAccess : false;
+
+    return searchGalleryIllustrations({
+      items: lists[activeFilter],
+      query: searchQuery,
+      hasPremiumAccess: effectivePremiumAccess,
+    });
+  }, [
+    activeFilter,
+    categoryItems,
+    hasActiveSearch,
+    hasPremiumAccess,
+    isReady,
+    lists,
+    searchQuery,
+  ]);
   const illustrations = useMemo(
-    () =>
-      hasActiveSearch
-        ? matchedItems
-        : getVisibleGalleryItems(matchedItems, columnCount),
-    [hasActiveSearch, matchedItems, columnCount]
+    () => {
+      if (hasActiveSearch) {
+        return matchedItems;
+      }
+
+      if (activeFilter === "all") {
+        return matchedItems.filter((item) => !item.paywalled);
+      }
+
+      return getVisibleGalleryItems(matchedItems, columnCount);
+    },
+    [activeFilter, hasActiveSearch, matchedItems, columnCount]
   );
   const isEmpty = matchedItems.length === 0;
   const emptyLabel =
@@ -186,16 +209,37 @@ export const GalleryGrid = memo(function GalleryGrid({
             isCovered ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0",
           ].join(" ")}
         />
-        <p className="text-center font-poppins text-xl font-normal leading-6 text-[#797979]">
-          {hasActiveSearch
-            ? "No matching illustrations"
-            : `No ${emptyLabel} illustrations yet`}
-        </p>
-        <p className="mt-2 max-w-sm text-center font-poppins text-sm font-normal leading-5 text-[#A9A9A9]">
-          {hasActiveSearch
-            ? "Try a different keyword or clear your search."
-            : "Check back soon — new assets are on the way."}
-        </p>
+        {hasActiveSearch ? (
+          <div className="flex w-full max-w-[476px] flex-col items-center gap-6">
+            <div className="relative aspect-[1536/1024] w-full">
+              <Image
+                src="/search/no-results.png"
+                alt=""
+                fill
+                sizes="(max-width: 767px) 358px, 476px"
+                className="object-cover"
+                aria-hidden
+              />
+            </div>
+            <div className="flex flex-col items-center gap-1.5 text-center">
+              <p className="font-poppins text-xl font-normal leading-normal text-black">
+                Hmm, we couldn&apos;t find that.
+              </p>
+              <p className="font-poppins text-sm font-normal leading-[23px] tracking-[0.14px] text-[#A9A9A9]">
+                Try another keyword or explore our collections.
+              </p>
+            </div>
+          </div>
+        ) : (
+          <>
+            <p className="text-center font-poppins text-xl font-normal leading-6 text-[#797979]">
+              {`No ${emptyLabel} illustrations yet`}
+            </p>
+            <p className="mt-2 max-w-sm text-center font-poppins text-sm font-normal leading-5 text-[#A9A9A9]">
+              Check back soon — new assets are on the way.
+            </p>
+          </>
+        )}
       </div>
     );
   }
@@ -224,7 +268,7 @@ export const GalleryGrid = memo(function GalleryGrid({
         {showBottomFade && hasPaidPeek ? (
           <div
             aria-hidden
-            className="pointer-events-none absolute inset-x-0 bottom-0 z-[2] h-[66px] bg-gradient-to-b from-transparent to-white tablet:h-[134px] desktop:h-[252px]"
+            className="pointer-events-none absolute inset-x-0 bottom-0 z-[2] h-[66px] bg-gradient-to-b from-transparent to-white tablet:h-[134px] wide:h-[252px]"
           />
         ) : null}
 

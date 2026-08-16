@@ -3,11 +3,10 @@
 import { forwardRef } from "react";
 
 import {
-  FILTER_ACTIVE_CLASSES,
-  FILTER_BUTTON,
-  FILTER_INACTIVE_CLASSES,
+  FILTER_VALUE_TO_VARIANT,
   type FilterButtonVariant,
 } from "@/lib/filterButtonTokens";
+import { getNavTabClassName, getNavTabStyle } from "@/lib/navTokens";
 import type { FilterValue } from "@/types/illustration";
 
 interface FilterButtonProps {
@@ -50,22 +49,11 @@ export const FilterButton = forwardRef<HTMLButtonElement, FilterButtonProps>(
         aria-controls={controlsId}
         tabIndex={active ? 0 : -1}
         onClick={onClick}
-        className={[
-          "motion-filter-tab box-border border-b border-solid font-poppins text-base font-normal leading-[18px]",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-900/30 focus-visible:ring-offset-2",
-          isStacked
-            ? "flex w-full items-center justify-start text-left"
-            : "inline-flex shrink-0 items-center justify-center",
-          active ? FILTER_ACTIVE_CLASSES : FILTER_INACTIVE_CLASSES,
-          active ? "border-[#202020]" : "border-transparent",
-        ].join(" ")}
-        style={{
-          minHeight: FILTER_BUTTON.height,
-          paddingTop: FILTER_BUTTON.paddingY,
-          paddingBottom: FILTER_BUTTON.paddingY,
-          paddingLeft: FILTER_BUTTON.paddingX,
-          paddingRight: FILTER_BUTTON.paddingX,
-        }}
+        className={getNavTabClassName({
+          active,
+          layout: isStacked ? "stacked" : "inline",
+        })}
+        style={getNavTabStyle()}
       >
         {isStacked && active ? (
           <span className="inline-flex items-center gap-2">
@@ -84,3 +72,4 @@ export const FilterButton = forwardRef<HTMLButtonElement, FilterButtonProps>(
 );
 
 export type { FilterButtonVariant };
+export { FILTER_VALUE_TO_VARIANT };

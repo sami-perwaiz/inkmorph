@@ -10,7 +10,7 @@ const DOWNLOAD_SCALE: Record<DownloadSize, number> = {
   "2x": 2,
 };
 
-function triggerBrowserDownload(blob: Blob, filename: string): void {
+export function triggerBrowserDownload(blob: Blob, filename: string): void {
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
   anchor.href = url;
@@ -42,7 +42,7 @@ function loadImageElement(src: string): Promise<HTMLImageElement> {
  * Renders the source at the requested download scale.
  * 1x returns the original PNG; 2x upscales to 2016×2016.
  */
-async function renderDownloadPng(
+export async function renderDownloadPng(
   src: string,
   size: DownloadSize
 ): Promise<Blob> {

@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter, Lora, Poppins } from "next/font/google";
 
 import { Analytics } from "@/components/Analytics/Analytics";
+import { AppProviders } from "@/components/AppProviders/AppProviders";
 import { MicrosoftClarity } from "@/components/Analytics/MicrosoftClarity";
 import "./globals.css";
 
@@ -109,7 +110,7 @@ export default function RootLayout({
         className={`${poppins.variable} ${inter.variable} ${lora.variable} bg-white font-poppins antialiased`}
         suppressHydrationWarning
       >
-        {children}
+        <AppProviders>{children}</AppProviders>
         <Analytics />
         <MicrosoftClarity />
       </body>

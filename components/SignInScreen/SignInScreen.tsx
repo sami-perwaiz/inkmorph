@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 
 import { AuthScreen } from "@/components/AuthScreen/AuthScreen";
 import type { AuthScreenCopy } from "@/lib/authScreenTokens";
-import { getAuthEntryHref, hasRegisteredAccounts } from "@/lib/authSession";
+import { isSignedIn } from "@/lib/authSession";
 
 /** Figma 40004799:8512 — Log in Screen */
 const SIGN_IN_COPY: AuthScreenCopy = {
@@ -19,22 +19,29 @@ const SIGN_IN_COPY: AuthScreenCopy = {
   footerLinkHref: "/signup",
 };
 
+function resolveNextPath(raw: string | null): string {
+  if (!raw || !raw.startsWith("/") || raw.startsWith("//")) {
+    return "/";
+  }
+
+  return raw;
+}
+
 export function SignInScreen() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [showSignIn, setShowSignIn] = useState(false);
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    // First-time users should start on Create Account, not Sign In.
-    if (!hasRegisteredAccounts()) {
-      router.replace(getAuthEntryHref(searchParams.get("next")));
+    if (isSignedIn()) {
+      router.replace(resolveNextPath(searchParams.get("next")));
       return;
     }
 
-    setShowSignIn(true);
+    setReady(true);
   }, [router, searchParams]);
 
-  if (!showSignIn) {
+  if (!ready) {
     return null;
   }
 

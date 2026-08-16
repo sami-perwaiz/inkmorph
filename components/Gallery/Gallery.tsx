@@ -10,7 +10,6 @@ import { GalleryGrid } from "@/components/GalleryGrid/GalleryGrid";
 import { ImagePreviewModal } from "@/components/ImagePreviewModal/ImagePreviewModal";
 import { Navbar } from "@/components/Navbar/Navbar";
 import { PremiumBanner } from "@/components/PremiumBanner/PremiumBanner";
-import { UnlockLibraryCta } from "@/components/PremiumBanner/UnlockLibraryCta";
 import { useImagePreviewModal } from "@/hooks/useImagePreviewModal";
 import { useIsDesktop } from "@/hooks/useIsDesktop";
 import { trackCategoryChange } from "@/lib/analytics";
@@ -98,21 +97,16 @@ export function Gallery({ lists }: GalleryProps) {
           onSearchChange={handleSearchChange}
         />
 
-        <main className="flex w-full flex-col gap-[50px] pt-[100px] tablet:pt-[120px] laptop:pt-[138px]">
-          {/* Figma 40004712:10295 — grid + fade, then unlock CTA (gap 50) */}
-          <div className="flex w-full flex-col gap-[50px]">
-            <ContentContainer>
-              <GalleryGrid
-                lists={lists}
-                activeFilter={activeFilter}
-                searchQuery={searchQuery}
-                isDesktop={isDesktop}
-                onPreview={preview.open}
-              />
-            </ContentContainer>
-
-            <UnlockLibraryCta />
-          </div>
+        <main className="flex w-full flex-col pt-[100px] tablet:pt-[120px] desktop:pt-[138px]">
+          <ContentContainer>
+            <GalleryGrid
+              lists={lists}
+              activeFilter={activeFilter}
+              searchQuery={searchQuery}
+              isDesktop={isDesktop}
+              onPreview={preview.open}
+            />
+          </ContentContainer>
 
           <PremiumBanner />
         </main>
@@ -131,7 +125,7 @@ export function Gallery({ lists }: GalleryProps) {
             onExitComplete={preview.completeExit}
           />
         )}
-      </div>
+        </div>
     </DownloadLimitProvider>
   );
 }

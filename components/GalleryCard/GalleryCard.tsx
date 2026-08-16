@@ -13,7 +13,9 @@ import {
 
 import { ActionOverlay } from "@/components/ActionOverlay/ActionOverlay";
 import { PremiumBadge } from "@/components/ActionOverlay/PremiumBadge";
+import { ProtectedPremiumImage } from "@/components/ProtectedPremiumImage/ProtectedPremiumImage";
 import { useCardAction } from "@/hooks/useCardAction";
+import { shouldProtectGalleryAsset } from "@/lib/premiumFeatureAccess";
 import {
   hasIllustrationImageLoaded,
   markIllustrationImageLoaded,
@@ -48,6 +50,7 @@ function GalleryCardComponent({
     handleDownload,
     handleLockedAction,
   } = useCardAction(illustration);
+  const protectImage = shouldProtectGalleryAsset(illustration);
 
   const [isLoaded, setIsLoaded] = useState(false);
   const srcRef = useRef(src);
@@ -142,7 +145,7 @@ function GalleryCardComponent({
           src={src}
           alt=""
           fill
-          sizes="(max-width: 833px) 33vw, (max-width: 1439px) 25vw, 20vw"
+          sizes="(max-width: 767px) 33vw, (max-width: 1439px) 25vw, 20vw"
           className={[
             "gallery-card-image object-cover",
             isLoaded ? "opacity-100" : "opacity-0",
@@ -176,23 +179,25 @@ function GalleryCardComponent({
         />
       )}
 
-      <Image
-        key={id}
-        src={src}
-        alt={alt}
-        fill
-        sizes="(max-width: 833px) 33vw, (max-width: 1439px) 25vw, 20vw"
-        className={[
-          "gallery-card-image object-cover",
-          isLoaded ? "opacity-100" : "opacity-0",
-        ].join(" ")}
-        {...(priority
-          ? { priority: true as const }
-          : { loading: "lazy" as const })}
-        decoding="async"
-        draggable={false}
-        onLoad={handleImageLoad}
-      />
+      <ProtectedPremiumImage enabled={protectImage} className="absolute inset-0">
+        <Image
+          key={id}
+          src={src}
+          alt={alt}
+          fill
+          sizes="(max-width: 767px) 33vw, (max-width: 1439px) 25vw, 20vw"
+          className={[
+            "gallery-card-image object-cover",
+            isLoaded ? "opacity-100" : "opacity-0",
+          ].join(" ")}
+          {...(priority
+            ? { priority: true as const }
+            : { loading: "lazy" as const })}
+          decoding="async"
+          draggable={false}
+          onLoad={handleImageLoad}
+        />
+      </ProtectedPremiumImage>
 
       {illustration.premium && isLoaded && <PremiumBadge />}
 

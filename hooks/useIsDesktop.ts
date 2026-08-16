@@ -2,8 +2,10 @@
 
 import { useLayoutEffect, useState } from "react";
 
-/** Figma desktop gallery / hover — 1440px */
-const DESKTOP_QUERY = "(min-width: 1440px)";
+import { MEDIA_QUERIES } from "@/lib/breakpoints";
+
+/** Desktop interactions (hover overlay, etc.) — ≥1200px */
+const DESKTOP_QUERY = MEDIA_QUERIES.desktop;
 
 export function useIsDesktop(): boolean | null {
   const [isDesktop, setIsDesktop] = useState<boolean | null>(null);

@@ -12,7 +12,11 @@ import {
   AUTH_SCREEN,
   type AuthScreenCopy,
 } from "@/lib/authScreenTokens";
-import { completeGoogleSignIn } from "@/lib/authSession";
+import {
+  AuthConflictError,
+  completeGoogleSignIn,
+  needsProfileSetup,
+} from "@/lib/authSession";
 import { signInWithGoogle } from "@/lib/googleAuth";
 
 function BrandLogo() {
@@ -95,6 +99,36 @@ function resolveNextPath(raw: string | null): string {
   return raw;
 }
 
+function resolveAuthErrorMessage(error: unknown): string | null {
+  if (!(error instanceof Error)) {
+    return "Google sign-in failed. Please try again.";
+  }
+
+  const message = error.message;
+
+  if (/cancel|closed|popup|access_denied|popup_closed/i.test(message)) {
+    return null;
+  }
+
+  if (/GOOGLE_CLIENT_ID|Client ID/i.test(message)) {
+    return "Google sign-in is not configured yet. Add NEXT_PUBLIC_GOOGLE_CLIENT_ID and redeploy.";
+  }
+
+  if (error instanceof AuthConflictError) {
+    return message;
+  }
+
+  if (/missing required profile fields|usable email/i.test(message)) {
+    return "Your Google account must include a verified email address to continue.";
+  }
+
+  if (/Identity Services|load Google/i.test(message)) {
+    return "Unable to load Google sign-in. Check your connection and try again.";
+  }
+
+  return message || "Google sign-in failed. Please try again.";
+}
+
 interface AuthScreenProps {
   copy: AuthScreenCopy;
 }
@@ -115,33 +149,25 @@ export function AuthScreen({ copy }: AuthScreenProps) {
 
     try {
       const googleProfile = await signInWithGoogle();
-      const { isNewAccount } = completeGoogleSignIn(googleProfile);
+      const { user, isNewAccount } = completeGoogleSignIn(googleProfile);
+      const destination =
+        isNewAccount || needsProfileSetup(user)
+          ? "/complete-profile?setup=1"
+          : resolveNextPath(searchParams.get("next"));
 
-      // First-time sign-up (including Google) → profile setup.
-      // Existing accounts (or sign-in) → main site / ?next=.
-      if (copy.afterAuthHref && isNewAccount) {
-        router.push(resolveNextPath(copy.afterAuthHref));
-        return;
-      }
-
-      router.push(resolveNextPath(searchParams.get("next")));
+      router.push(destination);
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Google sign-in failed.";
-      // User closed the picker or cancelled — stay on the auth screen quietly.
-      if (/cancel|closed|popup|access_denied/i.test(message)) {
+      const message = resolveAuthErrorMessage(error);
+      if (!message) {
         return;
       }
-      console.error(message);
-      setAuthError(
-        /GOOGLE_CLIENT_ID|Client ID/i.test(message)
-          ? "Google sign-in is not configured yet. Add NEXT_PUBLIC_GOOGLE_CLIENT_ID and redeploy."
-          : "Google sign-in failed. Please try again."
-      );
+
+      console.error(error);
+      setAuthError(message);
     } finally {
       setIsAuthenticating(false);
     }
-  }, [copy.afterAuthHref, isAuthenticating, router, searchParams]);
+  }, [isAuthenticating, router, searchParams]);
 
   return (
     <main className="relative flex min-h-screen flex-col bg-white tablet:flex-row">
@@ -151,7 +177,7 @@ export function AuthScreen({ copy }: AuthScreenProps) {
           alt=""
           fill
           priority
-          sizes="(max-width: 833px) 100vw, 50vw"
+          sizes="(max-width: 767px) 100vw, 50vw"
           className="object-cover"
           aria-hidden
         />
@@ -213,7 +239,7 @@ export function AuthScreen({ copy }: AuthScreenProps) {
               type="button"
               onClick={handleGoogleSignIn}
               disabled={isAuthenticating}
-              className="inline-flex w-full items-center justify-center gap-3 border border-solid bg-white font-inter text-sm font-medium leading-[22px] transition-colors hover:bg-gray-100/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 focus-visible:ring-offset-2"
+              className="inline-flex w-full items-center justify-center gap-3 border border-solid bg-white font-inter text-sm font-medium leading-[22px] transition-colors hover:bg-gray-100/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-70"
               style={{
                 height: AUTH_SCREEN.socialButtonHeight,
                 borderRadius: AUTH_SCREEN.socialButtonRadius,
@@ -224,7 +250,7 @@ export function AuthScreen({ copy }: AuthScreenProps) {
               }}
             >
               <GoogleIcon />
-              Sign in with Google
+              {isAuthenticating ? "Continuing with Google…" : "Continue with Google"}
             </button>
 
             {authError ? (

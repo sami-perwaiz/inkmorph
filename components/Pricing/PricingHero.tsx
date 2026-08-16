@@ -9,7 +9,7 @@ export function PricingHero() {
       className="relative w-full overflow-hidden"
       aria-labelledby="pricing-hero-heading"
     >
-      <div className="relative mx-auto flex min-h-[420px] w-full max-w-[1440px] items-center justify-center px-4 py-16 tablet:min-h-[560px] tablet:px-[50px] tablet:py-20 desktop:min-h-[741px] desktop:py-0">
+      <div className="relative mx-auto flex min-h-[420px] w-full max-w-[1440px] items-center justify-center px-4 py-16 tablet:min-h-[560px] tablet:px-[50px] tablet:py-20 wide:min-h-[741px] wide:py-0">
         <div className="motion-pricing-hero-bg absolute inset-0 overflow-hidden">
           <Image
             src="/pricing/hero-bg-v3.png"

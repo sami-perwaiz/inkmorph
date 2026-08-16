@@ -1,5 +1,11 @@
+"use client";
+
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
+
 import { AuthScreen } from "@/components/AuthScreen/AuthScreen";
 import type { AuthScreenCopy } from "@/lib/authScreenTokens";
+import { isSignedIn } from "@/lib/authSession";
 
 /** Figma 40004799:9080 — Sign Up Screen */
 const SIGN_UP_COPY: AuthScreenCopy = {
@@ -11,9 +17,33 @@ const SIGN_UP_COPY: AuthScreenCopy = {
   footerPrompt: "Already registered?",
   footerLinkLabel: "Sign in",
   footerLinkHref: "/signin",
-  afterAuthHref: "/complete-profile?setup=1",
 };
 
+function resolveNextPath(raw: string | null): string {
+  if (!raw || !raw.startsWith("/") || raw.startsWith("//")) {
+    return "/";
+  }
+
+  return raw;
+}
+
 export function SignUpScreen() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    if (isSignedIn()) {
+      router.replace(resolveNextPath(searchParams.get("next")));
+      return;
+    }
+
+    setReady(true);
+  }, [router, searchParams]);
+
+  if (!ready) {
+    return null;
+  }
+
   return <AuthScreen copy={SIGN_UP_COPY} />;
 }

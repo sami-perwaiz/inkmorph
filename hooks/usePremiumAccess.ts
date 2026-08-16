@@ -8,11 +8,16 @@ import {
   PREMIUM_CHANGE_EVENT,
 } from "@/lib/premiumAccess";
 
-export function usePremiumAccess(): boolean {
-  const [isPremium, setIsPremium] = useState(false);
+export function usePremiumAccess(): {
+  hasPremiumAccess: boolean;
+  isReady: boolean;
+} {
+  const [hasPremium, setHasPremium] = useState(false);
+  const [isReady, setIsReady] = useState(false);
 
   const sync = useCallback(() => {
-    setIsPremium(hasPremiumAccess());
+    setHasPremium(hasPremiumAccess());
+    setIsReady(true);
   }, []);
 
   useEffect(() => {
@@ -25,5 +30,5 @@ export function usePremiumAccess(): boolean {
     };
   }, [sync]);
 
-  return isPremium;
+  return { hasPremiumAccess: hasPremium, isReady };
 }

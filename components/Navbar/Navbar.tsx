@@ -3,14 +3,23 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { memo, useCallback, useEffect, useId, useState } from "react";
+import { memo, useCallback, useEffect, useId, useLayoutEffect, useState } from "react";
 
 import { ContentContainer } from "@/components/ContentContainer/ContentContainer";
-import { FilterTabs } from "@/components/FilterTabs/FilterTabs";
 import { GoPremiumButton } from "@/components/GoPremiumButton/GoPremiumButton";
+import { AllNavLink } from "@/components/Navbar/AllNavLink";
+import { CategoriesNavMenu } from "@/components/Navbar/CategoriesNavMenu";
+import {
+  MobileNavAccordionPanel,
+  MobileNavAccordionSection,
+  MOBILE_ACCORDION_TRIGGER_CLASS,
+  type MobileAccordionId,
+} from "@/components/Navbar/MobileNavAccordion";
 import { InkMorphLogo } from "@/components/InkMorphLogo/InkMorphLogo";
 import { MenuToggleIcon } from "@/components/MenuToggleIcon/MenuToggleIcon";
+import { NavDropdownProvider } from "@/components/Navbar/NavDropdownContext";
 import { PacksNavMenu } from "@/components/Navbar/PacksNavMenu";
+import { NavMenuTriggerLabel } from "@/components/Navbar/NavMenuTriggerLabel";
 import { ProfileMenu } from "@/components/ProfileMenu/ProfileMenu";
 import {
   AUTH_CHANGE_EVENT,
@@ -19,7 +28,13 @@ import {
   signOut,
 } from "@/lib/authSession";
 import { NAV } from "@/lib/constants";
-import { getNavTabClassName, getNavTabStyle } from "@/lib/navTokens";
+import { MEDIA_QUERIES } from "@/lib/breakpoints";
+import {
+  getMenuSubItemClassName,
+  getNavTabClassName,
+  getNavTabStyle,
+} from "@/lib/navTokens";
+import { PROFILE_CHANGE_EVENT, readUserProfile } from "@/lib/userProfile";
 import type { FilterValue } from "@/types/illustration";
 
 interface NavbarProps {
@@ -42,19 +57,30 @@ function PricingNavLink({
 }) {
   const isStacked = layout === "stacked";
 
-  return (
+  const link = (
     <Link
       href="/pricing"
       aria-current={active ? "page" : undefined}
       onClick={onNavigate}
       className={[
         getNavTabClassName({ active, layout: isStacked ? "stacked" : "inline" }),
+        isStacked ? MOBILE_ACCORDION_TRIGGER_CLASS : "",
       ].join(" ")}
       style={getNavTabStyle()}
     >
       Pricing
     </Link>
   );
+
+  if (isStacked) {
+    return (
+      <MobileNavAccordionSection expanded={false} emphasized={active}>
+        {link}
+      </MobileNavAccordionSection>
+    );
+  }
+
+  return link;
 }
 
 /**
@@ -66,8 +92,106 @@ const NAVBAR = {
   menuIconSize: 24,
 } as const;
 
-const ACCOUNT_EMAIL = "";
+function AccountMenuSection({
+  onNavigate,
+  openAccordion,
+  onAccordionChange,
+}: {
+  onNavigate: () => void;
+  openAccordion: MobileAccordionId | null;
+  onAccordionChange: (id: MobileAccordionId | null) => void;
+}) {
+  const [signedIn, setSignedInState] = useState(false);
+  const [displayName, setDisplayName] = useState("");
+  const panelId = useId();
+  const expanded = openAccordion === "account";
 
+  useEffect(() => {
+    const syncAuth = () => {
+      const next = isSignedIn();
+      setSignedInState(next);
+
+      if (!next) {
+        return;
+      }
+
+      const profile = readUserProfile();
+      const authUser = getAuthUser();
+      setDisplayName(
+        profile.fullName || authUser?.name || authUser?.email || "Account"
+      );
+    };
+
+    syncAuth();
+    window.addEventListener(AUTH_CHANGE_EVENT, syncAuth);
+    window.addEventListener(PROFILE_CHANGE_EVENT, syncAuth);
+    window.addEventListener("storage", syncAuth);
+
+    return () => {
+      window.removeEventListener(AUTH_CHANGE_EVENT, syncAuth);
+      window.removeEventListener(PROFILE_CHANGE_EVENT, syncAuth);
+      window.removeEventListener("storage", syncAuth);
+    };
+  }, []);
+
+  if (!signedIn) {
+    return null;
+  }
+
+  return (
+    <MobileNavAccordionSection expanded={expanded} emphasized={expanded}>
+      <button
+        type="button"
+        aria-expanded={expanded}
+        aria-controls={panelId}
+        onClick={() => onAccordionChange(expanded ? null : "account")}
+        className={[
+          getNavTabClassName({
+            active: false,
+            open: expanded,
+            layout: "stacked",
+          }),
+          MOBILE_ACCORDION_TRIGGER_CLASS,
+        ].join(" ")}
+        style={getNavTabStyle()}
+      >
+        <NavMenuTriggerLabel label={displayName} expanded={expanded} />
+      </button>
+
+      <MobileNavAccordionPanel expanded={expanded}>
+        <div id={panelId} role="menu" aria-label="Account">
+          <Link
+            href="/complete-profile"
+            role="menuitem"
+            onClick={onNavigate}
+            className={getMenuSubItemClassName({ active: false })}
+          >
+            Edit profile
+          </Link>
+          <Link
+            href="/privacy"
+            role="menuitem"
+            onClick={onNavigate}
+            className={getMenuSubItemClassName({ active: false })}
+          >
+            Privacy Policy
+          </Link>
+          <Link
+            href="/signin"
+            role="menuitem"
+            onClick={() => {
+              signOut();
+              onNavigate();
+            }}
+            className={getMenuSubItemClassName({ active: false, destructive: true })}
+          >
+            Logout
+          </Link>
+        </div>
+      </MobileNavAccordionPanel>
+    </MobileNavAccordionSection>
+  );
+}
 function SearchField({
   className = "",
   size = "desktop",
@@ -87,7 +211,7 @@ function SearchField({
     <label
       className={[
         "flex items-center rounded-[6px] border border-solid border-[#EAEAEA] bg-white",
-        isCompact ? "gap-2 px-2.5 py-2" : "w-full gap-2 px-3 py-2.5",
+        isCompact ? "min-w-0 gap-2 px-2.5 py-2" : "w-full gap-2 px-3 py-2.5",
         className,
       ].join(" ")}
     >
@@ -152,99 +276,6 @@ function SearchField({
   );
 }
 
-/**
- * Account row + expandable menu — collapsed: 40004794:11571
- * Expanded card: 40004794:11951 / 40004794:11984
- */
-function AccountMenuSection({ onNavigate }: { onNavigate: () => void }) {
-  const [signedIn, setSignedInState] = useState(false);
-  const [accountEmail, setAccountEmail] = useState(ACCOUNT_EMAIL);
-  const [expanded, setExpanded] = useState(false);
-  const panelId = useId();
-
-  useEffect(() => {
-    const syncAuth = () => {
-      const next = isSignedIn();
-      setSignedInState(next);
-      setAccountEmail(getAuthUser()?.email ?? "");
-      if (!next) {
-        setExpanded(false);
-      }
-    };
-
-    syncAuth();
-    window.addEventListener(AUTH_CHANGE_EVENT, syncAuth);
-    window.addEventListener("storage", syncAuth);
-
-    return () => {
-      window.removeEventListener(AUTH_CHANGE_EVENT, syncAuth);
-      window.removeEventListener("storage", syncAuth);
-    };
-  }, []);
-
-  if (!signedIn) {
-    return null;
-  }
-
-  return (
-    <div className="flex w-full flex-col items-stretch gap-2">
-      <button
-        type="button"
-        aria-expanded={expanded}
-        aria-controls={panelId}
-        onClick={() => setExpanded((value) => !value)}
-        className={[
-          "flex w-full items-center justify-between bg-white px-4 py-3 font-poppins text-base font-normal leading-[18px] text-black",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-900/30 focus-visible:ring-offset-2",
-          expanded ? "opacity-100" : "opacity-50 hover:opacity-80",
-        ].join(" ")}
-      >
-        <span className="truncate">{accountEmail}</span>
-        <Image
-          src="/icons/chevron-down.svg"
-          alt=""
-          width={16}
-          height={16}
-          className={[
-            "size-4 shrink-0 transition-transform duration-200",
-            expanded ? "rotate-180" : "",
-          ].join(" ")}
-          aria-hidden
-        />
-      </button>
-
-      {expanded ? (
-        <div
-          id={panelId}
-          role="menu"
-          aria-label="Account"
-          className="flex w-full flex-col gap-3 rounded-lg border border-solid border-[#F5F5F5] bg-white p-2"
-        >
-          <Link
-            href="/privacy"
-            role="menuitem"
-            onClick={onNavigate}
-            className="flex w-full items-center rounded-md px-1.5 py-1 font-poppins text-sm font-normal leading-5 text-black outline-none hover:bg-[#F5F5F5] focus-visible:bg-[#F5F5F5] focus-visible:ring-2 focus-visible:ring-gray-900/30"
-          >
-            Privacy Policy
-          </Link>
-          <Link
-            href="/signin"
-            role="menuitem"
-            onClick={() => {
-              signOut();
-              onNavigate();
-            }}
-            className="flex w-full items-center rounded-md px-1.5 py-1 font-poppins text-sm font-normal leading-5 text-[#F04438] outline-none hover:bg-[#F5F5F5] focus-visible:bg-[#F5F5F5] focus-visible:ring-2 focus-visible:ring-gray-900/30"
-          >
-            Logout
-          </Link>
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
 export const Navbar = memo(function Navbar({
   activeFilter,
   onFilterChange,
@@ -255,26 +286,43 @@ export const Navbar = memo(function Navbar({
 }: NavbarProps) {
   const pathname = usePathname();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [openAccordion, setOpenAccordion] = useState<MobileAccordionId | null>(
+    null
+  );
   const isPricingPage = pricingActive || pathname === "/pricing";
   const isPacksPage =
-    packsActive || pathname === "/packs" || pathname === "/wallpapers";
-  const showSearch = !isPricingPage;
+    packsActive ||
+    pathname.startsWith("/packs") ||
+    pathname.startsWith("/wallpapers");
+  const showSearch = !isPricingPage && !isPacksPage;
   const showGalleryFilters = !isPricingPage && !isPacksPage;
 
   const closeMenu = useCallback(() => setIsMenuOpen(false), []);
 
-  const handleFilterChange = useCallback(
-    (filter: FilterValue) => {
-      onFilterChange(filter);
-      setIsMenuOpen(false);
-    },
-    [onFilterChange]
-  );
+  const handleAccordionChange = useCallback((id: MobileAccordionId | null) => {
+    setOpenAccordion(id);
+  }, []);
 
   const galleryFilter = activeFilter ?? "all";
+  const isAllActive = showGalleryFilters && galleryFilter === "all";
+
+  useLayoutEffect(() => {
+    const mediaQuery = window.matchMedia(MEDIA_QUERIES.desktop);
+    const resetOnDesktop = () => {
+      if (mediaQuery.matches) {
+        setIsMenuOpen(false);
+        setOpenAccordion(null);
+      }
+    };
+
+    resetOnDesktop();
+    mediaQuery.addEventListener("change", resetOnDesktop);
+    return () => mediaQuery.removeEventListener("change", resetOnDesktop);
+  }, []);
 
   useEffect(() => {
     if (!isMenuOpen) {
+      setOpenAccordion(null);
       return;
     }
 
@@ -287,56 +335,61 @@ export const Navbar = memo(function Navbar({
   }, [isMenuOpen]);
 
   return (
-    <header className="fixed inset-x-0 top-0 z-50 w-full border-b border-solid border-[#F5F5F5] bg-white">
-      {/* Desktop/tablet chrome — Figma 40004968:9151 */}
-      <ContentContainer className="relative hidden tablet:block">
-        <div
-          className="flex items-center justify-between"
-          style={{
-            minHeight: NAV.desktopTabletHeight,
-            paddingLeft: NAV.desktopTabletPaddingX,
-            paddingRight: NAV.desktopTabletPaddingX,
-            paddingTop: 24,
-            paddingBottom: 20,
-          }}
-        >
+    <header
+      className="motion-navbar-header fixed inset-x-0 top-0 z-50 w-full bg-white"
+      data-mobile-menu-open={isMenuOpen ? "true" : "false"}
+    >
+      {/* Desktop chrome — Figma 40004968:9151 (1200px+) */}
+      <ContentContainer className="relative hidden desktop:block">
+        <NavDropdownProvider>
           <div
-            className="flex min-w-0 items-center"
-            style={{ gap: NAV.logoToFiltersGap }}
+            className="flex items-center justify-between gap-4"
+            style={{
+              minHeight: NAV.desktopTabletHeight,
+              paddingLeft: NAV.desktopTabletPaddingX,
+              paddingRight: NAV.desktopTabletPaddingX,
+              paddingTop: 24,
+              paddingBottom: 20,
+            }}
           >
-            <InkMorphLogo
-              size={NAV.logoDesktopTablet}
-              radius={NAVBAR.logoRadius}
-            />
-            <div className="flex items-center" style={{ gap: NAV.filterGap }}>
-              <FilterTabs
-                activeFilter={showGalleryFilters ? galleryFilter : null}
-                onFilterChange={onFilterChange}
-                idPrefix="desktop-filter"
+            <div
+              className="flex min-w-0 flex-1 items-center"
+              style={{ gap: NAV.logoToFiltersGap }}
+            >
+              <InkMorphLogo
+                size={NAV.logoDesktopTablet}
+                radius={NAVBAR.logoRadius}
               />
-              <PacksNavMenu />
-              <PricingNavLink active={isPricingPage} />
+              <div className="flex min-w-0 items-center gap-4 desktop:gap-5">
+                <AllNavLink active={isAllActive} />
+                <CategoriesNavMenu
+                  activeFilter={showGalleryFilters ? galleryFilter : null}
+                  showGalleryFilters={showGalleryFilters}
+                />
+                <PacksNavMenu />
+                <PricingNavLink active={isPricingPage} />
+              </div>
+            </div>
+
+            <div className="flex shrink-0 items-center gap-3 desktop:gap-4">
+              {showSearch ? (
+                <SearchField
+                  className="w-[clamp(10rem,18vw,13.5625rem)]"
+                  size="desktop"
+                  value={searchQuery}
+                  onChange={onSearchChange}
+                />
+              ) : null}
+              <GoPremiumButton />
+              <ProfileMenu />
             </div>
           </div>
-
-          <div className="flex shrink-0 items-center gap-4">
-            {showSearch ? (
-              <SearchField
-                className="w-[217px]"
-                size="desktop"
-                value={searchQuery}
-                onChange={onSearchChange}
-              />
-            ) : null}
-            <GoPremiumButton />
-            <ProfileMenu />
-          </div>
-        </div>
+        </NavDropdownProvider>
       </ContentContainer>
 
       {/* Mobile — closed: 40004794:11552 / open: 40004794:11951 */}
       <div
-        className="motion-mobile-nav relative bg-white tablet:hidden"
+        className="motion-mobile-nav relative bg-white desktop:hidden"
         data-open={isMenuOpen ? "true" : "false"}
       >
         <button
@@ -349,14 +402,14 @@ export const Navbar = memo(function Navbar({
 
         <div className="motion-mobile-panel relative">
           <div className="motion-mobile-header">
-            <div className="motion-mobile-header-row flex h-full w-full items-center justify-between px-4 tablet:px-[30px]">
+            <div className="motion-mobile-header-row flex h-full w-full min-w-0 items-center gap-2 px-4 tablet:gap-3 tablet:px-[30px]">
               <InkMorphLogo size={42} radius={NAVBAR.logoRadius} />
 
-              <div className="flex min-w-0 items-center gap-4">
+              <div className="flex min-w-0 flex-1 items-center justify-end gap-2 tablet:gap-3">
                 {!isMenuOpen && showSearch ? (
                   <SearchField
                     size="compact"
-                    className="w-[158px] shrink-0 tablet:w-[217px]"
+                    className="min-w-0 w-full max-w-[min(13.5625rem,calc(100vw-5.75rem))] tablet:max-w-[13.5625rem]"
                     value={searchQuery}
                     onChange={onSearchChange}
                   />
@@ -389,23 +442,37 @@ export const Navbar = memo(function Navbar({
           >
             <div className="motion-mobile-menu-body-inner">
               <div className="motion-mobile-menu-items flex w-full flex-col items-stretch gap-6">
-                <div className="flex w-full flex-col items-stretch px-3">
-                  <div className="flex w-full flex-col items-stretch gap-5">
-                    <FilterTabs
-                      activeFilter={showGalleryFilters ? galleryFilter : null}
-                      onFilterChange={handleFilterChange}
-                      variant="stacked"
-                      idPrefix="compact-filter"
+                <div className="flex w-full flex-col items-stretch gap-5">
+                    <AllNavLink
+                      active={isAllActive}
+                      layout="stacked"
+                      onNavigate={closeMenu}
                     />
-                    <PacksNavMenu layout="stacked" onNavigate={closeMenu} />
+                    <CategoriesNavMenu
+                      layout="stacked"
+                      activeFilter={showGalleryFilters ? galleryFilter : null}
+                      showGalleryFilters={showGalleryFilters}
+                      onNavigate={closeMenu}
+                      openAccordion={openAccordion}
+                      onAccordionChange={handleAccordionChange}
+                    />
+                    <PacksNavMenu
+                      layout="stacked"
+                      onNavigate={closeMenu}
+                      openAccordion={openAccordion}
+                      onAccordionChange={handleAccordionChange}
+                    />
                     <PricingNavLink
                       active={isPricingPage}
                       layout="stacked"
                       onNavigate={closeMenu}
                     />
-                    <AccountMenuSection onNavigate={closeMenu} />
+                    <AccountMenuSection
+                      onNavigate={closeMenu}
+                      openAccordion={openAccordion}
+                      onAccordionChange={handleAccordionChange}
+                    />
                   </div>
-                </div>
 
                 <GoPremiumButton className="w-full" />
               </div>

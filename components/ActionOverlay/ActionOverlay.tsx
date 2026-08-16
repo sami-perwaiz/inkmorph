@@ -10,6 +10,7 @@ import {
   type ReactNode,
 } from "react";
 
+import { AnimatedDropdownPanel } from "@/components/AnimatedDropdownPanel/AnimatedDropdownPanel";
 import {
   CheckIcon,
   ChevronDownIcon,
@@ -20,6 +21,10 @@ import {
   SpinnerIcon,
 } from "@/components/icons/ActionIcons";
 import { ACTION, type DownloadSize } from "@/lib/constants";
+import {
+  getMenuDropdownItemClassName,
+  getMenuDropdownPanelClassName,
+} from "@/lib/navTokens";
 import {
   getCopyButtonState,
   getDownloadButtonState,
@@ -259,24 +264,25 @@ function ActionOverlayComponent({
             )}
           </button>
 
-          {menuOpen && !locked && !downloadCompact && (
-            <div
-              id={menuId}
-              role="menu"
-              aria-label="Download size"
-              className="absolute bottom-[calc(100%+8px)] right-0 z-20 flex w-20 flex-col gap-[3px] rounded-lg border border-solid border-[#F5F5F5] bg-white p-1"
-              onClick={(event) => event.stopPropagation()}
-            >
-              {/* Figma 40004699:9300 — 1x selected + download; 2x gold + crown */}
+          <AnimatedDropdownPanel
+            open={menuOpen && !locked && !downloadCompact}
+            id={menuId}
+            label="Download size"
+            position="above"
+            className={getMenuDropdownPanelClassName({
+              align: "right",
+              size: "compact",
+              position: "above",
+            })}
+            onClick={(event) => event.stopPropagation()}
+          >
               <button
                 type="button"
                 role="menuitem"
-                className={[
-                  "flex w-full items-center justify-between rounded-md px-1.5 py-1 font-poppins text-sm font-normal leading-5",
-                  selectedSize === "1x"
-                    ? "bg-[#F5F5F5] text-[#0a0a0a]"
-                    : "bg-transparent text-[#0a0a0a] hover:bg-[#F5F5F5]",
-                ].join(" ")}
+                className={getMenuDropdownItemClassName({
+                  active: selectedSize === "1x",
+                  size: "compact",
+                })}
                 onClick={() => handleSelectSize("1x")}
               >
                 <span className="min-w-0 flex-1 truncate text-left">1x</span>
@@ -289,14 +295,17 @@ function ActionOverlayComponent({
               <button
                 type="button"
                 role="menuitem"
-                className="flex w-full items-center justify-between rounded-md px-1.5 py-1 font-poppins text-sm font-normal leading-5 text-[#F5C400] hover:bg-[#F5F5F5]"
+                className={getMenuDropdownItemClassName({
+                  active: selectedSize === "2x",
+                  premium: true,
+                  size: "compact",
+                })}
                 onClick={() => handleSelectSize("2x")}
               >
                 <span className="min-w-0 flex-1 truncate text-left">2x</span>
                 <CrownGoldIcon />
               </button>
-            </div>
-          )}
+          </AnimatedDropdownPanel>
         </div>
       </div>
 

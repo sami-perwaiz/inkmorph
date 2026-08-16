@@ -5,6 +5,7 @@ import {
   buildRegistryLookup,
   type AssetRegistry,
 } from "@/lib/inkmorphAssetIds";
+import { enrichIllustrationTags } from "@/lib/enrichIllustrationTags";
 import type { AssetSearchMetadata } from "@/lib/searchIllustrations";
 import type { Illustration, IllustrationCategory } from "@/types/illustration";
 
@@ -80,6 +81,7 @@ export function getIllustrations(): Illustration[] {
       }
 
       const meta = searchMeta[filename];
+      const enrichedTags = enrichIllustrationTags(filename, meta?.tags);
 
       illustrations.push({
         id: entry.id,
@@ -88,7 +90,7 @@ export function getIllustrations(): Illustration[] {
         filename,
         alt: toAltText(entry.id, meta?.name),
         ...(meta?.name ? { name: meta.name } : {}),
-        ...(meta?.tags?.length ? { tags: meta.tags } : {}),
+        ...(enrichedTags.length ? { tags: enrichedTags } : {}),
       });
     }
   }

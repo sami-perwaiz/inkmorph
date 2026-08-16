@@ -1,15 +1,20 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { useDownloadLimit } from "@/components/DownloadLimitProvider/DownloadLimitProvider";
+import { usePremiumAccessGate } from "@/components/PremiumAccessProvider/PremiumAccessProvider";
+import { usePremiumAccess } from "@/hooks/usePremiumAccess";
 import {
   copyImageToClipboard,
   downloadImage,
 } from "@/lib/illustrationActions";
 import { trackImageCopy, trackImageDownload } from "@/lib/analytics";
 import { ACTION, type DownloadSize } from "@/lib/constants";
+import {
+  isPremiumAssetLocked,
+  requiresPremiumForDownloadSize,
+} from "@/lib/premiumFeatureAccess";
 import type { CardActionState } from "@/types/action";
 import type { Illustration } from "@/types/illustration";
 
@@ -17,8 +22,9 @@ const SUCCESS_RESET_MS = ACTION.successResetMs;
 const ERROR_RESET_MS = 1800;
 
 export function useCardAction(illustration: Illustration) {
-  const { id, src, category, premium } = illustration;
-  const router = useRouter();
+  const { id, src, category } = illustration;
+  const { hasPremiumAccess } = usePremiumAccess();
+  const { requestPremiumAccess } = usePremiumAccessGate();
   const { requestDownloadSlot, commitDownloadSlot } = useDownloadLimit();
   const [actionState, setActionState] = useState<CardActionState>("idle");
   const [failedAction, setFailedAction] = useState<"copy" | "download" | null>(
@@ -28,7 +34,7 @@ export function useCardAction(illustration: Illustration) {
   const [statusMessage, setStatusMessage] = useState("");
   const resetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const actionStateRef = useRef(actionState);
-  const isLocked = Boolean(premium);
+  const isLocked = isPremiumAssetLocked(illustration, hasPremiumAccess);
 
   useEffect(() => {
     actionStateRef.current = actionState;
@@ -56,8 +62,8 @@ export function useCardAction(illustration: Illustration) {
   useEffect(() => clearResetTimer, [clearResetTimer]);
 
   const handleLockedAction = useCallback(() => {
-    router.push("/pricing#pricing-plans");
-  }, [router]);
+    requestPremiumAccess();
+  }, [requestPremiumAccess]);
 
   const handleCopy = useCallback(async () => {
     if (isLocked) {
@@ -89,6 +95,11 @@ export function useCardAction(illustration: Illustration) {
 
   const handleDownload = useCallback(
     async (size: DownloadSize = "1x") => {
+      if (requiresPremiumForDownloadSize(size, hasPremiumAccess)) {
+        requestPremiumAccess();
+        return;
+      }
+
       if (isLocked) {
         handleLockedAction();
         return;
@@ -128,9 +139,11 @@ export function useCardAction(illustration: Illustration) {
       category,
       commitDownloadSlot,
       handleLockedAction,
+      hasPremiumAccess,
       id,
       isLocked,
       requestDownloadSlot,
+      requestPremiumAccess,
       scheduleReset,
       src,
     ]

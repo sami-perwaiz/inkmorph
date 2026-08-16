@@ -94,13 +94,11 @@ export function PricingView() {
         pricingActive
       />
 
-      <main className="flex w-full flex-col pt-[70px] laptop:pt-[90px]">
+      <main className="flex w-full flex-col pt-[70px] desktop:pt-[90px]">
         <PricingHero />
         <div className="mt-[120px] flex flex-col">
           <PricingPlans />
-          <div className="mt-[120px]">
-            <PremiumBanner />
-          </div>
+          <PremiumBanner />
         </div>
       </main>
 

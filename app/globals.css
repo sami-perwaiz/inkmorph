@@ -28,6 +28,83 @@
     transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
   }
 
+  /* Navbar bottom divider — full width; desktop dropdowns bridge locally when open */
+  .motion-navbar-header {
+    border-bottom: 1px solid #f5f5f5;
+    transition: border-color 220ms ease-out;
+  }
+
+  /* Mobile/tablet: divider lives under the logo row while the menu is open */
+  .motion-navbar-header[data-mobile-menu-open="true"] {
+    border-bottom-color: transparent;
+  }
+
+  /* Floating dropdown panels — slide + fade only */
+  .motion-dropdown-panel {
+    opacity: 0;
+    pointer-events: none;
+    transition:
+      opacity 220ms cubic-bezier(0.22, 1, 0.36, 1),
+      transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
+      border-color 220ms ease-out;
+  }
+
+  .motion-dropdown-panel[data-position="below"] {
+    transform: translateY(-6px);
+  }
+
+  .motion-dropdown-panel[data-position="above"] {
+    transform: translateY(6px);
+  }
+
+  .motion-dropdown-panel[data-open="true"] {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+
+  /* Mobile accordion sub-panels — matching fade + slide */
+  .motion-accordion-dropdown-inner {
+    opacity: 0;
+    transform: translateY(-6px);
+    transition:
+      opacity 220ms cubic-bezier(0.22, 1, 0.36, 1),
+      transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .motion-accordion-dropdown-inner[data-open="true"] {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* Mobile/tablet menu sections — single divider between major sections */
+  .motion-mobile-accordion-section {
+    border-bottom: 1px solid #f5f5f5;
+    transition: border-color 220ms ease-out;
+  }
+
+  .motion-mobile-accordion-section[data-expanded="true"]
+    .motion-mobile-accordion-trigger {
+    border-bottom-color: transparent;
+  }
+
+  .motion-mobile-accordion-section[data-expanded="false"][data-emphasized="true"] {
+    border-bottom-color: transparent;
+  }
+
+  /* Individual premium gallery assets — casual copy/drag/select only, no visual change */
+  .premium-gallery-asset-protected {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+
+  .premium-gallery-asset-protected img {
+    -webkit-user-drag: none;
+    user-drag: none;
+    pointer-events: none;
+  }
+
   /* Filter tabs — color only */
   .motion-filter-tab {
     transition-property: color, background-color, border-color;
@@ -157,6 +234,12 @@
     padding-bottom: 14px;
     box-sizing: border-box;
     flex-shrink: 0;
+    border-bottom: 1px solid transparent;
+    transition: border-color 220ms ease-out;
+  }
+
+  .motion-mobile-nav[data-open="true"] .motion-mobile-header {
+    border-bottom-color: #f5f5f5;
   }
 
   .motion-mobile-backdrop {
@@ -482,6 +565,10 @@
     .motion-menu-toggle-hamburger,
     .motion-menu-toggle-close,
     .motion-menu-toggle-line,
+    .motion-navbar-header,
+    .motion-dropdown-panel,
+    .motion-accordion-dropdown-inner,
+    .motion-mobile-accordion-section,
     .motion-preview-modal-root,
     .motion-preview-modal-backdrop,
     .motion-preview-modal-card,

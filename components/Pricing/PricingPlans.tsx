@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useCallback, useState } from "react";
 
 import { SignInToPurchaseModal } from "@/components/Pricing/SignInToPurchaseModal";
-import { isSignedIn } from "@/lib/authSession";
+import { getAuthEntryHref, isSignedIn } from "@/lib/authSession";
 import { grantPremiumAccess } from "@/lib/premiumAccess";
 import { PRICING_PLANS, type PricingPlan } from "@/lib/pricingPlans";
 
@@ -79,7 +79,7 @@ function PlanCta({
 
   return (
     <Link
-      href="/signup"
+      href={getAuthEntryHref()}
       className={[
         "flex w-full items-center justify-center rounded-[6px] bg-[#F5F5F5] px-[18px] py-2.5",
         "font-poppins text-sm font-medium leading-5 text-black transition-opacity hover:opacity-80",
@@ -165,7 +165,7 @@ export function PricingPlans() {
     <>
       <section
         id="pricing-plans"
-        className="relative mx-auto flex w-full max-w-[1260px] flex-col items-center gap-[50px] laptop:px-[50px]"
+        className="relative mx-auto flex w-full max-w-[1260px] flex-col items-center gap-[50px] desktop:px-[50px]"
         aria-labelledby="pricing-plans-heading"
       >
         <div className="motion-pricing-plans-copy flex w-full max-w-[660px] flex-col items-center gap-[18px] px-4 text-center tablet:px-0">
@@ -182,7 +182,7 @@ export function PricingPlans() {
           </p>
         </div>
 
-        <div className="flex w-full max-w-[1160px] flex-col items-stretch gap-6 px-4 tablet:px-[50px] laptop:flex-row laptop:items-stretch laptop:gap-6 laptop:px-0">
+        <div className="flex w-full max-w-[1160px] flex-col items-stretch gap-6 px-4 tablet:px-[50px] desktop:flex-row desktop:items-stretch desktop:gap-6 desktop:px-0">
           {PRICING_PLANS.map((plan) => (
             <PricingCard
               key={plan.id}

@@ -37,12 +37,17 @@ const config: Config = {
         inter: ["var(--font-inter)", "sans-serif"],
         lora: ["var(--font-lora)", "serif"],
       },
+      spacing: {
+        /** Site-wide gap from preceding content to a CTA section (all breakpoints). */
+        "cta-section": "100px",
+      },
       screens: {
-        tablet: "834px",
-        /** Desktop chrome (filters / profile) — fits ~1280+ laptops */
-        laptop: "1280px",
-        /** 5-column gallery — Figma Abstract Desktop 1440 */
-        desktop: "1440px",
+        /** Tablet — 768px and up */
+        tablet: "768px",
+        /** Desktop — 1200px and up */
+        desktop: "1200px",
+        /** Wide desktop — 1440px and up (5-col gallery, 8-col pack grid) */
+        wide: "1440px",
       },
     },
   },
