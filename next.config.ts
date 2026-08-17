@@ -40,6 +40,12 @@ const PRODUCTION_SECURITY_HEADERS = [
 
 const nextConfig: NextConfig = {
   images: {
+    /**
+     * Vercel Image Optimization returns 402 once the plan quota is exceeded.
+     * Serve canonical /assets previews directly (still lazy + viewport-gated).
+     * Re-enable optimization after upgrading Vercel image quota/billing.
+     */
+    unoptimized: process.env.VERCEL === "1",
     formats: ["image/avif", "image/webp"],
     /** Viewport-relative previews — trimmed for faster mobile delivery. */
     deviceSizes: [360, 414, 640, 750, 828, 1080, 1200],
