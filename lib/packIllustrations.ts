@@ -17,7 +17,7 @@ export function getPackIllustrations(pack: IconPack): Illustration[] {
   }
 
   const byFilename = new Map(
-    getIllustrations().map((item) => [item.filename, item])
+    getIllustrations().map((item) => [item.storageFilename ?? item.filename, item])
   );
 
   return pack.illustrationFilenames

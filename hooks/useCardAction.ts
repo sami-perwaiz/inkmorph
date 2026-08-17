@@ -9,6 +9,7 @@ import {
   copyImageToClipboard,
   downloadImage,
 } from "@/lib/illustrationActions";
+import { getCanonicalFilename } from "@/lib/canonicalAsset";
 import { preloadOriginalAsset } from "@/lib/originalAssetCache";
 import { trackImageCopy, trackImageDownload } from "@/lib/analytics";
 import { ACTION, type DownloadSize } from "@/lib/constants";
@@ -26,7 +27,11 @@ export function useCardAction(illustration: Illustration) {
   const { id, src, category } = illustration;
   const { hasPremiumAccess } = usePremiumAccess();
   const { requestPremiumAccess } = usePremiumAccessGate();
-  const { requestActionSlots } = useDownloadLimit();
+  const {
+    refreshStatus,
+    requestActionSlots,
+    showExhaustedLimitModal,
+  } = useDownloadLimit();
   const [actionState, setActionState] = useState<CardActionState>("idle");
   const [failedAction, setFailedAction] = useState<"copy" | "download" | null>(
     null
@@ -72,6 +77,31 @@ export function useCardAction(illustration: Illustration) {
     requestPremiumAccess();
   }, [requestPremiumAccess]);
 
+  const ensureCreditsAvailable = useCallback(async (): Promise<boolean> => {
+    if (hasPremiumAccess) {
+      return true;
+    }
+
+    const latest = await refreshStatus();
+    const currentRemaining = latest?.remaining ?? 0;
+
+    if (currentRemaining <= 0) {
+      showExhaustedLimitModal();
+      return false;
+    }
+
+    return true;
+  }, [hasPremiumAccess, refreshStatus, showExhaustedLimitModal]);
+
+  const consumeCreditAfterSuccess = useCallback(async (): Promise<boolean> => {
+    if (hasPremiumAccess) {
+      return true;
+    }
+
+    const result = await requestActionSlots(1);
+    return result.ok;
+  }, [hasPremiumAccess, requestActionSlots]);
+
   const handleCopy = useCallback(async () => {
     if (isLocked) {
       handleLockedAction();
@@ -86,18 +116,21 @@ export function useCardAction(illustration: Illustration) {
     setActionState("copying");
     setStatusMessage("Copying image");
 
-    if (!hasPremiumAccess) {
-      const { ok } = await requestActionSlots(1);
-      if (!ok) {
+    try {
+      if (!(await ensureCreditsAvailable())) {
         resetActionState();
         return;
       }
-    }
 
-    preloadOriginalAsset(src);
+      preloadOriginalAsset(src);
 
-    try {
       await copyImageToClipboard(src, id);
+
+      if (!(await consumeCreditAfterSuccess())) {
+        resetActionState();
+        return;
+      }
+
       trackImageCopy(id, category);
       setActionState("copied");
       setStatusMessage("Image copied to clipboard");
@@ -110,11 +143,11 @@ export function useCardAction(illustration: Illustration) {
     }
   }, [
     category,
+    consumeCreditAfterSuccess,
+    ensureCreditsAvailable,
     handleLockedAction,
-    hasPremiumAccess,
     id,
     isLocked,
-    requestActionSlots,
     resetActionState,
     scheduleReset,
     src,
@@ -142,18 +175,21 @@ export function useCardAction(illustration: Illustration) {
         size === "2x" ? "Downloading high-quality PNG" : "Downloading PNG"
       );
 
-      if (!hasPremiumAccess) {
-        const { ok } = await requestActionSlots(1);
-        if (!ok) {
+      try {
+        if (!(await ensureCreditsAvailable())) {
           resetActionState();
           return;
         }
-      }
 
-      preloadOriginalAsset(src);
+        preloadOriginalAsset(src);
 
-      try {
-        await downloadImage(src, `${id}.png`, size);
+        await downloadImage(src, getCanonicalFilename(illustration), size);
+
+        if (!(await consumeCreditAfterSuccess())) {
+          resetActionState();
+          return;
+        }
+
         trackImageDownload(id, category);
         setActionState("downloaded");
         setStatusMessage(
@@ -169,11 +205,13 @@ export function useCardAction(illustration: Illustration) {
     },
     [
       category,
+      consumeCreditAfterSuccess,
+      ensureCreditsAvailable,
       handleLockedAction,
       hasPremiumAccess,
       id,
+      illustration,
       isLocked,
-      requestActionSlots,
       requestPremiumAccess,
       resetActionState,
       scheduleReset,

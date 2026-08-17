@@ -41,6 +41,7 @@ import {
 } from "@/lib/illustrationImageCache";
 import {
   IMAGE_PREVIEW_MODAL_SIZES,
+  PREVIEW_IMAGE_PROPS,
   IMAGE_PREVIEW_QUALITY,
 } from "@/lib/imageDelivery";
 import { MOTION } from "@/lib/motion";
@@ -215,7 +216,9 @@ function ImagePreviewModalComponent({
   const { hasPremiumAccess, isReady } = usePremiumAccess();
   const { requestPremiumAccess } = usePremiumAccessGate();
 
-  const [isImageLoaded, setIsImageLoaded] = useState(false);
+  const [isImageLoaded, setIsImageLoaded] = useState(() =>
+    hasIllustrationImageLoaded(illustration.src)
+  );
   const [menuOpen, setMenuOpen] = useState(false);
   const [selectedSize, setSelectedSize] = useState<DownloadSize>("1x");
 
@@ -235,7 +238,7 @@ function ImagePreviewModalComponent({
     actionState === "downloaded";
 
   useEffect(() => {
-    setIsImageLoaded(false);
+    setIsImageLoaded(hasIllustrationImageLoaded(illustration.src));
     setMenuOpen(false);
     setSelectedSize("1x");
   }, [illustration.src]);
@@ -587,6 +590,7 @@ function ImagePreviewModalComponent({
                 priority
                 decoding="async"
                 draggable={false}
+                {...PREVIEW_IMAGE_PROPS}
                 onLoad={handlePreviewImageLoad}
               />
             </ProtectedPremiumImage>

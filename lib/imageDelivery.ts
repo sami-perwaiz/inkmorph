@@ -43,3 +43,17 @@ export const WALLPAPER_DETAIL_IMAGE_SIZES =
 /** Gallery preview modal — larger on tablet/desktop. */
 export const IMAGE_PREVIEW_MODAL_SIZES =
   "(max-width: 767px) min(92vw, 400px), (max-width: 1199px) 440px, 480px";
+
+/**
+ * Optimized Next/Image previews — resized WebP/AVIF for fast grid and modal display.
+ * Download/copy actions use canonical originals via `lib/illustrationActions.ts`.
+ */
+export const PREVIEW_IMAGE_PROPS = {} as const;
+
+/**
+ * @deprecated Prefer {@link PREVIEW_IMAGE_PROPS} for on-screen previews.
+ * Unoptimized canonical URLs force full-size PNG loads and break preview performance.
+ */
+export const CANONICAL_ASSET_IMAGE_PROPS = {
+  unoptimized: true as const,
+};

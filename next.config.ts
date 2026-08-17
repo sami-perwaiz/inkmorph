@@ -1,6 +1,15 @@
 import type { NextConfig } from "next";
 
+import assetUrlMap from "./lib/asset-url-map.json";
+
 const ONE_YEAR_SECONDS = 60 * 60 * 24 * 365;
+
+const canonicalAssetRewrites = Object.entries(assetUrlMap.routes).map(
+  ([filename, destination]) => ({
+    source: `/assets/${filename}`,
+    destination,
+  })
+);
 
 const PRODUCTION_SECURITY_HEADERS = [
   {
@@ -37,6 +46,7 @@ const nextConfig: NextConfig = {
     /** Fixed-width previews — includes 2×/3× retina for 150–654px display sizes. */
     imageSizes: [96, 128, 168, 256, 300, 320, 384, 512, 640],
     minimumCacheTTL: ONE_YEAR_SECONDS,
+    qualities: [75, 90, 92],
     remotePatterns: [
       {
         protocol: "https",
@@ -44,15 +54,14 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  async rewrites() {
+    return canonicalAssetRewrites;
+  },
   async headers() {
     const securityHeaders =
       process.env.NODE_ENV === "production" ? PRODUCTION_SECURITY_HEADERS : [];
 
-    return [
-      {
-        source: "/:path*",
-        headers: [...securityHeaders],
-      },
+    const cacheHeaders = [
       {
         source: "/_next/static/:path*",
         headers: [
@@ -98,6 +107,27 @@ const nextConfig: NextConfig = {
           },
         ],
       },
+      {
+        source: "/assets/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: `public, max-age=${ONE_YEAR_SECONDS}, immutable`,
+          },
+        ],
+      },
+    ];
+
+    if (securityHeaders.length === 0) {
+      return cacheHeaders;
+    }
+
+    return [
+      {
+        source: "/:path*",
+        headers: [...securityHeaders],
+      },
+      ...cacheHeaders,
     ];
   },
   poweredByHeader: false,

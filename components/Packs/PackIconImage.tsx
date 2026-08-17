@@ -13,6 +13,7 @@ import {
 import { useSharedInViewport } from "@/hooks/useSharedInViewport";
 import { PACK_ICON } from "@/lib/constants";
 import {
+  PREVIEW_IMAGE_PROPS,
   IMAGE_PREVIEW_QUALITY,
   PACK_ICON_IMAGE_SIZES,
 } from "@/lib/imageDelivery";
@@ -124,6 +125,7 @@ function PackIconImageComponent({
             : {})}
           decoding="async"
           draggable={false}
+          {...PREVIEW_IMAGE_PROPS}
           onLoad={handleImageLoad}
           onError={handleImageError}
         />

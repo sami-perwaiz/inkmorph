@@ -25,6 +25,7 @@ import { preloadOriginalAsset } from "@/lib/originalAssetCache";
 import {
   GALLERY_CARD_CLASS,
   GALLERY_CARD_IMAGE_SIZES,
+  PREVIEW_IMAGE_PROPS,
   IMAGE_PREVIEW_QUALITY,
 } from "@/lib/imageDelivery";
 import {
@@ -190,6 +191,7 @@ function GalleryCardComponent({
                 : {})}
               decoding="async"
               draggable={false}
+              {...PREVIEW_IMAGE_PROPS}
               onLoad={handleImageLoad}
             />
           ) : null}
@@ -238,6 +240,7 @@ function GalleryCardComponent({
                 : {})}
               decoding="async"
               draggable={false}
+              {...PREVIEW_IMAGE_PROPS}
               onLoad={handleImageLoad}
             />
           ) : null}

@@ -9,7 +9,6 @@ import { PackBackButton } from "@/components/Packs/PackBackButton";
 import { Footer } from "@/components/Footer/Footer";
 import { Navbar } from "@/components/Navbar/Navbar";
 import { PremiumBanner } from "@/components/PremiumBanner/PremiumBanner";
-import { useDownloadLimit } from "@/components/DownloadLimitProvider/DownloadLimitProvider";
 import { usePremiumAccessGate } from "@/components/PremiumAccessProvider/PremiumAccessProvider";
 import { usePremiumAccess } from "@/hooks/usePremiumAccess";
 import {
@@ -34,7 +33,6 @@ export function WallpaperDetailView({ pack }: WallpaperDetailViewProps) {
   const router = useRouter();
   const { hasPremiumAccess } = usePremiumAccess();
   const { requestPremiumAccess } = usePremiumAccessGate();
-  const { requestActionSlots } = useDownloadLimit();
 
   const handleFilterChange = useCallback(
     (filter: FilterValue) => {
@@ -49,16 +47,9 @@ export function WallpaperDetailView({ pack }: WallpaperDetailViewProps) {
       return;
     }
 
-    if (!hasPremiumAccess) {
-      const { ok } = await requestActionSlots(1);
-      if (!ok) {
-        return;
-      }
-    }
-
     const src = getWallpaperDownloadSrc(pack);
     await downloadImage(src, getWallpaperDownloadFilename(pack), "1x");
-  }, [hasPremiumAccess, pack, requestActionSlots, requestPremiumAccess]);
+  }, [hasPremiumAccess, pack, requestPremiumAccess]);
 
   return (
     <div className="min-h-screen w-full bg-white">

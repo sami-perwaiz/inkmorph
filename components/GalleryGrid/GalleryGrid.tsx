@@ -15,7 +15,7 @@ import { GalleryCard } from "@/components/GalleryCard/GalleryCard";
 import { usePremiumAccess } from "@/hooks/usePremiumAccess";
 import { MEDIA_QUERIES } from "@/lib/breakpoints";
 import { FILTERS } from "@/lib/constants";
-import { GALLERY_GRID_CLASS } from "@/lib/imageDelivery";
+import { GALLERY_CARD_CLASS, GALLERY_GRID_CLASS } from "@/lib/imageDelivery";
 import {
   getVisibleGalleryItems,
   type IllustrationFilterLists,
@@ -28,7 +28,14 @@ import type { FilterValue, Illustration } from "@/types/illustration";
 interface GalleryGridProps {
   lists: IllustrationFilterLists;
   activeFilter: FilterValue;
+  /** Immediate search input (may lead the debounced query while typing). */
+  inputSearchQuery?: string;
+  /** Debounced query used to execute search. */
   searchQuery?: string;
+  /** True while input differs from the debounced query. */
+  isSearchPending?: boolean;
+  /** Monotonic generation id for the latest debounced query. */
+  searchGeneration?: number;
   isDesktop: boolean | null;
   onPreview: (illustration: Illustration) => void;
   /** Soft white fade over the paid peek row (Figma 40004723:10672). */
@@ -75,16 +82,41 @@ function useGalleryColumnCount(): number {
 
 const GRID_CLASS_NAME = GALLERY_GRID_CLASS;
 
+function GallerySearchSkeleton({ columnCount }: { columnCount: number }) {
+  const placeholders = Math.min(columnCount * 3, 15);
+
+  return (
+    <section
+      aria-label="Searching illustrations"
+      aria-busy="true"
+      className={GRID_CLASS_NAME}
+    >
+      {Array.from({ length: placeholders }, (_, index) => (
+        <div key={index} className={GALLERY_CARD_CLASS}>
+          <div
+            className="gallery-card-skeleton gallery-card-skeleton-shimmer absolute inset-0"
+            aria-hidden
+          />
+        </div>
+      ))}
+    </section>
+  );
+}
+
 export const GalleryGrid = memo(function GalleryGrid({
   lists,
   activeFilter,
+  inputSearchQuery = "",
   searchQuery = "",
+  isSearchPending = false,
+  searchGeneration = 0,
   isDesktop,
   onPreview,
   showBottomFade = true,
 }: GalleryGridProps) {
   const [renderedFilter, setRenderedFilter] = useState(activeFilter);
   const [isCovered, setIsCovered] = useState(false);
+  const [searchResults, setSearchResults] = useState<Illustration[]>([]);
   const isFirstRender = useRef(true);
   const activeFilterRef = useRef(activeFilter);
   const swapTimeoutRef = useRef<number | null>(null);
@@ -93,31 +125,57 @@ export const GalleryGrid = memo(function GalleryGrid({
   const hasFullLibraryAccess = isReady && hasPremiumAccess;
 
   const categoryItems = lists[renderedFilter];
-  const hasActiveSearch = searchQuery.trim().length > 0;
-  const matchedItems = useMemo(() => {
-    if (!hasActiveSearch) {
-      return categoryItems;
+  const resolvedQuery = searchQuery.trim();
+  const hasResolvedSearch = resolvedQuery.length > 0;
+  const hasInputSearch = inputSearchQuery.trim().length > 0;
+
+  useEffect(() => {
+    if (!hasResolvedSearch) {
+      setSearchResults([]);
+      return;
     }
 
+    let cancelled = false;
     const effectivePremiumAccess = isReady ? hasPremiumAccess : false;
 
-    return searchGalleryIllustrations({
-      items: lists[activeFilter],
-      query: searchQuery,
-      hasPremiumAccess: effectivePremiumAccess,
+    const frameId = window.requestAnimationFrame(() => {
+      if (cancelled) {
+        return;
+      }
+
+      const results = searchGalleryIllustrations({
+        items: lists[activeFilter],
+        query: resolvedQuery,
+        hasPremiumAccess: effectivePremiumAccess,
+        categoryFilter: activeFilter,
+      });
+
+      if (cancelled) {
+        return;
+      }
+
+      setSearchResults(results);
     });
+
+    return () => {
+      cancelled = true;
+      window.cancelAnimationFrame(frameId);
+    };
   }, [
     activeFilter,
-    categoryItems,
-    hasActiveSearch,
     hasPremiumAccess,
+    hasResolvedSearch,
     isReady,
     lists,
-    searchQuery,
+    resolvedQuery,
+    searchGeneration,
   ]);
+
+  const matchedItems = hasResolvedSearch ? searchResults : categoryItems;
+
   const illustrations = useMemo(
     () => {
-      if (hasActiveSearch) {
+      if (hasResolvedSearch) {
         return matchedItems;
       }
 
@@ -134,18 +192,25 @@ export const GalleryGrid = memo(function GalleryGrid({
     [
       activeFilter,
       columnCount,
-      hasActiveSearch,
       hasFullLibraryAccess,
+      hasResolvedSearch,
       matchedItems,
     ]
   );
-  const isEmpty = matchedItems.length === 0;
+
+  const showSearchLoading =
+    isSearchPending && hasInputSearch && searchResults.length === 0;
+  const showSearchEmpty =
+    !isSearchPending && hasResolvedSearch && searchResults.length === 0;
+  const isEmpty = showSearchEmpty;
+
   const emptyLabel =
     FILTERS.find((filter) => filter.value === renderedFilter)?.label ??
     "illustrations";
   const hasPaidPeek =
     !hasFullLibraryAccess &&
-    !hasActiveSearch &&
+    !hasResolvedSearch &&
+    !hasInputSearch &&
     illustrations.some((item) => item.paywalled);
 
   const priorityIds = useMemo(() => {
@@ -210,6 +275,21 @@ export const GalleryGrid = memo(function GalleryGrid({
     };
   }, [activeFilter, renderedFilter]);
 
+  if (showSearchLoading) {
+    return (
+      <div
+        id="illustration-gallery"
+        className="relative w-full px-0 py-0"
+        aria-busy="true"
+      >
+        <GallerySearchSkeleton columnCount={columnCount} />
+        <div className="sr-only" aria-live="polite">
+          Searching illustrations
+        </div>
+      </div>
+    );
+  }
+
   if (isEmpty) {
     return (
       <div
@@ -223,7 +303,7 @@ export const GalleryGrid = memo(function GalleryGrid({
             isCovered ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0",
           ].join(" ")}
         />
-        {hasActiveSearch ? (
+        {showSearchEmpty ? (
           <div className="flex w-full max-w-[476px] flex-col items-center gap-6">
             <div className="relative aspect-[1536/1024] w-full">
               <Image
@@ -263,6 +343,7 @@ export const GalleryGrid = memo(function GalleryGrid({
       <div className="relative">
         <section
           aria-label="Illustration gallery"
+          aria-busy={isSearchPending && hasInputSearch ? true : undefined}
           className={GRID_CLASS_NAME}
           {...(isCovered ? { inert: true as const } : {})}
         >
@@ -298,6 +379,12 @@ export const GalleryGrid = memo(function GalleryGrid({
           ].join(" ")}
         />
       </div>
+
+      {isSearchPending && hasInputSearch ? (
+        <div className="sr-only" aria-live="polite">
+          Updating search results
+        </div>
+      ) : null}
     </div>
   );
 });

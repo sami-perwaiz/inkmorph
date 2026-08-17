@@ -1,3 +1,4 @@
+import { getCanonicalAssetUrl } from "@/lib/canonicalAsset";
 import type { Illustration } from "@/types/illustration";
 
 /**
@@ -24,13 +25,15 @@ export function getStitchedLeatherPackIllustrations(): Illustration[] {
     const number = String(index + 1).padStart(2, "0");
     const name = stitchedLeatherIconName(number);
 
+    const filename = stitchedLeatherDownloadFilename(index);
+
     return {
       id: `SL3D-${number}`,
       category: "3d-icon",
-      src: `/packs/stitched-leather-3d/icons/${number}.png?v=${STITCHED_LEATHER_ASSET_VERSION}`,
-      filename: stitchedLeatherDownloadFilename(index),
+      filename,
       alt: `${name} stitched leather 3D icon`,
       name,
+      src: getCanonicalAssetUrl({ id: `SL3D-${number}`, filename }),
     };
   });
 }

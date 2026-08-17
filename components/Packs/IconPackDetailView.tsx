@@ -24,6 +24,8 @@ interface IconPackDetailViewProps {
   illustrations: Illustration[];
 }
 
+const DOWNLOAD_SUCCESS_RESET_MS = 2000;
+
 /** Figma 40004941:48235 — opened icon pack detail. */
 export function IconPackDetailView({
   pack,
@@ -32,10 +34,19 @@ export function IconPackDetailView({
   const router = useRouter();
   const { hasPremiumAccess } = usePremiumAccess();
   const { requestPremiumAccess } = usePremiumAccessGate();
-  const { requestActionSlots, remaining, showLimitModal } = useDownloadLimit();
+  const {
+    requestActionSlots,
+    remaining,
+    refreshStatus,
+    showExhaustedLimitModal,
+    showPartialLimitModal,
+    isStatusReady,
+  } = useDownloadLimit();
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
   const [downloadState, setDownloadState] = useState<PackDownloadState>("idle");
+  const [downloadError, setDownloadError] = useState<string | null>(null);
+  const downloadInFlightRef = useRef(false);
   const downloadResetTimeoutRef = useRef<number | null>(null);
 
   const clearDownloadResetTimeout = useCallback(() => {
@@ -51,6 +62,10 @@ export function IconPackDetailView({
     };
   }, [clearDownloadResetTimeout]);
 
+  useEffect(() => {
+    void refreshStatus();
+  }, [refreshStatus]);
+
   const visibleIllustrations = useMemo(
     () => getAccessiblePackIllustrations(illustrations, hasPremiumAccess),
     [hasPremiumAccess, illustrations]
@@ -61,8 +76,26 @@ export function IconPackDetailView({
       return Number.POSITIVE_INFINITY;
     }
 
-    return Number.isFinite(remaining) ? remaining : 0;
-  }, [hasPremiumAccess, remaining]);
+    if (!isStatusReady) {
+      return 0;
+    }
+
+    return Number.isFinite(remaining) ? Math.max(0, remaining) : 0;
+  }, [hasPremiumAccess, isStatusReady, remaining]);
+
+  useEffect(() => {
+    if (hasPremiumAccess || !Number.isFinite(freeRemaining)) {
+      return;
+    }
+
+    setSelectedIds((current) => {
+      if (current.size <= freeRemaining) {
+        return current;
+      }
+
+      return new Set([...current].slice(0, freeRemaining));
+    });
+  }, [freeRemaining, hasPremiumAccess]);
 
   const handleFilterChange = useCallback(
     (filter: FilterValue) => {
@@ -71,14 +104,22 @@ export function IconPackDetailView({
     [router]
   );
 
-  const handleEnterSelectionMode = useCallback(() => {
-    if (!hasPremiumAccess && freeRemaining <= 0) {
-      showLimitModal();
+  const handleEnterSelectionMode = useCallback(async () => {
+    if (hasPremiumAccess) {
+      setSelectionMode(true);
+      return;
+    }
+
+    const latest = await refreshStatus();
+    const currentRemaining = latest?.remaining ?? 0;
+
+    if (currentRemaining <= 0) {
+      showExhaustedLimitModal();
       return;
     }
 
     setSelectionMode(true);
-  }, [freeRemaining, hasPremiumAccess, showLimitModal]);
+  }, [hasPremiumAccess, refreshStatus, showExhaustedLimitModal]);
 
   const handleExitSelection = useCallback(() => {
     setSelectionMode(false);
@@ -97,12 +138,12 @@ export function IconPackDetailView({
 
         if (!hasPremiumAccess) {
           if (freeRemaining <= 0) {
-            showLimitModal();
+            showExhaustedLimitModal();
             return current;
           }
 
           if (next.size >= freeRemaining) {
-            showLimitModal();
+            showPartialLimitModal(freeRemaining, "cap_reached");
             return current;
           }
         }
@@ -111,14 +152,78 @@ export function IconPackDetailView({
         return next;
       });
     },
-    [freeRemaining, hasPremiumAccess, showLimitModal]
+    [freeRemaining, hasPremiumAccess, showExhaustedLimitModal, showPartialLimitModal]
+  );
+
+  const runPackDownload = useCallback(
+    async (items: Illustration[], wasSelecting: boolean) => {
+      if (downloadInFlightRef.current || items.length === 0) {
+        return;
+      }
+
+      downloadInFlightRef.current = true;
+      clearDownloadResetTimeout();
+      setDownloadError(null);
+      setDownloadState("preparing");
+
+      try {
+        if (!hasPremiumAccess) {
+          const latest = await refreshStatus();
+          const currentRemaining = latest?.remaining ?? 0;
+
+          if (currentRemaining <= 0) {
+            showExhaustedLimitModal();
+            setDownloadState("idle");
+            return;
+          }
+
+          if (items.length > currentRemaining) {
+            showPartialLimitModal(currentRemaining);
+            setDownloadState("idle");
+            return;
+          }
+        }
+
+        await downloadPackIcons(pack, items);
+
+        if (!hasPremiumAccess) {
+          const consume = await requestActionSlots(items.length);
+          if (!consume.ok) {
+            setDownloadError("Unable to update download allowance.");
+            setDownloadState("idle");
+            return;
+          }
+        }
+
+        if (wasSelecting) {
+          setSelectionMode(false);
+          setSelectedIds(new Set());
+        }
+
+        setDownloadState("success");
+        downloadResetTimeoutRef.current = window.setTimeout(() => {
+          downloadResetTimeoutRef.current = null;
+          setDownloadState("idle");
+        }, DOWNLOAD_SUCCESS_RESET_MS);
+      } catch {
+        setDownloadError("Unable to prepare download. Please try again.");
+        setDownloadState("idle");
+      } finally {
+        downloadInFlightRef.current = false;
+      }
+    },
+    [
+      clearDownloadResetTimeout,
+      hasPremiumAccess,
+      pack,
+      refreshStatus,
+      requestActionSlots,
+      showExhaustedLimitModal,
+      showPartialLimitModal,
+    ]
   );
 
   const handleDownloadAll = useCallback(async () => {
-    if (downloadState === "preparing") {
-      return;
-    }
-
     if (!hasPremiumAccess) {
       return;
     }
@@ -131,42 +236,16 @@ export function IconPackDetailView({
       ? visibleIllustrations.filter((item) => selectedIds.has(item.id))
       : visibleIllustrations;
 
-    const wasSelecting = selectionMode;
-
-    clearDownloadResetTimeout();
-    setDownloadState("preparing");
-
-    try {
-      await downloadPackIcons(pack, items);
-
-      if (wasSelecting) {
-        setSelectionMode(false);
-        setSelectedIds(new Set());
-      }
-
-      setDownloadState("success");
-      downloadResetTimeoutRef.current = window.setTimeout(() => {
-        downloadResetTimeoutRef.current = null;
-        setDownloadState("idle");
-      }, 2000);
-    } catch {
-      setDownloadState("idle");
-    }
+    await runPackDownload(items, selectionMode);
   }, [
-    clearDownloadResetTimeout,
-    downloadState,
     hasPremiumAccess,
-    visibleIllustrations,
-    pack,
+    runPackDownload,
     selectedIds,
     selectionMode,
+    visibleIllustrations,
   ]);
 
   const handleDownloadSelected = useCallback(async () => {
-    if (downloadState === "preparing") {
-      return;
-    }
-
     if (selectedIds.size === 0) {
       return;
     }
@@ -175,48 +254,8 @@ export function IconPackDetailView({
       selectedIds.has(item.id)
     );
 
-    clearDownloadResetTimeout();
-    setDownloadState("preparing");
-
-    try {
-      if (!hasPremiumAccess) {
-        if (items.length > freeRemaining) {
-          showLimitModal();
-          setDownloadState("idle");
-          return;
-        }
-
-        const { ok } = await requestActionSlots(items.length);
-        if (!ok) {
-          setDownloadState("idle");
-          return;
-        }
-      }
-
-      await downloadPackIcons(pack, items);
-
-      setSelectionMode(false);
-      setSelectedIds(new Set());
-
-      setDownloadState("success");
-      downloadResetTimeoutRef.current = window.setTimeout(() => {
-        downloadResetTimeoutRef.current = null;
-        setDownloadState("idle");
-      }, 2000);
-    } catch {
-      setDownloadState("idle");
-    }
-  }, [
-    clearDownloadResetTimeout,
-    downloadState,
-    freeRemaining,
-    hasPremiumAccess,
-    pack,
-    requestActionSlots,
-    selectedIds,
-    showLimitModal,
-    visibleIllustrations,
-  ]);
+    await runPackDownload(items, true);
+  }, [runPackDownload, selectedIds, visibleIllustrations]);
 
   const handleDownloadAllPremiumGate = useCallback(() => {
     requestPremiumAccess();
@@ -244,7 +283,9 @@ export function IconPackDetailView({
         selectionMode={selectionMode}
         downloadState={downloadState}
         isPremiumDownloadAll={hasPremiumAccess}
-        onEnterSelectionMode={handleEnterSelectionMode}
+        onEnterSelectionMode={() => {
+          void handleEnterSelectionMode();
+        }}
         onExitSelection={handleExitSelection}
         onDownloadAll={handleToolbarDownload}
         onDownloadAllPremiumGate={handleDownloadAllPremiumGate}
@@ -264,11 +305,12 @@ export function IconPackDetailView({
       <Footer onFilterChange={handleFilterChange} />
 
       <div className="sr-only" aria-live="polite" aria-atomic="true">
-        {downloadState === "preparing"
-          ? "Preparing download"
-          : downloadState === "success"
-            ? "Download started"
-            : `Viewing ${pack.title} pack with ${visibleIllustrations.length} icons`}
+        {downloadError ??
+          (downloadState === "preparing"
+            ? "Preparing download"
+            : downloadState === "success"
+              ? "Download started"
+              : `Viewing ${pack.title} pack with ${visibleIllustrations.length} icons`)}
       </div>
     </div>
   );

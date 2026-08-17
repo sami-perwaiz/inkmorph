@@ -4,6 +4,12 @@ export const ANONYMOUS_DAILY_ACTION_LIMIT = 5;
 /** Signed-up users — shared Copy + Download actions per day. */
 export const SIGNED_IN_DAILY_ACTION_LIMIT = 8;
 
+/**
+ * Daily Copy + Download limits apply to gallery 3D assets (All, Avatars,
+ * Characters, Objects, Abstract) and Icon Pack downloads only.
+ * iPhone Wallpapers are excluded and never consume allowance.
+ */
+
 /** @deprecated Use tier-specific limits — kept for legacy imports. */
 export const DAILY_DOWNLOAD_LIMIT = ANONYMOUS_DAILY_ACTION_LIMIT;
 

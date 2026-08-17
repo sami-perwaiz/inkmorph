@@ -3,8 +3,10 @@ import { join } from "path";
 
 import {
   buildRegistryLookup,
+  getDownloadFilename,
   type AssetRegistry,
 } from "@/lib/inkmorphAssetIds";
+import { getCanonicalAssetUrl } from "@/lib/canonicalAsset";
 import { enrichIllustrationTags } from "@/lib/enrichIllustrationTags";
 import type { AssetSearchMetadata } from "@/lib/searchIllustrations";
 import type { Illustration, IllustrationCategory } from "@/types/illustration";
@@ -82,15 +84,20 @@ export function getIllustrations(): Illustration[] {
 
       const meta = searchMeta[filename];
       const enrichedTags = enrichIllustrationTags(filename, meta?.tags);
-
-      illustrations.push({
+      const canonicalFilename = getDownloadFilename(entry.id, filename);
+      const illustrationBase = {
         id: entry.id,
         category,
-        src: `/illustrations/${category}/${filename}`,
-        filename,
+        storageFilename: filename,
+        filename: canonicalFilename,
         alt: toAltText(entry.id, meta?.name),
         ...(meta?.name ? { name: meta.name } : {}),
         ...(enrichedTags.length ? { tags: enrichedTags } : {}),
+      };
+
+      illustrations.push({
+        ...illustrationBase,
+        src: getCanonicalAssetUrl(illustrationBase),
       });
     }
   }

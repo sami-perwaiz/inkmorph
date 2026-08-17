@@ -1,5 +1,6 @@
 import JSZip from "jszip";
 
+import { getCanonicalFilename } from "@/lib/canonicalAsset";
 import {
   renderDownloadPng,
   triggerBrowserDownload,
@@ -27,7 +28,7 @@ function sanitizeFolderName(name: string): string {
 }
 
 function iconFilename(item: Illustration): string {
-  return item.filename || `${item.id}.png`;
+  return getCanonicalFilename(item);
 }
 
 async function addIconsToSession(
@@ -40,9 +41,22 @@ async function addIconsToSession(
     session.set(pack.id, bucket);
   }
 
-  for (const item of items) {
-    const blob = await renderDownloadPng(item.src, "1x");
-    bucket.icons.set(item.id, { filename: iconFilename(item), blob });
+  const results = await Promise.all(
+    items.map(async (item) => {
+      const blob = await renderDownloadPng(item.src, "1x");
+      return {
+        id: item.id,
+        filename: iconFilename(item),
+        blob,
+      };
+    })
+  );
+
+  for (const stored of results) {
+    bucket.icons.set(stored.id, {
+      filename: stored.filename,
+      blob: stored.blob,
+    });
   }
 }
 
@@ -52,7 +66,7 @@ async function downloadPackZip(
 ): Promise<void> {
   const bucket = session.get(pack.id);
   if (!bucket) {
-    return;
+    throw new Error("Failed to prepare pack download.");
   }
 
   const folderName = sanitizeFolderName(pack.id);
@@ -106,7 +120,7 @@ export async function downloadPackIcons(
   items: Illustration[]
 ): Promise<void> {
   if (items.length === 0) {
-    return;
+    throw new Error("No icons selected for download.");
   }
 
   await addIconsToSession(pack, items);
@@ -123,7 +137,9 @@ export async function downloadPackIcons(
 
   const bucket = session.get(pack.id);
   const stored = bucket?.icons.get(items[0].id);
-  if (stored) {
-    triggerBrowserDownload(stored.blob, stored.filename);
+  if (!stored) {
+    throw new Error("Failed to prepare icon for download.");
   }
+
+  triggerBrowserDownload(stored.blob, stored.filename);
 }

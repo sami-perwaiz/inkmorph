@@ -1,4 +1,5 @@
 import type { FilterValue, Illustration } from "@/types/illustration";
+import { getStorageFilename } from "@/lib/canonicalAsset";
 
 export type IllustrationFilterLists = Record<FilterValue, Illustration[]>;
 
@@ -28,15 +29,15 @@ function sortBySrc(items: Illustration[]): Illustration[] {
 }
 
 function isAbstractIllustration(item: Illustration): boolean {
-  return /abstract/i.test(item.filename);
+  return /abstract/i.test(getStorageFilename(item));
 }
 
 function isCharacterIllustration(item: Illustration): boolean {
-  return /character/i.test(item.filename);
+  return /character/i.test(getStorageFilename(item));
 }
 
 function isAvatarIllustration(item: Illustration): boolean {
-  return /avatar/i.test(item.filename);
+  return /avatar/i.test(getStorageFilename(item));
 }
 
 /** Evenly spaced indices within `length` (e.g. 6 locks across 50 free items). */

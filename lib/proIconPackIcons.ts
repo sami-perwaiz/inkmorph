@@ -1,3 +1,4 @@
+import { getCanonicalAssetUrl } from "@/lib/canonicalAsset";
 import type { Illustration } from "@/types/illustration";
 
 export const PRO_ICON_PACK_ASSET_VERSION = "20260817-1";
@@ -54,13 +55,18 @@ export function getProIconPackIllustrations(packId: string): Illustration[] {
     const downloadId = String(index + 1).padStart(3, "0");
     const name = `${config.displayName} ${number}`;
 
-    return {
+    const filename = `${config.downloadPrefix}-${downloadId}.png`;
+    const illustrationBase = {
       id: `${config.iconIdPrefix}-${number}`,
-      category: "3d-icon",
-      src: `/packs/${config.packId}/icons/${number}.png?v=${PRO_ICON_PACK_ASSET_VERSION}`,
-      filename: `${config.downloadPrefix}-${downloadId}.png`,
+      category: "3d-icon" as const,
+      filename,
       alt: `${name} 3D icon`,
       name,
+    };
+
+    return {
+      ...illustrationBase,
+      src: getCanonicalAssetUrl(illustrationBase),
     };
   });
 }

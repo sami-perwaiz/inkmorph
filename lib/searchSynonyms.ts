@@ -23,7 +23,7 @@ export const SEARCH_SYNONYM_GROUPS: readonly (readonly string[])[] = [
   ["money", "finance", "banking", "payment", "cash", "currency"],
   ["food", "meal", "dining", "restaurant", "cuisine", "snack"],
   ["coffee", "espresso", "cafe", "beverage", "drink", "mug", "cup"],
-  ["phone", "mobile", "smartphone", "cell", "device", "communication"],
+  ["phone", "mobile", "smartphone", "cellphone", "cell", "device", "communication"],
   ["computer", "laptop", "pc", "desktop", "technology", "device"],
   ["search", "find", "discover", "explore", "magnifying glass", "lookup"],
   ["lock", "security", "secure", "padlock", "protection", "privacy"],
@@ -83,6 +83,7 @@ export const SEARCH_SYNONYM_GROUPS: readonly (readonly string[])[] = [
   ["science", "lab", "research", "experiment", "chemistry"],
   ["math", "number", "numeral", "digit", "count"],
   ["avatar", "profile", "user", "headshot", "portrait", "social media"],
+  ["cursor", "pointer", "mouse cursor", "mouse pointer", "arrow cursor", "pointer icon", "computer cursor", "selection cursor", "mouse", "click", "navigation", "select", "ui"],
   ["character", "mascot", "persona", "figure", "cartoon"],
   ["abstract", "decorative", "pattern", "shape", "design element"],
   ["3d", "3d icon", "3d illustration", "render", "isometric"],
@@ -119,11 +120,33 @@ export function expandSearchToken(token: string): Array<{
   const normalized = normalizeSearchTerm(token);
   const ranks = synonymRankByTerm.get(normalized);
 
-  if (!ranks) {
-    return [{ term: normalized, rank: 0 }];
+  if (ranks) {
+    return [...ranks.entries()]
+      .sort((a, b) => a[1] - b[1])
+      .map(([term, rank]) => ({ term, rank }));
   }
 
-  return [...ranks.entries()]
-    .sort((a, b) => a[1] - b[1])
-    .map(([term, rank]) => ({ term, rank }));
+  const expanded: Array<{ term: string; rank: number }> = [
+    { term: normalized, rank: 0 },
+  ];
+  const seen = new Set<string>([normalized]);
+
+  if (normalized.length >= 2) {
+    for (const group of SEARCH_SYNONYM_GROUPS) {
+      for (let index = 0; index < group.length; index += 1) {
+        const candidate = normalizeSearchTerm(group[index]);
+        if (
+          candidate.length > normalized.length &&
+          candidate.startsWith(normalized) &&
+          normalized.length / candidate.length >= 0.4 &&
+          !seen.has(candidate)
+        ) {
+          seen.add(candidate);
+          expanded.push({ term: candidate, rank: index + 1 });
+        }
+      }
+    }
+  }
+
+  return expanded;
 }

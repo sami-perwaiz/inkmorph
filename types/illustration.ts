@@ -13,8 +13,10 @@ export interface Illustration {
   id: string;
   category: IllustrationCategory;
   src: string;
-  /** Public illustrations filename, e.g. 001-icon01.png */
-  filename: string;
+  /** On-disk filename under public/illustrations (category heuristics only). */
+  storageFilename?: string;
+  /** Public canonical download filename, e.g. IM3D-AIZ-239.png or im-sl3d-001.png */
+  filename?: string;
   alt: string;
   /** Pro-locked asset — crown badge and locked copy/download. */
   premium?: boolean;

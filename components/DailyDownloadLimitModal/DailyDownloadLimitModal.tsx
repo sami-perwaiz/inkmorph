@@ -67,8 +67,13 @@ function HourglassIcon() {
   );
 }
 
+export type LimitModalVariant = "exhausted" | "partial";
+export type PartialLimitReason = "remaining" | "cap_reached";
+
 interface DailyDownloadLimitModalProps {
   open: boolean;
+  variant: LimitModalVariant;
+  partialReason?: PartialLimitReason;
   resetAt: number | null;
   remaining: number;
   limit: number;
@@ -78,6 +83,8 @@ interface DailyDownloadLimitModalProps {
 
 function DailyDownloadLimitModalComponent({
   open,
+  variant,
+  partialReason = "remaining",
   resetAt,
   remaining,
   limit,
@@ -123,7 +130,7 @@ function DailyDownloadLimitModalComponent({
   }, [open]);
 
   useEffect(() => {
-    if (!open) {
+    if (!open || variant !== "exhausted") {
       resetTriggeredRef.current = false;
       return;
     }
@@ -150,7 +157,7 @@ function DailyDownloadLimitModalComponent({
     tick();
     const intervalId = window.setInterval(tick, 1000);
     return () => window.clearInterval(intervalId);
-  }, [onResetComplete, open, resetAt]);
+  }, [onResetComplete, open, resetAt, variant]);
 
   useEffect(() => {
     if (!isMounted || !isVisible) {
@@ -179,7 +186,7 @@ function DailyDownloadLimitModalComponent({
     return null;
   }
 
-  const showPartialRemaining = remaining > 0 && remaining < limit;
+  const isExhausted = variant === "exhausted";
 
   return createPortal(
     <div
@@ -246,7 +253,9 @@ function DailyDownloadLimitModalComponent({
                 lineHeight: `${LIMIT_MODAL.titleLineHeight}px`,
               }}
             >
-              Daily Download Limit Reached
+              {isExhausted
+                ? "Daily Download Limit Reached"
+                : "Free Downloads Remaining"}
             </h2>
 
             <p
@@ -258,53 +267,64 @@ function DailyDownloadLimitModalComponent({
                 color: LIMIT_MODAL.bodyColor,
               }}
             >
-              {showPartialRemaining ? (
+              {isExhausted ? (
+                <>You&apos;ve used all your free downloads for today.</>
+              ) : partialReason === "cap_reached" ? (
                 <>
-                  You have{" "}
-                  <span className="font-medium text-black">{remaining}</span>{" "}
-                  free action{remaining === 1 ? "" : "s"} remaining today.
-                  Select fewer assets to continue.
+                  You&apos;ve reached your {remaining} remaining free download
+                  {remaining === 1 ? "" : "s"}.
                 </>
               ) : (
                 <>
-                  You&apos;ve used all your free downloads for today.
+                  You have{" "}
+                  <span className="font-medium text-black">{remaining}</span>{" "}
+                  free download{remaining === 1 ? "" : "s"} remaining.
+                  {remaining > 0 ? (
+                    <>
+                      {" "}
+                      You can select up to {remaining} more{" "}
+                      {remaining === 1 ? "icon" : "icons"}.
+                    </>
+                  ) : null}
                 </>
               )}
             </p>
 
-            <div className="flex w-full flex-col items-center gap-1 pt-1">
-              <p
-                className="font-inter font-normal"
-                style={{
-                  fontSize: LIMIT_MODAL.bodySize,
-                  lineHeight: `${LIMIT_MODAL.bodyLineHeight}px`,
-                  color: LIMIT_MODAL.bodyColor,
-                }}
-              >
-                Resets in
-              </p>
-              <p
-                id={timerId}
-                aria-live="polite"
-                className="font-inter font-medium tabular-nums text-black"
-                style={{
-                  fontSize: LIMIT_MODAL.timerSize,
-                  lineHeight: `${LIMIT_MODAL.timerLineHeight}px`,
-                }}
-              >
-                {countdown || "—"}
-              </p>
-              <p
-                className="font-inter font-normal"
-                style={{
-                  fontSize: LIMIT_MODAL.bodySize,
-                  lineHeight: `${LIMIT_MODAL.bodyLineHeight}px`,
-                  color: LIMIT_MODAL.bodyColor,
-                }}
-              >
-                Come back after the reset to continue downloading.
-              </p>
-            </div>
+            {isExhausted ? (
+              <div className="flex w-full flex-col items-center gap-1 pt-1">
+                <p
+                  className="font-inter font-normal"
+                  style={{
+                    fontSize: LIMIT_MODAL.bodySize,
+                    lineHeight: `${LIMIT_MODAL.bodyLineHeight}px`,
+                    color: LIMIT_MODAL.bodyColor,
+                  }}
+                >
+                  Resets in
+                </p>
+                <p
+                  id={timerId}
+                  aria-live="polite"
+                  className="font-inter font-medium tabular-nums text-black"
+                  style={{
+                    fontSize: LIMIT_MODAL.timerSize,
+                    lineHeight: `${LIMIT_MODAL.timerLineHeight}px`,
+                  }}
+                >
+                  {countdown || "—"}
+                </p>
+                <p
+                  className="font-inter font-normal"
+                  style={{
+                    fontSize: LIMIT_MODAL.bodySize,
+                    lineHeight: `${LIMIT_MODAL.bodyLineHeight}px`,
+                    color: LIMIT_MODAL.bodyColor,
+                  }}
+                >
+                  Come back after the reset to continue downloading.
+                </p>
+              </div>
+            ) : null}
           </div>
         </div>
       </div>

@@ -1,3 +1,4 @@
+import { getStorageFilename } from "@/lib/canonicalAsset";
 import {
   getIllustrationContentCategory,
   type IllustrationContentCategory,
@@ -7,7 +8,7 @@ import {
   normalizeSearchTerm,
   tokenizeSearchQuery,
 } from "@/lib/searchSynonyms";
-import type { Illustration } from "@/types/illustration";
+import type { FilterValue, Illustration } from "@/types/illustration";
 
 import { getSearchableGalleryIllustrations } from "@/lib/premiumFeatureAccess";
 
@@ -23,7 +24,8 @@ export interface AssetSearchMetadata {
 
 interface SearchableIllustrationFields {
   id: string;
-  filename: string;
+  filename?: string;
+  storageFilename?: string;
   name?: string;
   tags?: string[];
   alt?: string;
@@ -32,6 +34,10 @@ interface SearchableIllustrationFields {
 interface RankedIllustration<T extends Illustration> {
   item: T;
   score: number;
+}
+
+interface SearchOptions {
+  categoryFilter?: FilterValue;
 }
 
 const STYLE_TERMS = new Set([
@@ -74,6 +80,9 @@ const CATEGORY_TERMS: Record<IllustrationContentCategory, string[]> = {
   abstract: ["abstract", "decorative", "pattern", "shape"],
 };
 
+const SEARCH_RESULT_CACHE = new Map<string, Illustration[]>();
+const SEARCH_CACHE_LIMIT = 96;
+
 function splitWords(value: string): string[] {
   return value
     .toLowerCase()
@@ -98,10 +107,44 @@ function termMatchesText(text: string, term: string): boolean {
   return splitWords(normalized).includes(term);
 }
 
+/** Higher scores when the prefix covers more of the target word (cur → cursor). */
+function scorePrefixOnWord(word: string, prefix: string): number {
+  if (!word.startsWith(prefix)) {
+    return 0;
+  }
+
+  const ratio = prefix.length / word.length;
+  return Math.floor(40 + ratio * 48);
+}
+
+function scorePrefixOnWords(words: string[], prefix: string): number {
+  if (prefix.length === 0) {
+    return 0;
+  }
+
+  let best = 0;
+  for (const word of words) {
+    best = Math.max(best, scorePrefixOnWord(word, prefix));
+  }
+
+  return best;
+}
+
+function applyRankPenalty(score: number, rank: number): number {
+  if (score === 0) {
+    return 0;
+  }
+
+  const penalty = rank * 6;
+  const capped =
+    rank >= 2 ? Math.min(score, 80 - Math.max(0, rank - 2) * 8) : score;
+  return Math.max(0, capped - penalty);
+}
+
 function scoreTokenMatch({
-  item,
   term,
   rank,
+  allowPrefix,
   nameWords,
   normalizedName,
   normalizedTags,
@@ -110,9 +153,9 @@ function scoreTokenMatch({
   normalizedId,
   contentCategory,
 }: {
-  item: SearchableIllustrationFields;
   term: string;
   rank: number;
+  allowPrefix: boolean;
   nameWords: string[];
   normalizedName: string;
   normalizedTags: string[];
@@ -121,48 +164,59 @@ function scoreTokenMatch({
   normalizedId: string;
   contentCategory: IllustrationContentCategory;
 }): number {
-  const rankPenalty = rank * 4;
   let score = 0;
 
   if (hasExactWord(nameWords, term)) {
-    score = Math.max(score, 120 - rankPenalty);
+    score = Math.max(score, 120);
   } else if (termMatchesText(normalizedName, term)) {
-    score = Math.max(score, 95 - rankPenalty);
+    score = Math.max(score, 95);
+  } else if (allowPrefix) {
+    const prefixScore = scorePrefixOnWords(nameWords, term);
+    score = Math.max(score, prefixScore);
+    if (prefixScore >= 58 && normalizedName.startsWith(term)) {
+      score = Math.max(score, prefixScore + 6);
+    }
   }
 
   for (const tag of normalizedTags) {
     if (tag === term) {
-      score = Math.max(score, 90 - rankPenalty);
+      score = Math.max(score, 90);
       continue;
     }
 
     const tagWords = splitWords(tag);
     if (hasExactWord(tagWords, term)) {
-      score = Math.max(score, 75 - rankPenalty);
+      score = Math.max(score, 75);
       continue;
     }
 
+    if (allowPrefix) {
+      score = Math.max(score, scorePrefixOnWords(tagWords, term));
+    }
+
     if (term.includes(" ") && tag.includes(term)) {
-      score = Math.max(score, 45 - rankPenalty);
+      score = Math.max(score, 45);
     }
   }
 
   if (termMatchesText(normalizedAlt, term)) {
-    score = Math.max(score, 35 - rankPenalty);
+    score = Math.max(score, 35);
+  } else if (allowPrefix && term.length >= 2 && normalizedAlt.startsWith(term)) {
+    score = Math.max(score, 22);
   }
 
   if (CATEGORY_TERMS[contentCategory].includes(term)) {
-    score = Math.max(score, 30 - rankPenalty);
+    score = Math.max(score, 30);
   }
 
   if (contentCategory === term) {
-    score = Math.max(score, 40 - rankPenalty);
+    score = Math.max(score, 40);
   }
 
   if (STYLE_TERMS.has(term)) {
     for (const tag of normalizedTags) {
       if (STYLE_TERMS.has(tag)) {
-        score = Math.max(score, 18 - rankPenalty);
+        score = Math.max(score, 18);
         break;
       }
     }
@@ -171,23 +225,24 @@ function scoreTokenMatch({
   if (USE_CASE_TERMS.has(term)) {
     for (const tag of normalizedTags) {
       if (USE_CASE_TERMS.has(tag)) {
-        score = Math.max(score, 14 - rankPenalty);
+        score = Math.max(score, 14);
         break;
       }
     }
   }
 
-  if (normalizedFilename.includes(term) && term.length >= 4) {
-    score = Math.max(score, 10 - rankPenalty);
+  const minLen = allowPrefix ? 2 : 4;
+  if (term.length >= minLen) {
+    if (normalizedFilename.includes(term)) {
+      score = Math.max(score, allowPrefix ? 32 : 10);
+    }
+
+    if (normalizedId.includes(term)) {
+      score = Math.max(score, allowPrefix ? 28 : 8);
+    }
   }
 
-  if (normalizedId.includes(term) && term.length >= 4) {
-    score = Math.max(score, 8 - rankPenalty);
-  }
-
-  void item;
-
-  return score;
+  return applyRankPenalty(score, rank);
 }
 
 function buildExpandedTokenGroups(tokens: string[]): Array<Array<{ term: string; rank: number }>> {
@@ -213,6 +268,19 @@ function buildExpandedTokenGroups(tokens: string[]): Array<Array<{ term: string;
   });
 }
 
+function categoryBoost(
+  item: SearchableIllustrationFields,
+  categoryFilter?: FilterValue
+): number {
+  if (!categoryFilter || categoryFilter === "all") {
+    return 0;
+  }
+
+  const storageFilename = getStorageFilename(item);
+  const contentCategory = getIllustrationContentCategory(storageFilename);
+  return contentCategory === categoryFilter ? 30 : 0;
+}
+
 /** Score one asset against a normalized query using semantic synonym expansion. */
 export function scoreIllustrationSearch<T extends SearchableIllustrationFields>(
   item: T,
@@ -227,23 +295,28 @@ export function scoreIllustrationSearch<T extends SearchableIllustrationFields>(
   const nameWords = splitWords(normalizedName);
   const normalizedTags = (item.tags ?? []).map((tag) => normalizeSearchTerm(tag));
   const normalizedAlt = normalizeSearchTerm(item.alt ?? "");
-  const normalizedFilename = normalizeSearchTerm(item.filename);
+  const storageFilename = getStorageFilename(item);
+  const normalizedFilename = normalizeSearchTerm(storageFilename);
   const normalizedId = normalizeSearchTerm(item.id);
-  const contentCategory = getIllustrationContentCategory(item.filename);
+  const contentCategory = getIllustrationContentCategory(storageFilename);
   const tokenGroups = buildExpandedTokenGroups(tokens);
 
   let totalScore = 0;
 
-  for (const group of tokenGroups) {
+  for (let groupIndex = 0; groupIndex < tokenGroups.length; groupIndex += 1) {
+    const group = tokenGroups[groupIndex];
+    const rawToken = tokens[groupIndex];
     let bestForToken = 0;
 
     for (const { term, rank } of group) {
+      const allowPrefix = rank === 0 && term === rawToken;
+
       bestForToken = Math.max(
         bestForToken,
         scoreTokenMatch({
-          item,
           term,
           rank,
+          allowPrefix,
           nameWords,
           normalizedName,
           normalizedTags,
@@ -262,6 +335,19 @@ export function scoreIllustrationSearch<T extends SearchableIllustrationFields>(
     totalScore += bestForToken;
   }
 
+  const normalizedQuery = normalizeSearchTerm(query);
+  if (normalizedQuery) {
+    if (normalizedName === normalizedQuery) {
+      totalScore += 30;
+    } else if (normalizedName.includes(normalizedQuery)) {
+      totalScore += 18;
+    }
+
+    if (normalizedTags.includes(normalizedQuery)) {
+      totalScore += 24;
+    }
+  }
+
   return totalScore;
 }
 
@@ -275,7 +361,8 @@ export function illustrationMatchesQuery(
 
 export function filterIllustrationsBySearch<T extends Illustration>(
   items: T[],
-  query: string
+  query: string,
+  options?: SearchOptions
 ): T[] {
   const normalized = query.trim();
   if (!normalized) {
@@ -285,10 +372,13 @@ export function filterIllustrationsBySearch<T extends Illustration>(
   const ranked: RankedIllustration<T>[] = [];
 
   for (const item of items) {
-    const score = scoreIllustrationSearch(item, normalized);
-    if (score > 0) {
-      ranked.push({ item, score });
+    const baseScore = scoreIllustrationSearch(item, normalized);
+    if (baseScore === 0) {
+      continue;
     }
+
+    const score = baseScore + categoryBoost(item, options?.categoryFilter);
+    ranked.push({ item, score });
   }
 
   ranked.sort((a, b) => {
@@ -302,16 +392,57 @@ export function filterIllustrationsBySearch<T extends Illustration>(
   return ranked.map(({ item }) => item);
 }
 
+function getSearchCacheKey(
+  query: string,
+  categoryFilter: FilterValue | undefined,
+  hasPremiumAccess: boolean
+): string {
+  return `${categoryFilter ?? "all"}|${hasPremiumAccess ? "pro" : "free"}|${normalizeSearchTerm(query)}`;
+}
+
+function readSearchCache(key: string): Illustration[] | undefined {
+  return SEARCH_RESULT_CACHE.get(key);
+}
+
+function writeSearchCache(key: string, results: Illustration[]): void {
+  if (SEARCH_RESULT_CACHE.size >= SEARCH_CACHE_LIMIT) {
+    const oldestKey = SEARCH_RESULT_CACHE.keys().next().value;
+    if (oldestKey) {
+      SEARCH_RESULT_CACHE.delete(oldestKey);
+    }
+  }
+
+  SEARCH_RESULT_CACHE.set(key, results);
+}
+
 /** Search within a scoped list after plan-based accessibility filtering. */
 export function searchGalleryIllustrations<T extends Illustration>({
   items,
   query,
   hasPremiumAccess,
+  categoryFilter,
 }: {
   items: T[];
   query: string;
   hasPremiumAccess: boolean;
+  categoryFilter?: FilterValue;
 }): T[] {
+  const normalized = query.trim();
+  if (!normalized) {
+    return items;
+  }
+
+  const cacheKey = getSearchCacheKey(normalized, categoryFilter, hasPremiumAccess);
+  const cached = readSearchCache(cacheKey);
+  if (cached) {
+    return cached as T[];
+  }
+
   const accessible = getSearchableGalleryIllustrations(items, hasPremiumAccess);
-  return filterIllustrationsBySearch(accessible, query);
+  const results = filterIllustrationsBySearch(accessible, normalized, {
+    categoryFilter,
+  });
+
+  writeSearchCache(cacheKey, results);
+  return results;
 }

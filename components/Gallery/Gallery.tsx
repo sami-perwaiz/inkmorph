@@ -9,7 +9,7 @@ import { Footer } from "@/components/Footer/Footer";
 import { GalleryGrid } from "@/components/GalleryGrid/GalleryGrid";
 import { Navbar } from "@/components/Navbar/Navbar";
 import { PremiumBanner } from "@/components/PremiumBanner/PremiumBanner";
-import { useDebouncedValue } from "@/hooks/useDebouncedValue";
+import { useLiveSearch } from "@/hooks/useLiveSearch";
 import { useImagePreviewModal } from "@/hooks/useImagePreviewModal";
 import { useIsDesktop } from "@/hooks/useIsDesktop";
 import { trackCategoryChange } from "@/lib/analytics";
@@ -57,7 +57,11 @@ export function Gallery({ lists }: GalleryProps) {
     resolveFilterParam(searchParams.get("filter"))
   );
   const [searchQuery, setSearchQuery] = useState("");
-  const debouncedSearchQuery = useDebouncedValue(searchQuery, 300);
+  const {
+    debouncedQuery: debouncedSearchQuery,
+    isPending: isSearchPending,
+    generation: searchGeneration,
+  } = useLiveSearch(searchQuery, 200);
   const isDesktop = useIsDesktop();
   const preview = useImagePreviewModal(isDesktop);
   const skipScrollOnMountRef = useRef(true);
@@ -110,7 +114,10 @@ export function Gallery({ lists }: GalleryProps) {
             <GalleryGrid
               lists={lists}
               activeFilter={activeFilter}
+              inputSearchQuery={searchQuery}
               searchQuery={debouncedSearchQuery}
+              isSearchPending={isSearchPending}
+              searchGeneration={searchGeneration}
               isDesktop={isDesktop}
               onPreview={preview.open}
             />

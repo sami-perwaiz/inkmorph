@@ -11,7 +11,11 @@ import {
   type ReactNode,
 } from "react";
 
-import { DailyDownloadLimitModal } from "@/components/DailyDownloadLimitModal/DailyDownloadLimitModal";
+import {
+  DailyDownloadLimitModal,
+  type LimitModalVariant,
+  type PartialLimitReason,
+} from "@/components/DailyDownloadLimitModal/DailyDownloadLimitModal";
 import { usePremiumAccess } from "@/hooks/usePremiumAccess";
 import { trackDownloadLimitPopup } from "@/lib/analytics";
 import { AUTH_CHANGE_EVENT, isSignedIn } from "@/lib/authSession";
@@ -26,16 +30,25 @@ import { ANONYMOUS_DAILY_ACTION_LIMIT } from "@/lib/dailyDownloadReset";
 export interface ActionSlotsResult {
   ok: boolean;
   allowedCount: number;
+  remaining: number;
 }
 
 interface DownloadLimitContextValue {
   status: DownloadLimitStatus | null;
+  /** False until the server-backed allowance has been fetched at least once. */
+  isStatusReady: boolean;
   remaining: number;
   resetAt: number | null;
-  refreshStatus: () => Promise<void>;
-  /** Authorize shared Copy + Download actions (1 action = 1 slot). */
+  refreshStatus: () => Promise<DownloadLimitStatus | null>;
+  /** Consume shared Copy + Download credits after a successful action. */
   requestActionSlots: (count: number) => Promise<ActionSlotsResult>;
-  showLimitModal: () => void;
+  /** Timer popup — only when remaining credits are zero. */
+  showExhaustedLimitModal: () => void;
+  /** Credits-remaining message — when user still has credits but hits selection cap. */
+  showPartialLimitModal: (
+    remainingCount: number,
+    reason?: PartialLimitReason
+  ) => void;
 }
 
 const DownloadLimitContext = createContext<DownloadLimitContextValue | null>(
@@ -50,11 +63,17 @@ export function DownloadLimitProvider({ children }: { children: ReactNode }) {
   const { hasPremiumAccess, isReady } = usePremiumAccess();
   const [status, setStatus] = useState<DownloadLimitStatus | null>(null);
   const [isLimitOpen, setIsLimitOpen] = useState(false);
+  const [limitModalVariant, setLimitModalVariant] =
+    useState<LimitModalVariant>("exhausted");
+  const [partialRemaining, setPartialRemaining] = useState(0);
+  const [partialReason, setPartialReason] =
+    useState<PartialLimitReason>("remaining");
   const authorizeInFlightRef = useRef<Promise<ActionSlotsResult> | null>(null);
 
-  const refreshStatus = useCallback(async () => {
+  const refreshStatus = useCallback(async (): Promise<DownloadLimitStatus | null> => {
     const next = await fetchDownloadLimitStatus();
     setStatus(next);
+    return next;
   }, []);
 
   const syncSessionsAndRefresh = useCallback(async () => {
@@ -81,23 +100,51 @@ export function DownloadLimitProvider({ children }: { children: ReactNode }) {
     };
   }, [syncSessionsAndRefresh]);
 
-  const showLimitModal = useCallback(() => {
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        void refreshStatus();
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [refreshStatus]);
+
+  const showExhaustedLimitModal = useCallback(() => {
     void refreshStatus().finally(() => {
+      setLimitModalVariant("exhausted");
       setIsLimitOpen(true);
       trackDownloadLimitPopup();
     });
   }, [refreshStatus]);
+
+  const showPartialLimitModal = useCallback(
+    (remainingCount: number, reason: PartialLimitReason = "remaining") => {
+      setPartialRemaining(Math.max(0, remainingCount));
+      setPartialReason(reason);
+      setLimitModalVariant("partial");
+      setIsLimitOpen(true);
+    },
+    []
+  );
 
   const requestActionSlots = useCallback(
     async (count: number): Promise<ActionSlotsResult> => {
       const normalizedCount = Math.max(0, Math.floor(count));
 
       if (normalizedCount === 0) {
-        return { ok: false, allowedCount: 0 };
+        return { ok: false, allowedCount: 0, remaining: status?.remaining ?? 0 };
       }
 
       if (hasPremiumAccess) {
-        return { ok: true, allowedCount: normalizedCount };
+        return {
+          ok: true,
+          allowedCount: normalizedCount,
+          remaining: Number.POSITIVE_INFINITY,
+        };
       }
 
       if (authorizeInFlightRef.current) {
@@ -116,14 +163,10 @@ export function DownloadLimitProvider({ children }: { children: ReactNode }) {
           isSignedIn: result.isSignedIn,
         });
 
-        if (!result.authorized) {
-          showLimitModal();
-          return { ok: false, allowedCount: 0 };
-        }
-
         return {
-          ok: true,
+          ok: result.authorized,
           allowedCount: result.allowedCount,
+          remaining: result.remaining,
         };
       })();
 
@@ -135,7 +178,7 @@ export function DownloadLimitProvider({ children }: { children: ReactNode }) {
         authorizeInFlightRef.current = null;
       }
     },
-    [hasPremiumAccess, showLimitModal]
+    [hasPremiumAccess, status?.remaining]
   );
 
   const handleResetComplete = useCallback(async () => {
@@ -147,28 +190,41 @@ export function DownloadLimitProvider({ children }: { children: ReactNode }) {
     setIsLimitOpen(false);
   }, []);
 
+  const isStatusReady = status !== null || hasPremiumAccess;
+
   const remaining =
     hasPremiumAccess || status?.isPremium
       ? Number.POSITIVE_INFINITY
-      : (status?.remaining ?? ANONYMOUS_DAILY_ACTION_LIMIT);
+      : isStatusReady
+        ? (status?.remaining ?? 0)
+        : 0;
 
   const resetAt = status?.resetAt ?? null;
+
+  const modalRemaining =
+    limitModalVariant === "partial"
+      ? partialRemaining
+      : (status?.remaining ?? 0);
 
   const value = useMemo(
     () => ({
       status,
+      isStatusReady,
       remaining,
       resetAt,
       refreshStatus,
       requestActionSlots,
-      showLimitModal,
+      showExhaustedLimitModal,
+      showPartialLimitModal,
     }),
     [
+      isStatusReady,
       remaining,
       refreshStatus,
       requestActionSlots,
       resetAt,
-      showLimitModal,
+      showExhaustedLimitModal,
+      showPartialLimitModal,
       status,
     ]
   );
@@ -178,8 +234,10 @@ export function DownloadLimitProvider({ children }: { children: ReactNode }) {
       {children}
       <DailyDownloadLimitModal
         open={isLimitOpen}
+        variant={limitModalVariant}
+        partialReason={partialReason}
         resetAt={resetAt}
-        remaining={status?.remaining ?? 0}
+        remaining={modalRemaining}
         limit={status?.limit ?? ANONYMOUS_DAILY_ACTION_LIMIT}
         onClose={closeLimitModal}
         onResetComplete={handleResetComplete}
