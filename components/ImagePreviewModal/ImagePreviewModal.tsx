@@ -243,8 +243,7 @@ function ImagePreviewModalComponent({
   const isBusy =
     actionState === "copying" ||
     actionState === "downloading";
-  const showCancel =
-    actionState === "copying" || actionState === "downloading";
+  const showCancel = actionState === "copying";
 
   useEffect(() => {
     setIsImageLoaded(hasIllustrationImageLoaded(illustration.src));
@@ -790,7 +789,7 @@ function ImagePreviewModalComponent({
               </button>
             ) : null}
 
-            {!showCancel && statusMessage && (copyState === "loading" || downloadState === "loading") ? (
+            {!showCancel && statusMessage && copyState === "loading" ? (
               <p
                 aria-live="polite"
                 className="font-inter text-xs font-normal leading-[18px] text-[#797979]"

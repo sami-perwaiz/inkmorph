@@ -122,3 +122,20 @@ export function reportByteProgress(
     totalBytes: total,
   });
 }
+
+/** Label for multi-file download buttons — percentage reflects files started. */
+export function formatMultiDownloadButtonLabel(
+  completedItems: number,
+  totalItems: number
+): string {
+  if (totalItems <= 1) {
+    return "Downloading…";
+  }
+
+  const percent = Math.min(
+    100,
+    Math.round((completedItems / totalItems) * 100)
+  );
+
+  return `Downloading ${percent}%`;
+}

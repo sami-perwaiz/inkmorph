@@ -2,18 +2,10 @@ import type { DownloadSize } from "@/lib/constants";
 import type { DownloadProgressOptions } from "@/lib/downloadProgress";
 import { fetchOriginalAssetBlob } from "@/lib/originalAssetCache";
 
-/**
- * Download quality tiers from the native source (1008×1008):
- * - 1x → 1008×1008 (native PNG)
- * - 2x → 2016×2016 (2×, high-quality resample)
- */
-const DOWNLOAD_SCALE: Record<DownloadSize, number> = {
-  "1x": 1,
-  "2x": 2,
-};
+const MULTI_DOWNLOAD_STAGGER_MS = 300;
 
-export function triggerBrowserDownload(blob: Blob, filename: string): void {
-  const url = URL.createObjectURL(blob);
+/** Same-origin direct download — Chrome handles fetch/progress in its Downloads UI. */
+export function triggerNativeFileDownload(url: string, filename: string): void {
   const anchor = document.createElement("a");
   anchor.href = url;
   anchor.download = filename;
@@ -22,77 +14,88 @@ export function triggerBrowserDownload(blob: Blob, filename: string): void {
   document.body.appendChild(anchor);
   anchor.click();
   anchor.remove();
-
-  // Delay revoke so Safari can start the download.
-  window.setTimeout(() => {
-    URL.revokeObjectURL(url);
-  }, 1500);
 }
 
-function loadImageElement(src: string): Promise<HTMLImageElement> {
+interface NativeFileDownloadOptions {
+  delayMs?: number;
+  signal?: AbortSignal;
+  onProgress?: (completedItems: number, totalItems: number) => void;
+}
+
+/** Schedules native downloads and resolves once every file has been started. */
+export function triggerNativeFileDownloads(
+  items: ReadonlyArray<{ url: string; filename: string }>,
+  options?: NativeFileDownloadOptions
+): Promise<void> {
+  if (items.length === 0) {
+    return Promise.resolve();
+  }
+
+  if (items.length === 1) {
+    triggerNativeFileDownload(items[0].url, items[0].filename);
+    options?.onProgress?.(1, 1);
+    return Promise.resolve();
+  }
+
   return new Promise((resolve, reject) => {
-    const image = new Image();
-    image.decoding = "async";
-    image.onload = () => resolve(image);
-    image.onerror = () =>
-      reject(new Error("Failed to decode image for download."));
-    image.src = src;
-  });
-}
+    const delayMs = options?.delayMs ?? MULTI_DOWNLOAD_STAGGER_MS;
+    const totalItems = items.length;
+    let completedItems = 0;
+    let settled = false;
+    const timeoutIds: number[] = [];
 
-/**
- * Renders the source at the requested download scale.
- * 1x returns the original PNG; 2x upscales to 2016×2016.
- */
-export async function renderDownloadPng(
-  src: string,
-  size: DownloadSize,
-  options?: DownloadProgressOptions
-): Promise<Blob> {
-  options?.onProgress?.({ phase: "preparing" });
+    const settleResolve = () => {
+      if (settled) {
+        return;
+      }
 
-  const sourceBlob = await fetchOriginalAssetBlob(src, options);
+      settled = true;
+      resolve();
+    };
 
-  if (size === "1x") {
-    return sourceBlob;
-  }
+    const settleReject = (error: DOMException) => {
+      if (settled) {
+        return;
+      }
 
-  options?.onProgress?.({ phase: "rendering" });
+      settled = true;
+      reject(error);
+    };
 
-  const objectUrl = URL.createObjectURL(sourceBlob);
+    const clearPending = () => {
+      for (const id of timeoutIds) {
+        window.clearTimeout(id);
+      }
+      timeoutIds.length = 0;
+    };
 
-  try {
-    const image = await loadImageElement(objectUrl);
-    const scale = DOWNLOAD_SCALE[size];
-    const width = Math.max(1, Math.round(image.naturalWidth * scale));
-    const height = Math.max(1, Math.round(image.naturalHeight * scale));
+    options?.signal?.addEventListener(
+      "abort",
+      () => {
+        clearPending();
+        settleReject(new DOMException("Download cancelled.", "AbortError"));
+      },
+      { once: true }
+    );
 
-    const canvas = document.createElement("canvas");
-    canvas.width = width;
-    canvas.height = height;
+    items.forEach((item, index) => {
+      const timeoutId = window.setTimeout(() => {
+        if (options?.signal?.aborted) {
+          return;
+        }
 
-    const context = canvas.getContext("2d");
-    if (!context) {
-      throw new Error("Unable to prepare download.");
-    }
+        triggerNativeFileDownload(item.url, item.filename);
+        completedItems += 1;
+        options?.onProgress?.(completedItems, totalItems);
 
-    context.imageSmoothingEnabled = true;
-    context.imageSmoothingQuality = "high";
-    context.clearRect(0, 0, width, height);
-    context.drawImage(image, 0, 0, width, height);
+        if (completedItems === totalItems) {
+          settleResolve();
+        }
+      }, index * delayMs);
 
-    const blob = await new Promise<Blob | null>((resolve) => {
-      canvas.toBlob(resolve, "image/png");
+      timeoutIds.push(timeoutId);
     });
-
-    if (!blob) {
-      throw new Error("Failed to encode PNG.");
-    }
-
-    return blob;
-  } finally {
-    URL.revokeObjectURL(objectUrl);
-  }
+  });
 }
 
 export async function copyImageToClipboard(
@@ -127,13 +130,25 @@ export async function copyImageToClipboard(
   }
 }
 
+/** Starts a native browser download from the original asset URL (1x and 2x). */
 export async function downloadImage(
   src: string,
   filename: string,
   size: DownloadSize = "1x",
   options?: DownloadProgressOptions
 ): Promise<void> {
-  const blob = await renderDownloadPng(src, size, options);
+  void size;
+
+  if (options?.signal?.aborted) {
+    throw new DOMException("Download cancelled.", "AbortError");
+  }
+
   options?.onProgress?.({ phase: "triggering" });
-  triggerBrowserDownload(blob, filename);
+  triggerNativeFileDownload(src, filename);
+
+  await new Promise<void>((resolve) => {
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => resolve());
+    });
+  });
 }

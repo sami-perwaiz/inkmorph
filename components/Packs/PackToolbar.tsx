@@ -79,7 +79,7 @@ export function PackToolbar({
       : isDownloading
         ? "Downloading…"
         : isSuccess
-          ? "Download Complete"
+          ? "Downloaded"
           : isError
             ? "Download failed · Try again"
             : downloadLabel);

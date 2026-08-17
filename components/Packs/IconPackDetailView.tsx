@@ -15,7 +15,7 @@ import { useDownloadLimit } from "@/components/DownloadLimitProvider/DownloadLim
 import { usePremiumAccessGate } from "@/components/PremiumAccessProvider/PremiumAccessProvider";
 import { usePremiumAccess } from "@/hooks/usePremiumAccess";
 import { ACTION } from "@/lib/constants";
-import { formatDownloadProgress } from "@/lib/downloadProgress";
+import { formatMultiDownloadButtonLabel } from "@/lib/downloadProgress";
 import { downloadPackIcons } from "@/lib/packIconDownloads";
 import type { IconPack } from "@/lib/iconPacks";
 import { getAccessiblePackIllustrations } from "@/lib/premiumFeatureAccess";
@@ -168,7 +168,6 @@ export function IconPackDetailView({
       clearDownloadResetTimeout();
       setDownloadError(null);
       setDownloadState("preparing");
-      setDownloadStatusLabel("Preparing…");
 
       abortControllerRef.current?.abort();
       const controller = new AbortController();
@@ -195,11 +194,26 @@ export function IconPackDetailView({
         }
 
         setDownloadState("downloading");
+        setDownloadStatusLabel(
+          formatMultiDownloadButtonLabel(0, items.length)
+        );
 
         await downloadPackIcons(pack, items, {
           signal: controller.signal,
           onProgress: (update) => {
-            setDownloadStatusLabel(formatDownloadProgress(update));
+            if (
+              typeof update.completedItems !== "number" ||
+              typeof update.totalItems !== "number"
+            ) {
+              return;
+            }
+
+            setDownloadStatusLabel(
+              formatMultiDownloadButtonLabel(
+                update.completedItems,
+                update.totalItems
+              )
+            );
           },
         });
 
@@ -224,11 +238,7 @@ export function IconPackDetailView({
         }
 
         setDownloadState("success");
-        setDownloadStatusLabel(
-          items.length > 1
-            ? `Download Complete · ${items.length} files`
-            : "Downloaded"
-        );
+        setDownloadStatusLabel("Downloaded");
         downloadResetTimeoutRef.current = window.setTimeout(() => {
           downloadResetTimeoutRef.current = null;
           setDownloadState("idle");

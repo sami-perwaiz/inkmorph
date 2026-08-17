@@ -12,7 +12,6 @@ import { PremiumBanner } from "@/components/PremiumBanner/PremiumBanner";
 import { usePremiumAccessGate } from "@/components/PremiumAccessProvider/PremiumAccessProvider";
 import { usePremiumAccess } from "@/hooks/usePremiumAccess";
 import { ACTION } from "@/lib/constants";
-import { formatDownloadProgress } from "@/lib/downloadProgress";
 import {
   IMAGE_PREVIEW_QUALITY,
   WALLPAPER_DETAIL_IMAGE_SIZES,
@@ -82,16 +81,13 @@ export function WallpaperDetailView({ pack }: WallpaperDetailViewProps) {
     }
 
     setDownloadState("preparing");
-    setDownloadLabel("Preparing…");
+    setDownloadLabel("Downloading…");
 
     try {
       const src = getWallpaperDownloadSrc(pack);
 
       await downloadImage(src, getWallpaperDownloadFilename(pack), "1x", {
         signal: controller.signal,
-        onProgress: (update) => {
-          setDownloadLabel(formatDownloadProgress(update));
-        },
       });
 
       setDownloadState("success");

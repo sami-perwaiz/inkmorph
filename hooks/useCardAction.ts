@@ -212,7 +212,7 @@ export function useCardAction(illustration: Illustration) {
 
       setFailedAction(null);
       setActionState("downloading");
-      setStatusMessage("Preparing…");
+      setStatusMessage("Downloading…");
 
       try {
         if (!(await ensureCreditsAvailable())) {
@@ -220,13 +220,8 @@ export function useCardAction(illustration: Illustration) {
           return;
         }
 
-        preloadOriginalAsset(src);
-
         await downloadImage(src, getCanonicalFilename(illustration), size, {
           signal: controller.signal,
-          onProgress: (update) => {
-            setStatusMessage(formatDownloadProgress(update));
-          },
         });
 
         if (!(await consumeCreditAfterSuccess())) {
