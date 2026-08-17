@@ -16,6 +16,8 @@ import { PremiumBadge } from "@/components/ActionOverlay/PremiumBadge";
 import { ProtectedPremiumImage } from "@/components/ProtectedPremiumImage/ProtectedPremiumImage";
 import { useCardAction } from "@/hooks/useCardAction";
 import { usePremiumAccess } from "@/hooks/usePremiumAccess";
+import { useSharedInViewport } from "@/hooks/useSharedInViewport";
+import { GALLERY } from "@/lib/constants";
 import {
   shouldProtectGalleryAsset,
 } from "@/lib/premiumFeatureAccess";
@@ -66,10 +68,18 @@ function GalleryCardComponent({
     hasFullLibraryAccess
   );
 
-  const [isLoaded, setIsLoaded] = useState(false);
+  const [isLoaded, setIsLoaded] = useState(() => hasIllustrationImageLoaded(src));
   const srcRef = useRef(src);
   const showPremiumBadge =
     Boolean(illustration.premium) && isLoaded && !hasFullLibraryAccess;
+
+  const cached = hasIllustrationImageLoaded(src);
+  const shouldObserve = !priority && !cached;
+  const { ref: viewportRef, inViewport } = useSharedInViewport(
+    GALLERY.viewportRootMargin,
+    shouldObserve
+  );
+  const shouldFetch = priority || cached || inViewport;
 
   useEffect(() => {
     if (srcRef.current === src) {
@@ -77,7 +87,7 @@ function GalleryCardComponent({
     }
 
     srcRef.current = src;
-    setIsLoaded(false);
+    setIsLoaded(hasIllustrationImageLoaded(src));
     setIsHovered(false);
   }, [src, setIsHovered]);
 
@@ -162,24 +172,28 @@ function GalleryCardComponent({
           <div className="gallery-card-skeleton absolute inset-0" aria-hidden />
         )}
 
-        <Image
-          key={id}
-          src={src}
-          alt=""
-          fill
-          sizes={GALLERY_CARD_IMAGE_SIZES}
-          quality={IMAGE_PREVIEW_QUALITY.grid}
-          className={[
-            "gallery-card-image object-contain object-center",
-            isLoaded ? "opacity-100" : "opacity-0",
-          ].join(" ")}
-          {...(priority
-            ? { priority: true as const }
-            : { loading: "lazy" as const })}
-          decoding="async"
-          draggable={false}
-          onLoad={handleImageLoad}
-        />
+        <div ref={viewportRef} className="absolute inset-0">
+          {shouldFetch ? (
+            <Image
+              key={id}
+              src={src}
+              alt=""
+              fill
+              sizes={GALLERY_CARD_IMAGE_SIZES}
+              quality={IMAGE_PREVIEW_QUALITY.grid}
+              className={[
+                "gallery-card-image object-contain object-center",
+                isLoaded ? "opacity-100" : "opacity-0",
+              ].join(" ")}
+              {...(priority
+                ? { priority: true as const, fetchPriority: "high" as const }
+                : {})}
+              decoding="async"
+              draggable={false}
+              onLoad={handleImageLoad}
+            />
+          ) : null}
+        </div>
       </article>
     );
   }
@@ -205,26 +219,30 @@ function GalleryCardComponent({
         />
       )}
 
-      <ProtectedPremiumImage enabled={protectImage} className="absolute inset-0">
-        <Image
-          key={id}
-          src={src}
-          alt={alt}
-          fill
-          sizes={GALLERY_CARD_IMAGE_SIZES}
-          quality={IMAGE_PREVIEW_QUALITY.grid}
-          className={[
-            "gallery-card-image object-contain object-center",
-            isLoaded ? "opacity-100" : "opacity-0",
-          ].join(" ")}
-          {...(priority
-            ? { priority: true as const }
-            : { loading: "lazy" as const })}
-          decoding="async"
-          draggable={false}
-          onLoad={handleImageLoad}
-        />
-      </ProtectedPremiumImage>
+      <div ref={viewportRef} className="absolute inset-0">
+        <ProtectedPremiumImage enabled={protectImage} className="absolute inset-0">
+          {shouldFetch ? (
+            <Image
+              key={id}
+              src={src}
+              alt={alt}
+              fill
+              sizes={GALLERY_CARD_IMAGE_SIZES}
+              quality={IMAGE_PREVIEW_QUALITY.grid}
+              className={[
+                "gallery-card-image object-contain object-center",
+                isLoaded ? "opacity-100" : "opacity-0",
+              ].join(" ")}
+              {...(priority
+                ? { priority: true as const, fetchPriority: "high" as const }
+                : {})}
+              decoding="async"
+              draggable={false}
+              onLoad={handleImageLoad}
+            />
+          ) : null}
+        </ProtectedPremiumImage>
+      </div>
 
       {showPremiumBadge ? <PremiumBadge /> : null}
 

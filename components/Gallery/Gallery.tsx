@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
@@ -7,15 +8,23 @@ import { ContentContainer } from "@/components/ContentContainer/ContentContainer
 import { DownloadLimitProvider } from "@/components/DownloadLimitProvider/DownloadLimitProvider";
 import { Footer } from "@/components/Footer/Footer";
 import { GalleryGrid } from "@/components/GalleryGrid/GalleryGrid";
-import { ImagePreviewModal } from "@/components/ImagePreviewModal/ImagePreviewModal";
 import { Navbar } from "@/components/Navbar/Navbar";
 import { PremiumBanner } from "@/components/PremiumBanner/PremiumBanner";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { useImagePreviewModal } from "@/hooks/useImagePreviewModal";
 import { useIsDesktop } from "@/hooks/useIsDesktop";
 import { trackCategoryChange } from "@/lib/analytics";
 import { FILTERS } from "@/lib/constants";
 import type { IllustrationFilterLists } from "@/lib/filterIllustrations";
 import type { FilterValue } from "@/types/illustration";
+
+const ImagePreviewModal = dynamic(
+  () =>
+    import("@/components/ImagePreviewModal/ImagePreviewModal").then(
+      (module) => ({ default: module.ImagePreviewModal })
+    ),
+  { ssr: false }
+);
 
 interface GalleryProps {
   lists: IllustrationFilterLists;
@@ -49,6 +58,7 @@ export function Gallery({ lists }: GalleryProps) {
     resolveFilterParam(searchParams.get("filter"))
   );
   const [searchQuery, setSearchQuery] = useState("");
+  const debouncedSearchQuery = useDebouncedValue(searchQuery, 300);
   const isDesktop = useIsDesktop();
   const preview = useImagePreviewModal(isDesktop);
   const skipScrollOnMountRef = useRef(true);
@@ -102,7 +112,7 @@ export function Gallery({ lists }: GalleryProps) {
             <GalleryGrid
               lists={lists}
               activeFilter={activeFilter}
-              searchQuery={searchQuery}
+              searchQuery={debouncedSearchQuery}
               isDesktop={isDesktop}
               onPreview={preview.open}
             />
@@ -125,7 +135,7 @@ export function Gallery({ lists }: GalleryProps) {
             onExitComplete={preview.completeExit}
           />
         )}
-        </div>
+      </div>
     </DownloadLimitProvider>
   );
 }

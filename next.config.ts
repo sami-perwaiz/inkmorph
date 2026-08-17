@@ -2,6 +2,33 @@ import type { NextConfig } from "next";
 
 const ONE_YEAR_SECONDS = 60 * 60 * 24 * 365;
 
+const PRODUCTION_SECURITY_HEADERS = [
+  {
+    key: "Strict-Transport-Security",
+    value: "max-age=63072000; includeSubDomains; preload",
+  },
+  {
+    key: "X-Content-Type-Options",
+    value: "nosniff",
+  },
+  {
+    key: "X-Frame-Options",
+    value: "SAMEORIGIN",
+  },
+  {
+    key: "Referrer-Policy",
+    value: "strict-origin-when-cross-origin",
+  },
+  {
+    key: "Permissions-Policy",
+    value: "camera=(), microphone=(), geolocation=()",
+  },
+  {
+    key: "Content-Security-Policy",
+    value: "upgrade-insecure-requests",
+  },
+] as const;
+
 const nextConfig: NextConfig = {
   images: {
     formats: ["image/avif", "image/webp"],
@@ -18,7 +45,32 @@ const nextConfig: NextConfig = {
     ],
   },
   async headers() {
+    const securityHeaders =
+      process.env.NODE_ENV === "production" ? PRODUCTION_SECURITY_HEADERS : [];
+
     return [
+      {
+        source: "/:path*",
+        headers: [...securityHeaders],
+      },
+      {
+        source: "/_next/static/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: `public, max-age=${ONE_YEAR_SECONDS}, immutable`,
+          },
+        ],
+      },
+      {
+        source: "/icons/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: `public, max-age=${ONE_YEAR_SECONDS}, immutable`,
+          },
+        ],
+      },
       {
         source: "/packs/:path*",
         headers: [

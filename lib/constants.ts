@@ -36,6 +36,8 @@ export const GALLERY = {
   mobileTopOffset: 100,
   tabletTopOffset: 120,
   desktopTopOffset: 138,
+  /** Prefetch gallery/card previews slightly before they scroll into view. */
+  viewportRootMargin: "400px",
 } as const;
 
 /** Pack detail icon grid — 150px tiles, optimized previews only. */

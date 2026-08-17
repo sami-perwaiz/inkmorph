@@ -4,24 +4,65 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
   type ReactNode,
 } from "react";
 
 import { PurchaseProModal } from "@/components/Packs/PurchaseProModal";
+import {
+  AUTH_CHANGE_EVENT,
+  hasPremiumAccess,
+  PREMIUM_CHANGE_EVENT,
+} from "@/lib/premiumAccess";
 
 interface PremiumAccessContextValue {
   /** Opens the site-wide Purchase Pro modal — never navigates away. */
   requestPremiumAccess: () => void;
 }
 
+export interface PremiumAccessStateValue {
+  hasPremiumAccess: boolean;
+  isReady: boolean;
+}
+
 const PremiumAccessContext = createContext<PremiumAccessContextValue | null>(
   null
 );
 
+export const PremiumAccessStateContext =
+  createContext<PremiumAccessStateValue | null>(null);
+
+function readPremiumAccessSync(): boolean {
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  return hasPremiumAccess();
+}
+
 export function PremiumAccessProvider({ children }: { children: ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [hasPremium, setHasPremium] = useState(readPremiumAccessSync);
+  const [isReady, setIsReady] = useState(
+    () => typeof window !== "undefined"
+  );
+
+  const syncPremiumState = useCallback(() => {
+    setHasPremium(hasPremiumAccess());
+    setIsReady(true);
+  }, []);
+
+  useEffect(() => {
+    syncPremiumState();
+    window.addEventListener(PREMIUM_CHANGE_EVENT, syncPremiumState);
+    window.addEventListener(AUTH_CHANGE_EVENT, syncPremiumState);
+    return () => {
+      window.removeEventListener(PREMIUM_CHANGE_EVENT, syncPremiumState);
+      window.removeEventListener(AUTH_CHANGE_EVENT, syncPremiumState);
+    };
+  }, [syncPremiumState]);
 
   const requestPremiumAccess = useCallback(() => {
     setIsOpen(true);
@@ -31,16 +72,23 @@ export function PremiumAccessProvider({ children }: { children: ReactNode }) {
     setIsOpen(false);
   }, []);
 
-  const value = useMemo(
+  const gateValue = useMemo(
     () => ({ requestPremiumAccess }),
     [requestPremiumAccess]
   );
 
+  const stateValue = useMemo(
+    () => ({ hasPremiumAccess: hasPremium, isReady }),
+    [hasPremium, isReady]
+  );
+
   return (
-    <PremiumAccessContext.Provider value={value}>
-      {children}
-      <PurchaseProModal open={isOpen} onClose={close} />
-    </PremiumAccessContext.Provider>
+    <PremiumAccessStateContext.Provider value={stateValue}>
+      <PremiumAccessContext.Provider value={gateValue}>
+        {children}
+        <PurchaseProModal open={isOpen} onClose={close} />
+      </PremiumAccessContext.Provider>
+    </PremiumAccessStateContext.Provider>
   );
 }
 

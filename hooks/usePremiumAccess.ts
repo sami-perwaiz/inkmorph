@@ -1,7 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useContext, useEffect, useState } from "react";
 
+import {
+  PremiumAccessStateContext,
+} from "@/components/PremiumAccessProvider/PremiumAccessProvider";
 import {
   AUTH_CHANGE_EVENT,
   hasPremiumAccess,
@@ -16,10 +19,13 @@ function readPremiumAccessSync(): boolean {
   return hasPremiumAccess();
 }
 
+/** Reads premium access from the shared provider when available. */
 export function usePremiumAccess(): {
   hasPremiumAccess: boolean;
   isReady: boolean;
 } {
+  const shared = useContext(PremiumAccessStateContext);
+
   const [hasPremium, setHasPremium] = useState(readPremiumAccessSync);
   const [isReady, setIsReady] = useState(
     () => typeof window !== "undefined"
@@ -31,6 +37,10 @@ export function usePremiumAccess(): {
   }, []);
 
   useEffect(() => {
+    if (shared) {
+      return;
+    }
+
     sync();
     window.addEventListener(PREMIUM_CHANGE_EVENT, sync);
     window.addEventListener(AUTH_CHANGE_EVENT, sync);
@@ -38,7 +48,11 @@ export function usePremiumAccess(): {
       window.removeEventListener(PREMIUM_CHANGE_EVENT, sync);
       window.removeEventListener(AUTH_CHANGE_EVENT, sync);
     };
-  }, [sync]);
+  }, [shared, sync]);
+
+  if (shared) {
+    return shared;
+  }
 
   return { hasPremiumAccess: hasPremium, isReady };
 }
