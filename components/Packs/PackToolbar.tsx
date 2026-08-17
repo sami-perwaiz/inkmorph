@@ -3,7 +3,7 @@
 import Image from "next/image";
 
 import { PackBackButton } from "@/components/Packs/PackBackButton";
-import { CheckIcon, SpinnerIcon } from "@/components/icons/ActionIcons";
+import { CheckIcon } from "@/components/icons/ActionIcons";
 import { ACTION } from "@/lib/constants";
 
 export type PackDownloadState =
@@ -23,7 +23,6 @@ interface PackToolbarProps {
   onExitSelection: () => void;
   onDownloadAll: () => void;
   onDownloadAllPremiumGate: () => void;
-  onCancelDownload?: () => void;
 }
 
 function ToolbarCrownIcon() {
@@ -62,27 +61,23 @@ export function PackToolbar({
   onExitSelection,
   onDownloadAll,
   onDownloadAllPremiumGate,
-  onCancelDownload,
 }: PackToolbarProps) {
   const downloadDisabled = selectionMode && selectedCount === 0;
-  const isPreparing = downloadState === "preparing";
   const isDownloading = downloadState === "downloading";
-  const isBusy = isPreparing || isDownloading;
+  const isBusy = isDownloading;
   const isSuccess = downloadState === "success";
   const isError = downloadState === "error";
   const downloadLabel = selectionMode ? "Download Selected" : "Download All";
 
   const downloadButtonLabel =
     downloadStatusLabel ??
-    (isPreparing
-      ? "Preparing…"
-      : isDownloading
-        ? "Downloading…"
-        : isSuccess
-          ? "Downloaded"
-          : isError
-            ? "Download failed · Try again"
-            : downloadLabel);
+    (isDownloading
+      ? "Downloading…"
+      : isSuccess
+        ? "Downloaded"
+        : isError
+          ? "Download failed · Try again"
+          : downloadLabel);
 
   const handleDownloadAllClick = () => {
     if (isBusy) {
@@ -120,24 +115,13 @@ export function PackToolbar({
                   aria-busy={isBusy}
                   className={toolbarActionClassName}
                 >
-                  {isBusy ? (
-                    <SpinnerIcon className="size-4 shrink-0" />
-                  ) : isSuccess ? (
+                  {isSuccess ? (
                     <CheckIcon className="size-4 shrink-0" />
                   ) : null}
                   <span className="max-w-[min(52vw,220px)] truncate">
                     {downloadButtonLabel}
                   </span>
                 </button>
-                {isBusy && onCancelDownload ? (
-                  <button
-                    type="button"
-                    onClick={onCancelDownload}
-                    className="shrink-0 font-poppins text-xs font-normal leading-4 text-[#797979] underline-offset-2 hover:underline"
-                  >
-                    Cancel
-                  </button>
-                ) : null}
                 <p
                   aria-live="polite"
                   aria-atomic
@@ -168,9 +152,7 @@ export function PackToolbar({
                   }
                   className={toolbarActionClassName}
                 >
-                  {isBusy ? (
-                    <SpinnerIcon className="size-4 shrink-0" />
-                  ) : isSuccess ? (
+                  {isSuccess ? (
                     <CheckIcon className="size-4 shrink-0" />
                   ) : null}
                   <span className="max-w-[min(52vw,220px)] truncate">
@@ -180,15 +162,6 @@ export function PackToolbar({
                     <ToolbarCrownIcon />
                   ) : null}
                 </button>
-                {isBusy && onCancelDownload ? (
-                  <button
-                    type="button"
-                    onClick={onCancelDownload}
-                    className="shrink-0 font-poppins text-xs font-normal leading-4 text-[#797979] underline-offset-2 hover:underline tablet:ml-2"
-                  >
-                    Cancel
-                  </button>
-                ) : null}
                 <button
                   type="button"
                   onClick={onEnterSelectionMode}

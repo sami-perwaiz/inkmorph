@@ -167,7 +167,6 @@ export function IconPackDetailView({
       downloadInFlightRef.current = true;
       clearDownloadResetTimeout();
       setDownloadError(null);
-      setDownloadState("preparing");
 
       abortControllerRef.current?.abort();
       const controller = new AbortController();
@@ -326,15 +325,6 @@ export function IconPackDetailView({
     void handleDownloadAll();
   }, [handleDownloadAll, handleDownloadSelected, selectionMode]);
 
-  const handleCancelDownload = useCallback(() => {
-    abortControllerRef.current?.abort();
-    clearDownloadResetTimeout();
-    downloadInFlightRef.current = false;
-    setDownloadState("idle");
-    setDownloadStatusLabel(undefined);
-    setDownloadError(null);
-  }, [clearDownloadResetTimeout]);
-
   return (
     <div className="min-h-screen w-full bg-white">
       <Navbar
@@ -355,7 +345,6 @@ export function IconPackDetailView({
         onExitSelection={handleExitSelection}
         onDownloadAll={handleToolbarDownload}
         onDownloadAllPremiumGate={handleDownloadAllPremiumGate}
-        onCancelDownload={handleCancelDownload}
       />
 
       <main className="flex w-full flex-col pt-[169px] desktop:pt-[205px]">

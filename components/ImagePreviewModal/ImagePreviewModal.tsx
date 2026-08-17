@@ -704,11 +704,9 @@ function ImagePreviewModalComponent({
                   >
                     {isLocked ? (
                       <LockIcon />
-                    ) : downloadState === "loading" ? (
-                      <SpinnerIcon />
                     ) : downloadState === "success" ? (
                       <CheckIcon />
-                    ) : downloadState === "error" ? null : null}
+                    ) : null}
                     <span className="truncate">{downloadLabel}</span>
                   </span>
                 </button>
