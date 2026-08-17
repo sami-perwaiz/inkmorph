@@ -11,8 +11,8 @@ export function IconPacksGrid() {
         aria-label="Icon packs"
         className={PACK_WALLPAPER_GRID_CLASS}
       >
-        {getVisibleIconPacks().map((pack) => (
-          <PackCard key={pack.id} pack={pack} />
+        {getVisibleIconPacks().map((pack, index) => (
+          <PackCard key={pack.id} pack={pack} priority={index < 2} />
         ))}
       </section>
     </ContentContainer>

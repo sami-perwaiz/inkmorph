@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
 
+import { LazyImage } from "@/components/LazyImage/LazyImage";
 import { PurchaseProModal } from "@/components/Packs/PurchaseProModal";
 import { usePremiumAccess } from "@/hooks/usePremiumAccess";
 import {
@@ -48,7 +49,13 @@ function WallpaperPremiumBadge() {
 }
 
 /** Figma 40004961:8905 — wallpaper set thumbnail tile. */
-export function WallpaperCard({ pack }: { pack: WallpaperPack }) {
+export function WallpaperCard({
+  pack,
+  priority = false,
+}: {
+  pack: WallpaperPack;
+  priority?: boolean;
+}) {
   const router = useRouter();
   const { hasPremiumAccess } = usePremiumAccess();
   const [purchaseModalOpen, setPurchaseModalOpen] = useState(false);
@@ -79,13 +86,13 @@ export function WallpaperCard({ pack }: { pack: WallpaperPack }) {
         className="group relative w-full min-w-0 overflow-hidden bg-[#FAFAFA] text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-900/30 focus-visible:ring-offset-2"
         style={{ aspectRatio: PACK_WALLPAPER_THUMB_ASPECT }}
       >
-        <Image
+        <LazyImage
           src={pack.thumbnailSrc}
           alt=""
-          fill
           sizes={PACK_WALLPAPER_THUMB_IMAGE_SIZES}
+          priority={priority}
           className={[
-            "object-cover object-center transition-opacity",
+            "object-cover object-center",
             isLocked ? "opacity-90 group-hover:opacity-100" : "",
           ].join(" ")}
         />

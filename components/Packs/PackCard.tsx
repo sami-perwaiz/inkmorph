@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
 
+import { LazyImage } from "@/components/LazyImage/LazyImage";
 import { PurchaseProModal } from "@/components/Packs/PurchaseProModal";
 import { usePremiumAccess } from "@/hooks/usePremiumAccess";
 import {
@@ -45,7 +46,13 @@ function PackPremiumBadge() {
 }
 
 /** Figma 40004936:47780 — pack thumbnail + title + description. */
-export function PackCard({ pack }: { pack: IconPack }) {
+export function PackCard({
+  pack,
+  priority = false,
+}: {
+  pack: IconPack;
+  priority?: boolean;
+}) {
   const router = useRouter();
   const { hasPremiumAccess } = usePremiumAccess();
   const [purchaseModalOpen, setPurchaseModalOpen] = useState(false);
@@ -81,13 +88,13 @@ export function PackCard({ pack }: { pack: IconPack }) {
         ].join(" ")}
         style={{ aspectRatio: PACK_WALLPAPER_THUMB_ASPECT }}
       >
-        <Image
+        <LazyImage
           src={pack.thumbnailSrc}
           alt=""
-          fill
           sizes={PACK_WALLPAPER_THUMB_IMAGE_SIZES}
+          priority={priority}
           className={[
-            "object-cover object-center transition-opacity",
+            "object-cover object-center",
             isLocked ? "opacity-90 group-hover:opacity-100" : "",
           ].join(" ")}
         />

@@ -11,8 +11,8 @@ export function WallpapersGrid() {
         aria-label="iPhone wallpapers"
         className={PACK_WALLPAPER_GRID_CLASS}
       >
-        {WALLPAPER_PACKS.map((pack) => (
-          <WallpaperCard key={pack.id} pack={pack} />
+        {WALLPAPER_PACKS.map((pack, index) => (
+          <WallpaperCard key={pack.id} pack={pack} priority={index < 2} />
         ))}
       </section>
     </ContentContainer>

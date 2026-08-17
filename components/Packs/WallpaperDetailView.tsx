@@ -1,9 +1,9 @@
 "use client";
 
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useCallback } from "react";
 
+import { LazyImage } from "@/components/LazyImage/LazyImage";
 import { DownloadWallpaperButton } from "@/components/Packs/DownloadWallpaperButton";
 import { PackBackButton } from "@/components/Packs/PackBackButton";
 import { Footer } from "@/components/Footer/Footer";
@@ -65,12 +65,12 @@ export function WallpaperDetailView({ pack }: WallpaperDetailViewProps) {
 
             <div className="flex w-full min-w-0 flex-col items-center gap-10 desktop:h-[600px] desktop:flex-row desktop:items-start desktop:justify-center desktop:gap-[100px]">
               <div className="relative mx-auto aspect-[277/600] w-full max-w-[277px] shrink-0 overflow-hidden rounded-[20px] bg-[#FAFAFA] desktop:mx-0 desktop:h-[600px] desktop:w-[277px] desktop:aspect-auto">
-                <Image
+                <LazyImage
                   src={pack.previewSrc}
                   alt={pack.title}
-                  fill
-                  priority
                   sizes="(max-width: 1199px) min(277px, 100vw), 277px"
+                  priority
+                  quality={85}
                   className="object-cover object-center"
                 />
               </div>

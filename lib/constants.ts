@@ -38,6 +38,15 @@ export const GALLERY = {
   desktopTopOffset: 138,
 } as const;
 
+/** Pack detail icon grid — 150px tiles, optimized previews only. */
+export const PACK_ICON = {
+  displaySize: 150,
+  imageSizes: "150px",
+  /** Prefetch icons slightly before they scroll into view. */
+  viewportRootMargin: "400px",
+  previewQuality: 80,
+} as const;
+
 /** Pack detail toolbar — flush under fixed navbar (bar height + 1px border). */
 export const PACK_DETAIL = {
   headerClearance: 71,

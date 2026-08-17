@@ -221,6 +221,42 @@
     background-color: #f3f3f3;
   }
 
+  .gallery-card-skeleton-shimmer {
+    background: linear-gradient(
+      90deg,
+      #f3f3f3 0%,
+      #fafafa 50%,
+      #f3f3f3 100%
+    );
+    background-size: 200% 100%;
+    animation: gallery-skeleton-shimmer 1.8s ease-in-out infinite;
+  }
+
+  @keyframes gallery-skeleton-shimmer {
+    0% {
+      background-position: 200% 0;
+    }
+
+    100% {
+      background-position: -200% 0;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .gallery-card-skeleton-shimmer {
+      animation: none;
+    }
+  }
+
+  /* Pack icon grid — hide bitmap until fully decoded to avoid partial/cropped paint */
+  .pack-icon-image {
+    visibility: hidden;
+  }
+
+  .pack-icon-image.opacity-100 {
+    visibility: visible;
+  }
+
   /* Safari 15–16.3 lazy-load gray border workaround */
   @supports (font: -apple-system-body) and (-webkit-appearance: none) {
     img[loading="lazy"] {

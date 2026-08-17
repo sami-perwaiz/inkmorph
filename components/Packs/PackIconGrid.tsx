@@ -1,15 +1,17 @@
 "use client";
 
-import Image from "next/image";
-import { useCallback } from "react";
+import { memo, useMemo } from "react";
 
+import { PackIconImage } from "@/components/Packs/PackIconImage";
 import { CheckIcon } from "@/components/icons/ActionIcons";
+import { usePackIconColumnCount } from "@/hooks/usePackIconColumnCount";
 import type { Illustration } from "@/types/illustration";
 
 interface PackIconCellProps {
   illustration: Illustration;
   selectionMode: boolean;
   selected: boolean;
+  priority: boolean;
   onToggleSelect: (id: string) => void;
 }
 
@@ -17,7 +19,7 @@ interface PackIconCellProps {
 function SelectionBadge({ checked }: { checked: boolean }) {
   return (
     <div
-      className="absolute bottom-[10px] right-[10px] flex size-9 items-center justify-center rounded-[6px] shadow-[0px_8px_4px_rgba(10,13,18,0.03),0px_20px_12px_rgba(10,13,18,0.08)]"
+      className="absolute bottom-[10px] right-[10px] flex size-9 items-center justify-center rounded-[6px] shadow-[0px_8px_8px_-4px_rgba(10,13,18,0.03),0px_20px_12px_rgba(10,13,18,0.08)]"
       style={{
         backgroundImage:
           "linear-gradient(180deg, rgba(255,255,255,0.2) 0%, rgba(99,99,99,0.2) 100%), linear-gradient(90deg, #000 0%, #000 100%)",
@@ -39,18 +41,19 @@ function SelectionBadge({ checked }: { checked: boolean }) {
 }
 
 /** Figma 40004941:48483 — 150px pack icon tile with optional selection. */
-function PackIconCell({
+const PackIconCell = memo(function PackIconCell({
   illustration,
   selectionMode,
   selected,
+  priority,
   onToggleSelect,
 }: PackIconCellProps) {
-  const handleClick = useCallback(() => {
+  const handleClick = () => {
     if (!selectionMode) {
       return;
     }
     onToggleSelect(illustration.id);
-  }, [illustration.id, onToggleSelect, selectionMode]);
+  };
 
   return (
     <button
@@ -64,17 +67,14 @@ function PackIconCell({
           : illustration.alt
       }
       className={[
-        "relative aspect-square w-full max-w-[150px] overflow-hidden wide:size-[150px] wide:max-w-none",
+        "relative aspect-square w-full max-w-[150px] overflow-hidden bg-[#FAFAFA] wide:size-[150px] wide:max-w-none",
         selectionMode ? "cursor-pointer" : "cursor-default",
       ].join(" ")}
     >
-      <Image
+      <PackIconImage
         src={illustration.src}
         alt={illustration.alt}
-        fill
-        unoptimized
-        sizes="(max-width: 1199px) 33vw, 150px"
-        className="object-contain object-center"
+        priority={priority}
       />
       {selectionMode ? (
         <>
@@ -86,7 +86,7 @@ function PackIconCell({
       ) : null}
     </button>
   );
-}
+});
 
 interface PackIconGridProps {
   illustrations: Illustration[];
@@ -101,6 +101,15 @@ export function PackIconGrid({
   selectedIds,
   onToggleSelect,
 }: PackIconGridProps) {
+  const columnCount = usePackIconColumnCount();
+  const priorityIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const item of illustrations.slice(0, columnCount)) {
+      ids.add(item.id);
+    }
+    return ids;
+  }, [columnCount, illustrations]);
+
   return (
     <section
       aria-label="Pack icons"
@@ -112,6 +121,7 @@ export function PackIconGrid({
           illustration={illustration}
           selectionMode={selectionMode}
           selected={selectedIds.has(illustration.id)}
+          priority={priorityIds.has(illustration.id)}
           onToggleSelect={onToggleSelect}
         />
       ))}
