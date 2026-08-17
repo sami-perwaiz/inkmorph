@@ -12,6 +12,7 @@ import {
   PACK_WALLPAPER_THUMB_ASPECT,
   PACK_WALLPAPER_THUMB_IMAGE_SIZES,
 } from "@/lib/constants";
+import { IMAGE_PREVIEW_QUALITY } from "@/lib/imageDelivery";
 import {
   canAccessWallpaperPack,
   type WallpaperPack,
@@ -91,12 +92,13 @@ export function WallpaperCard({
           alt=""
           sizes={PACK_WALLPAPER_THUMB_IMAGE_SIZES}
           priority={priority}
+          quality={IMAGE_PREVIEW_QUALITY.grid}
           className={[
             "object-cover object-center",
             isLocked ? "opacity-90 group-hover:opacity-100" : "",
           ].join(" ")}
         />
-        {pack.premium ? <WallpaperPremiumBadge /> : null}
+        {pack.premium && !hasPremiumAccess ? <WallpaperPremiumBadge /> : null}
       </button>
 
       <PurchaseProModal

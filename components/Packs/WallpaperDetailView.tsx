@@ -11,13 +11,17 @@ import { Navbar } from "@/components/Navbar/Navbar";
 import { PremiumBanner } from "@/components/PremiumBanner/PremiumBanner";
 import { usePremiumAccessGate } from "@/components/PremiumAccessProvider/PremiumAccessProvider";
 import { usePremiumAccess } from "@/hooks/usePremiumAccess";
-import { downloadImage } from "@/lib/illustrationActions";
+import {
+  IMAGE_PREVIEW_QUALITY,
+  WALLPAPER_DETAIL_IMAGE_SIZES,
+} from "@/lib/imageDelivery";
 import {
   canAccessWallpaperPack,
   getWallpaperDownloadFilename,
   getWallpaperDownloadSrc,
   type WallpaperPack,
 } from "@/lib/wallpaperPacks";
+import { downloadImage } from "@/lib/illustrationActions";
 import type { FilterValue } from "@/types/illustration";
 
 interface WallpaperDetailViewProps {
@@ -68,9 +72,9 @@ export function WallpaperDetailView({ pack }: WallpaperDetailViewProps) {
                 <LazyImage
                   src={pack.previewSrc}
                   alt={pack.title}
-                  sizes="(max-width: 1199px) min(277px, 100vw), 277px"
+                  sizes={WALLPAPER_DETAIL_IMAGE_SIZES}
                   priority
-                  quality={85}
+                  quality={IMAGE_PREVIEW_QUALITY.detail}
                   className="object-cover object-center"
                 />
               </div>

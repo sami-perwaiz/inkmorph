@@ -15,10 +15,12 @@ import { GalleryCard } from "@/components/GalleryCard/GalleryCard";
 import { usePremiumAccess } from "@/hooks/usePremiumAccess";
 import { MEDIA_QUERIES } from "@/lib/breakpoints";
 import { FILTERS } from "@/lib/constants";
+import { GALLERY_GRID_CLASS } from "@/lib/imageDelivery";
 import {
   getVisibleGalleryItems,
   type IllustrationFilterLists,
 } from "@/lib/filterIllustrations";
+import { shouldShowPaywalledTeaser } from "@/lib/premiumFeatureAccess";
 import { MOTION } from "@/lib/motion";
 import { searchGalleryIllustrations } from "@/lib/searchIllustrations";
 import type { FilterValue, Illustration } from "@/types/illustration";
@@ -71,8 +73,7 @@ function useGalleryColumnCount(): number {
   return columns;
 }
 
-const GRID_CLASS_NAME =
-  "grid w-full grid-cols-3 gap-5 px-4 tablet:grid-cols-4 tablet:px-[50px] desktop:grid-cols-4 wide:grid-cols-5";
+const GRID_CLASS_NAME = GALLERY_GRID_CLASS;
 
 export const GalleryGrid = memo(function GalleryGrid({
   lists,
@@ -89,6 +90,7 @@ export const GalleryGrid = memo(function GalleryGrid({
   const swapTimeoutRef = useRef<number | null>(null);
   const columnCount = useGalleryColumnCount();
   const { hasPremiumAccess, isReady } = usePremiumAccess();
+  const hasFullLibraryAccess = isReady && hasPremiumAccess;
 
   const categoryItems = lists[renderedFilter];
   const hasActiveSearch = searchQuery.trim().length > 0;
@@ -119,20 +121,32 @@ export const GalleryGrid = memo(function GalleryGrid({
         return matchedItems;
       }
 
+      if (hasFullLibraryAccess) {
+        return matchedItems;
+      }
+
       if (activeFilter === "all") {
         return matchedItems.filter((item) => !item.paywalled);
       }
 
       return getVisibleGalleryItems(matchedItems, columnCount);
     },
-    [activeFilter, hasActiveSearch, matchedItems, columnCount]
+    [
+      activeFilter,
+      columnCount,
+      hasActiveSearch,
+      hasFullLibraryAccess,
+      matchedItems,
+    ]
   );
   const isEmpty = matchedItems.length === 0;
   const emptyLabel =
     FILTERS.find((filter) => filter.value === renderedFilter)?.label ??
     "illustrations";
   const hasPaidPeek =
-    !hasActiveSearch && illustrations.some((item) => item.paywalled);
+    !hasFullLibraryAccess &&
+    !hasActiveSearch &&
+    illustrations.some((item) => item.paywalled);
 
   const priorityIds = useMemo(() => {
     const ids = new Set<string>();
@@ -259,7 +273,10 @@ export const GalleryGrid = memo(function GalleryGrid({
               isDesktop={isDesktop}
               onPreview={onPreview}
               priority={priorityIds.has(illustration.id)}
-              teaser={Boolean(illustration.paywalled)}
+              teaser={shouldShowPaywalledTeaser(
+                illustration,
+                hasFullLibraryAccess
+              )}
             />
           ))}
         </section>

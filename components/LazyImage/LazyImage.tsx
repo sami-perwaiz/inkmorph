@@ -13,6 +13,7 @@ import {
   hasIllustrationImageLoaded,
   markIllustrationImageLoaded,
 } from "@/lib/illustrationImageCache";
+import { IMAGE_PREVIEW_QUALITY } from "@/lib/imageDelivery";
 
 interface LazyImageProps {
   src: string;
@@ -33,7 +34,7 @@ export function LazyImage({
   sizes,
   priority = false,
   className = "object-cover object-center",
-  quality,
+  quality = IMAGE_PREVIEW_QUALITY.grid,
 }: LazyImageProps) {
   const [isLoaded, setIsLoaded] = useState(() => hasIllustrationImageLoaded(src));
   const srcRef = useRef(src);

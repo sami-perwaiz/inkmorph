@@ -1,4 +1,5 @@
 import type { DownloadSize } from "@/lib/constants";
+import { fetchOriginalAssetBlob } from "@/lib/originalAssetCache";
 
 /**
  * Download quality tiers from the native source (1008×1008):
@@ -46,13 +47,7 @@ export async function renderDownloadPng(
   src: string,
   size: DownloadSize
 ): Promise<Blob> {
-  const response = await fetch(src);
-
-  if (!response.ok) {
-    throw new Error("Failed to fetch image for download.");
-  }
-
-  const sourceBlob = await response.blob();
+  const sourceBlob = await fetchOriginalAssetBlob(src);
 
   if (size === "1x") {
     return sourceBlob;
@@ -98,13 +93,7 @@ export async function copyImageToClipboard(
   src: string,
   assetId: string
 ): Promise<void> {
-  const response = await fetch(src);
-
-  if (!response.ok) {
-    throw new Error("Failed to fetch image for copying.");
-  }
-
-  const blob = await response.blob();
+  const blob = await fetchOriginalAssetBlob(src);
 
   if (typeof ClipboardItem === "undefined" || !navigator.clipboard?.write) {
     throw new Error("Clipboard API is not supported.");

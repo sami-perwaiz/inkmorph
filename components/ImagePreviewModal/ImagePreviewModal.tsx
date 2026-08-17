@@ -39,7 +39,12 @@ import {
   hasIllustrationImageLoaded,
   markIllustrationImageLoaded,
 } from "@/lib/illustrationImageCache";
+import {
+  IMAGE_PREVIEW_MODAL_SIZES,
+  IMAGE_PREVIEW_QUALITY,
+} from "@/lib/imageDelivery";
 import { MOTION } from "@/lib/motion";
+import { preloadOriginalAsset } from "@/lib/originalAssetCache";
 import { getModalBackdropStyle } from "@/lib/modalBackdrop";
 import {
   getCopyButtonState,
@@ -207,14 +212,18 @@ function ImagePreviewModalComponent({
     handleLockedAction,
   } = useCardAction(illustration);
 
-  const { hasPremiumAccess } = usePremiumAccess();
+  const { hasPremiumAccess, isReady } = usePremiumAccess();
   const { requestPremiumAccess } = usePremiumAccessGate();
 
   const [isImageLoaded, setIsImageLoaded] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [selectedSize, setSelectedSize] = useState<DownloadSize>("1x");
 
-  const protectImage = shouldProtectGalleryAsset(illustration);
+  const hasFullLibraryAccess = isReady && hasPremiumAccess;
+  const protectImage = shouldProtectGalleryAsset(
+    illustration,
+    hasFullLibraryAccess
+  );
 
   const copyState = getCopyButtonState(actionState, failedAction);
   const downloadState = getDownloadButtonState(actionState, failedAction);
@@ -230,6 +239,12 @@ function ImagePreviewModalComponent({
     setMenuOpen(false);
     setSelectedSize("1x");
   }, [illustration.src]);
+
+  useEffect(() => {
+    if (visible && !isLocked) {
+      preloadOriginalAsset(illustration.src);
+    }
+  }, [visible, isLocked, illustration.src]);
 
   useEffect(() => {
     if (!visible) {
@@ -563,7 +578,8 @@ function ImagePreviewModalComponent({
                 src={illustration.src}
                 alt={illustration.alt}
                 fill
-                sizes="400px"
+                sizes={IMAGE_PREVIEW_MODAL_SIZES}
+                quality={IMAGE_PREVIEW_QUALITY.modal}
                 className={[
                   "gallery-card-image object-cover",
                   isImageLoaded ? "opacity-100" : "opacity-0",

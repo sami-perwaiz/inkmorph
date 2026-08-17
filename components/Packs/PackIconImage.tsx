@@ -13,6 +13,10 @@ import {
 import { useSharedInViewport } from "@/hooks/useSharedInViewport";
 import { PACK_ICON } from "@/lib/constants";
 import {
+  IMAGE_PREVIEW_QUALITY,
+  PACK_ICON_IMAGE_SIZES,
+} from "@/lib/imageDelivery";
+import {
   hasIllustrationImageLoaded,
   markIllustrationImageLoaded,
 } from "@/lib/illustrationImageCache";
@@ -109,8 +113,8 @@ function PackIconImageComponent({
           alt={alt}
           width={PACK_ICON.displaySize}
           height={PACK_ICON.displaySize}
-          sizes={PACK_ICON.imageSizes}
-          quality={PACK_ICON.previewQuality}
+          sizes={PACK_ICON_IMAGE_SIZES}
+          quality={IMAGE_PREVIEW_QUALITY.tile}
           className={[
             "pack-icon-image gallery-card-image size-full object-contain object-center transition-opacity duration-200 ease-out",
             isLoaded ? "opacity-100" : "opacity-0",

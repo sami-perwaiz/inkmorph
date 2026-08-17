@@ -5,8 +5,10 @@ const ONE_YEAR_SECONDS = 60 * 60 * 24 * 365;
 const nextConfig: NextConfig = {
   images: {
     formats: ["image/avif", "image/webp"],
-    deviceSizes: [360, 414, 640, 768, 1024, 1200, 1440, 1920],
-    imageSizes: [96, 128, 168, 256, 384],
+    /** Viewport-relative previews (gallery, pack/wallpaper cards). */
+    deviceSizes: [360, 414, 640, 750, 828, 1080, 1200, 1440, 1920],
+    /** Fixed-width previews — includes 2×/3× retina for 150–654px display sizes. */
+    imageSizes: [96, 128, 168, 256, 300, 320, 384, 512, 640],
     minimumCacheTTL: ONE_YEAR_SECONDS,
     remotePatterns: [
       {
@@ -28,6 +30,15 @@ const nextConfig: NextConfig = {
       },
       {
         source: "/wallpapers/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: `public, max-age=${ONE_YEAR_SECONDS}, immutable`,
+          },
+        ],
+      },
+      {
+        source: "/illustrations/:path*",
         headers: [
           {
             key: "Cache-Control",

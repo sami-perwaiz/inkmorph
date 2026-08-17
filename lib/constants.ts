@@ -41,11 +41,27 @@ export const GALLERY = {
 /** Pack detail icon grid — 150px tiles, optimized previews only. */
 export const PACK_ICON = {
   displaySize: 150,
-  imageSizes: "150px",
   /** Prefetch icons slightly before they scroll into view. */
   viewportRootMargin: "300px",
-  previewQuality: 85,
 } as const;
+
+/** Shared responsive grid for pack + wallpaper listing pages. */
+export const PACK_WALLPAPER_GRID_CLASS =
+  "grid w-full min-w-0 grid-cols-1 gap-8 px-4 tablet:grid-cols-2 tablet:px-[50px]";
+
+/** Figma pack/wallpaper thumbnail — 654×400 at desktop two-column width. */
+export const PACK_WALLPAPER_THUMB_ASPECT = "654 / 400" as const;
+
+export {
+  GALLERY_CARD_CLASS,
+  GALLERY_CARD_IMAGE_SIZES,
+  GALLERY_GRID_CLASS,
+  IMAGE_PREVIEW_MODAL_SIZES,
+  IMAGE_PREVIEW_QUALITY,
+  PACK_ICON_IMAGE_SIZES,
+  PACK_WALLPAPER_THUMB_IMAGE_SIZES,
+  WALLPAPER_DETAIL_IMAGE_SIZES,
+} from "@/lib/imageDelivery";
 
 /** Pack detail toolbar — flush under fixed navbar (bar height + 1px border). */
 export const PACK_DETAIL = {
@@ -56,16 +72,6 @@ export const PACK_DETAIL = {
   toolbarHeightDesktop: 84,
   toolbarGridGap: 30,
 } as const;
-
-/** Shared responsive grid for pack + wallpaper listing pages. */
-export const PACK_WALLPAPER_GRID_CLASS =
-  "grid w-full min-w-0 grid-cols-1 gap-8 px-4 tablet:grid-cols-2 tablet:px-[50px]";
-
-/** Figma pack/wallpaper thumbnail — 654×400 at desktop two-column width. */
-export const PACK_WALLPAPER_THUMB_ASPECT = "654 / 400" as const;
-
-export const PACK_WALLPAPER_THUMB_IMAGE_SIZES =
-  "(max-width: 767px) 100vw, 50vw";
 
 export const FOOTER = {
   pt: 64,

@@ -17,11 +17,20 @@ export function isPremiumAssetLocked(
   return Boolean(illustration.premium) && !hasPremiumAccess;
 }
 
-/** Copy protection applies only to individual premium gallery assets. */
+/** Copy protection for premium gallery assets — disabled once the user has Pro access. */
 export function shouldProtectGalleryAsset(
-  illustration: Pick<Illustration, "premium">
+  illustration: Pick<Illustration, "premium">,
+  hasPremiumAccess: boolean
 ): boolean {
-  return Boolean(illustration.premium);
+  return isPremiumAssetLocked(illustration, hasPremiumAccess);
+}
+
+/** Paywalled peek tiles and bottom fade — hidden for Pro users. */
+export function shouldShowPaywalledTeaser(
+  illustration: Pick<Illustration, "paywalled">,
+  hasPremiumAccess: boolean
+): boolean {
+  return Boolean(illustration.paywalled) && !hasPremiumAccess;
 }
 
 /** Any action that requires Pro for a free/basic user. */

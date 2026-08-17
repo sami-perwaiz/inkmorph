@@ -1,11 +1,20 @@
+"use client";
+
 import Image from "next/image";
 
 import { ContentContainer } from "@/components/ContentContainer/ContentContainer";
 import { GoPremiumButton } from "@/components/GoPremiumButton/GoPremiumButton";
+import { usePremiumAccess } from "@/hooks/usePremiumAccess";
 import { CTA } from "@/lib/constants";
 
-/** Premium promo banner — desktop 40004600:8848, tablet 40004712:10317, mobile 40004723:10694 */
+/** Premium promo banner — hidden for Pro users who already have full library access. */
 export function PremiumBanner() {
+  const { hasPremiumAccess, isReady } = usePremiumAccess();
+
+  if (isReady && hasPremiumAccess) {
+    return null;
+  }
+
   return (
     <ContentContainer className={CTA.sectionGapClass}>
       <section

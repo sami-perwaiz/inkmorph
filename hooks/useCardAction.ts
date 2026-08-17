@@ -9,6 +9,7 @@ import {
   copyImageToClipboard,
   downloadImage,
 } from "@/lib/illustrationActions";
+import { preloadOriginalAsset } from "@/lib/originalAssetCache";
 import { trackImageCopy, trackImageDownload } from "@/lib/analytics";
 import { ACTION, type DownloadSize } from "@/lib/constants";
 import {
@@ -78,6 +79,7 @@ export function useCardAction(illustration: Illustration) {
     setFailedAction(null);
     setActionState("copying");
     setStatusMessage("Copying image");
+    preloadOriginalAsset(src);
 
     try {
       await copyImageToClipboard(src, id);
@@ -118,6 +120,7 @@ export function useCardAction(illustration: Illustration) {
       setStatusMessage(
         size === "2x" ? "Downloading high-quality PNG" : "Downloading PNG"
       );
+      preloadOriginalAsset(src);
 
       try {
         await downloadImage(src, `${id}.png`, size);

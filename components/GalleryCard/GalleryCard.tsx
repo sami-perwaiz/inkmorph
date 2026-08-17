@@ -15,7 +15,16 @@ import { ActionOverlay } from "@/components/ActionOverlay/ActionOverlay";
 import { PremiumBadge } from "@/components/ActionOverlay/PremiumBadge";
 import { ProtectedPremiumImage } from "@/components/ProtectedPremiumImage/ProtectedPremiumImage";
 import { useCardAction } from "@/hooks/useCardAction";
-import { shouldProtectGalleryAsset } from "@/lib/premiumFeatureAccess";
+import { usePremiumAccess } from "@/hooks/usePremiumAccess";
+import {
+  shouldProtectGalleryAsset,
+} from "@/lib/premiumFeatureAccess";
+import { preloadOriginalAsset } from "@/lib/originalAssetCache";
+import {
+  GALLERY_CARD_CLASS,
+  GALLERY_CARD_IMAGE_SIZES,
+  IMAGE_PREVIEW_QUALITY,
+} from "@/lib/imageDelivery";
 import {
   hasIllustrationImageLoaded,
   markIllustrationImageLoaded,
@@ -50,10 +59,17 @@ function GalleryCardComponent({
     handleDownload,
     handleLockedAction,
   } = useCardAction(illustration);
-  const protectImage = shouldProtectGalleryAsset(illustration);
+  const { hasPremiumAccess, isReady } = usePremiumAccess();
+  const hasFullLibraryAccess = isReady && hasPremiumAccess;
+  const protectImage = shouldProtectGalleryAsset(
+    illustration,
+    hasFullLibraryAccess
+  );
 
   const [isLoaded, setIsLoaded] = useState(false);
   const srcRef = useRef(src);
+  const showPremiumBadge =
+    Boolean(illustration.premium) && isLoaded && !hasFullLibraryAccess;
 
   useEffect(() => {
     if (srcRef.current === src) {
@@ -119,10 +135,13 @@ function GalleryCardComponent({
   );
 
   const handleMouseEnter = useCallback(() => {
+    if (!isLocked) {
+      preloadOriginalAsset(src);
+    }
     if (canShowOverlay) {
       setIsHovered(true);
     }
-  }, [canShowOverlay, setIsHovered]);
+  }, [canShowOverlay, isLocked, setIsHovered, src]);
 
   const handleMouseLeave = useCallback(() => {
     if (showDesktopOverlay) {
@@ -133,7 +152,10 @@ function GalleryCardComponent({
   if (teaser) {
     return (
       <article
-        className="pointer-events-none relative aspect-square w-full overflow-hidden bg-white"
+        className={[
+          GALLERY_CARD_CLASS,
+          "pointer-events-none overflow-hidden bg-white",
+        ].join(" ")}
         aria-hidden
       >
         {!isLoaded && (
@@ -145,9 +167,10 @@ function GalleryCardComponent({
           src={src}
           alt=""
           fill
-          sizes="(max-width: 767px) 33vw, (max-width: 1439px) 25vw, 20vw"
+          sizes={GALLERY_CARD_IMAGE_SIZES}
+          quality={IMAGE_PREVIEW_QUALITY.grid}
           className={[
-            "gallery-card-image object-cover",
+            "gallery-card-image object-contain object-center",
             isLoaded ? "opacity-100" : "opacity-0",
           ].join(" ")}
           {...(priority
@@ -163,7 +186,10 @@ function GalleryCardComponent({
 
   return (
     <article
-      className="group relative aspect-square w-full cursor-pointer overflow-hidden bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-900/30 focus-visible:ring-offset-2"
+      className={[
+        GALLERY_CARD_CLASS,
+        "group cursor-pointer overflow-hidden bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-900/30 focus-visible:ring-offset-2",
+      ].join(" ")}
       role="button"
       tabIndex={0}
       aria-label={`Open preview for ${alt}`}
@@ -185,9 +211,10 @@ function GalleryCardComponent({
           src={src}
           alt={alt}
           fill
-          sizes="(max-width: 767px) 33vw, (max-width: 1439px) 25vw, 20vw"
+          sizes={GALLERY_CARD_IMAGE_SIZES}
+          quality={IMAGE_PREVIEW_QUALITY.grid}
           className={[
-            "gallery-card-image object-cover",
+            "gallery-card-image object-contain object-center",
             isLoaded ? "opacity-100" : "opacity-0",
           ].join(" ")}
           {...(priority
@@ -199,7 +226,7 @@ function GalleryCardComponent({
         />
       </ProtectedPremiumImage>
 
-      {illustration.premium && isLoaded && <PremiumBadge />}
+      {showPremiumBadge ? <PremiumBadge /> : null}
 
       {canShowOverlay && (
         <ActionOverlay
