@@ -5,8 +5,9 @@ import { useCallback } from "react";
 
 import {
   canUseHistoryBack,
+  lockScrollPersistence,
   markLegalBackNavigation,
-  savePageScroll,
+  savePageState,
 } from "@/lib/legalScroll";
 
 interface UseHistoryBackOptions {
@@ -20,7 +21,8 @@ export function useHistoryBack({
   const router = useRouter();
 
   return useCallback(() => {
-    savePageScroll(window.location.pathname);
+    lockScrollPersistence();
+    savePageState(window.location.pathname, { scrollY: window.scrollY });
     markLegalBackNavigation();
 
     if (canUseHistoryBack()) {

@@ -1,59 +1,18 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { useEffect, useRef, useState, type ReactNode } from "react";
-
-import { peekLegalNavigationDirection } from "@/lib/legalScroll";
+import { type ReactNode } from "react";
 
 interface LegalPageTransitionProps {
   children: ReactNode;
 }
 
+/** Legal routes render without enter/exit animation to avoid scroll interference. */
 export function LegalPageTransition({ children }: LegalPageTransitionProps) {
   const pathname = usePathname();
-  const hasMountedRef = useRef(false);
-  const pathnameRef = useRef(pathname);
-  const [visible, setVisible] = useState(true);
-
-  useEffect(() => {
-    const previousPath = pathnameRef.current;
-    pathnameRef.current = pathname;
-
-    if (!hasMountedRef.current) {
-      hasMountedRef.current = true;
-      return;
-    }
-
-    if (previousPath === pathname) {
-      return;
-    }
-
-    const isBackNavigation = peekLegalNavigationDirection() === "back";
-
-    setVisible(false);
-
-    const frame = window.requestAnimationFrame(() => {
-      window.requestAnimationFrame(() => {
-        setVisible(true);
-      });
-    });
-
-    if (isBackNavigation) {
-      return () => {
-        window.cancelAnimationFrame(frame);
-      };
-    }
-
-    return () => {
-      window.cancelAnimationFrame(frame);
-    };
-  }, [pathname]);
 
   return (
-    <div
-      className="legal-page-transition"
-      data-visible={visible ? "true" : "false"}
-    >
+    <div key={pathname} className="legal-page-transition" data-visible="true">
       {children}
     </div>
   );

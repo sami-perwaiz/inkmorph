@@ -17,7 +17,26 @@ function pageStateKey(path: string): string {
 
 const DIRECTION_KEY = "inkmorph-legal-nav-direction";
 
+let scrollPersistenceLocked = false;
+
+/** Suppress debounced scroll writes during route transitions. */
+export function lockScrollPersistence(): void {
+  scrollPersistenceLocked = true;
+}
+
+export function unlockScrollPersistence(): void {
+  scrollPersistenceLocked = false;
+}
+
+export function isScrollPersistenceLocked(): boolean {
+  return scrollPersistenceLocked;
+}
+
 function readPageState(path: string): StoredPageState | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
   const raw = sessionStorage.getItem(pageStateKey(path));
   if (raw === null) {
     return null;
@@ -40,6 +59,10 @@ function readPageState(path: string): StoredPageState | null {
 }
 
 function writePageState(path: string, state: StoredPageState): void {
+  if (typeof window === "undefined") {
+    return;
+  }
+
   sessionStorage.setItem(pageStateKey(path), JSON.stringify(state));
 }
 
@@ -48,10 +71,26 @@ export function savePageState(
   path: string,
   partial?: Partial<StoredPageState>
 ): void {
+  if (typeof window === "undefined" || isScrollPersistenceLocked()) {
+    return;
+  }
+
   const existing = readPageState(path);
   writePageState(path, {
     scrollY: partial?.scrollY ?? window.scrollY,
     searchQuery: partial?.searchQuery ?? existing?.searchQuery,
+  });
+}
+
+export function setPageScroll(path: string, scrollY: number): void {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  const existing = readPageState(path);
+  writePageState(path, {
+    scrollY,
+    searchQuery: existing?.searchQuery,
   });
 }
 
@@ -75,7 +114,7 @@ export function restorePageScroll(path: string): void {
 
   const top = saved.scrollY;
   const apply = () => {
-    window.scrollTo({ top, behavior: "auto" });
+    window.scrollTo({ top, left: 0, behavior: "auto" });
   };
 
   apply();
@@ -86,26 +125,14 @@ export function restorePageScroll(path: string): void {
   });
 
   window.setTimeout(apply, 0);
-  window.setTimeout(apply, 100);
-  window.setTimeout(apply, 300);
-  window.setTimeout(apply, 600);
-}
-
-export function saveLegalPageScroll(path: string): void {
-  if (isLegalPagePath(path)) {
-    savePageScroll(path);
-  }
-}
-
-export function restoreLegalPageScroll(path: string): void {
-  if (isLegalPagePath(path)) {
-    restorePageScroll(path);
-  }
+  window.setTimeout(apply, 50);
+  window.setTimeout(apply, 150);
 }
 
 /** Call before navigating forward to a legal page from an in-app link. */
 export function prepareLegalNavigation(fromPath: string): void {
-  savePageState(fromPath);
+  lockScrollPersistence();
+  savePageState(fromPath, { scrollY: window.scrollY });
   markLegalForwardNavigation();
 }
 
@@ -126,11 +153,12 @@ export function consumeLegalNavigationDirection():
   return direction === "forward" || direction === "back" ? direction : null;
 }
 
-export function peekLegalNavigationDirection(): "forward" | "back" | null {
-  const direction = sessionStorage.getItem(DIRECTION_KEY);
-  return direction === "forward" || direction === "back" ? direction : null;
-}
-
 export function canUseHistoryBack(): boolean {
   return window.history.length > 1;
+}
+
+/** Scroll a forward legal route to the top without animation or flash. */
+export function resetLegalPageScroll(path: string): void {
+  setPageScroll(path, 0);
+  window.scrollTo({ top: 0, left: 0, behavior: "auto" });
 }

@@ -6,16 +6,16 @@ import { useEffect, useLayoutEffect, useRef } from "react";
 import {
   consumeLegalNavigationDirection,
   isLegalPagePath,
+  isScrollPersistenceLocked,
+  lockScrollPersistence,
   markLegalBackNavigation,
+  resetLegalPageScroll,
   restorePageScroll,
   savePageState,
+  unlockScrollPersistence,
 } from "@/lib/legalScroll";
 
-function prefersReducedMotion(): boolean {
-  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-}
-
-/** Restores scroll when navigating back; scrolls legal pages to top on forward nav. */
+/** Restores scroll on back; legal pages always open at the top on forward navigation. */
 export function ScrollRestoration() {
   const pathname = usePathname();
   const hasMountedRef = useRef(false);
@@ -27,6 +27,8 @@ export function ScrollRestoration() {
     }
 
     const handlePopState = () => {
+      lockScrollPersistence();
+      savePageState(pathnameRef.current, { scrollY: window.scrollY });
       markLegalBackNavigation();
     };
 
@@ -40,6 +42,10 @@ export function ScrollRestoration() {
     let timeout: number | null = null;
 
     const persistScroll = () => {
+      if (isScrollPersistenceLocked()) {
+        return;
+      }
+
       savePageState(pathnameRef.current);
     };
 
@@ -60,37 +66,46 @@ export function ScrollRestoration() {
         window.clearTimeout(timeout);
       }
 
-      persistScroll();
+      if (!isScrollPersistenceLocked()) {
+        persistScroll();
+      }
     };
   }, [pathname]);
 
   useLayoutEffect(() => {
     const previousPath = pathnameRef.current;
+    const direction = consumeLegalNavigationDirection();
+    const isBackNavigation = direction === "back";
+    const isForwardLegalNavigation =
+      !isBackNavigation && isLegalPagePath(pathname);
+
+    lockScrollPersistence();
+
+    if (!isBackNavigation && previousPath !== pathname) {
+      savePageState(previousPath, { scrollY: window.scrollY });
+    }
+
     pathnameRef.current = pathname;
+
+    if (isForwardLegalNavigation) {
+      resetLegalPageScroll(pathname);
+    } else if (isBackNavigation) {
+      restorePageScroll(pathname);
+    }
 
     if (!hasMountedRef.current) {
       hasMountedRef.current = true;
-      return;
     }
 
-    const direction = consumeLegalNavigationDirection();
-    const isBackNavigation = direction === "back";
+    window.requestAnimationFrame(() => {
+      if (isForwardLegalNavigation) {
+        resetLegalPageScroll(pathname);
+      } else if (isBackNavigation) {
+        restorePageScroll(pathname);
+      }
 
-    if (!isBackNavigation) {
-      savePageState(previousPath);
-    }
-
-    if (isBackNavigation) {
-      restorePageScroll(pathname);
-      return;
-    }
-
-    if (isLegalPagePath(pathname)) {
-      const behavior: ScrollBehavior = prefersReducedMotion()
-        ? "auto"
-        : "smooth";
-      window.scrollTo({ top: 0, behavior });
-    }
+      unlockScrollPersistence();
+    });
   }, [pathname]);
 
   return null;
