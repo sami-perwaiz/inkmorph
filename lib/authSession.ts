@@ -342,5 +342,6 @@ export function signOut(): void {
   revokeGoogleAccess();
   window.localStorage.removeItem(STORAGE_KEY);
   window.localStorage.removeItem(USER_STORAGE_KEY);
+  void fetch("/api/downloads/premium", { method: "DELETE" }).catch(() => {});
   notifyAuthChange();
 }

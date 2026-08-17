@@ -2,9 +2,14 @@
 
 import type { ReactNode } from "react";
 
+import { DownloadLimitProvider } from "@/components/DownloadLimitProvider/DownloadLimitProvider";
 import { PremiumAccessProvider } from "@/components/PremiumAccessProvider/PremiumAccessProvider";
 
-/** Site-wide providers — premium modal available on every page without navigation. */
+/** Site-wide providers — premium modal and download limits on every page. */
 export function AppProviders({ children }: { children: ReactNode }) {
-  return <PremiumAccessProvider>{children}</PremiumAccessProvider>;
+  return (
+    <PremiumAccessProvider>
+      <DownloadLimitProvider>{children}</DownloadLimitProvider>
+    </PremiumAccessProvider>
+  );
 }

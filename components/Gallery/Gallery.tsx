@@ -5,7 +5,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 import { ContentContainer } from "@/components/ContentContainer/ContentContainer";
-import { DownloadLimitProvider } from "@/components/DownloadLimitProvider/DownloadLimitProvider";
 import { Footer } from "@/components/Footer/Footer";
 import { GalleryGrid } from "@/components/GalleryGrid/GalleryGrid";
 import { Navbar } from "@/components/Navbar/Navbar";
@@ -91,8 +90,7 @@ export function Gallery({ lists }: GalleryProps) {
     "illustrations";
 
   return (
-    <DownloadLimitProvider>
-      <div className="min-h-screen w-full bg-white">
+    <div className="min-h-screen w-full bg-white">
         <a
           href="#illustration-gallery"
           className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[60] focus:rounded-lg focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:text-gray-900 focus:shadow-action-hover focus:outline-none focus:ring-2 focus:ring-gray-900/30"
@@ -136,6 +134,5 @@ export function Gallery({ lists }: GalleryProps) {
           />
         )}
       </div>
-    </DownloadLimitProvider>
   );
 }

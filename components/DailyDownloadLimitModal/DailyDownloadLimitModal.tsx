@@ -3,6 +3,11 @@
 import { memo, useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
+import {
+  formatDownloadResetCountdown,
+  getRemainingMsUntilReset,
+  getClientTimezoneOffsetMinutes,
+} from "@/lib/dailyDownloadReset";
 import { MOTION } from "@/lib/motion";
 
 /** Figma 40004571:9074 — single responsive popup (desktop max 345px). */
@@ -22,6 +27,8 @@ const LIMIT_MODAL = {
   bodySize: 14,
   bodyLineHeight: 21,
   bodyColor: "#797979",
+  timerSize: 16,
+  timerLineHeight: 24,
 } as const;
 
 function HourglassIcon() {
@@ -62,19 +69,30 @@ function HourglassIcon() {
 
 interface DailyDownloadLimitModalProps {
   open: boolean;
+  resetAt: number | null;
+  remaining: number;
+  limit: number;
   onClose: () => void;
+  onResetComplete: () => void;
 }
 
 function DailyDownloadLimitModalComponent({
   open,
+  resetAt,
+  remaining,
+  limit,
   onClose,
+  onResetComplete,
 }: DailyDownloadLimitModalProps) {
   const [isMounted, setIsMounted] = useState(open);
   const [isVisible, setIsVisible] = useState(false);
+  const [countdown, setCountdown] = useState("");
   const titleId = useId();
   const descriptionId = useId();
+  const timerId = useId();
   const cardRef = useRef<HTMLDivElement>(null);
   const previouslyFocusedRef = useRef<HTMLElement | null>(null);
+  const resetTriggeredRef = useRef(false);
 
   useEffect(() => {
     if (open) {
@@ -105,6 +123,36 @@ function DailyDownloadLimitModalComponent({
   }, [open]);
 
   useEffect(() => {
+    if (!open) {
+      resetTriggeredRef.current = false;
+      return;
+    }
+
+    const timezoneOffsetMinutes = getClientTimezoneOffsetMinutes();
+
+    const tick = () => {
+      const targetResetAt =
+        resetAt ?? Date.now() + getRemainingMsUntilReset(timezoneOffsetMinutes);
+      const remainingMs = targetResetAt - Date.now();
+
+      if (remainingMs <= 0) {
+        setCountdown(formatDownloadResetCountdown(0));
+        if (!resetTriggeredRef.current) {
+          resetTriggeredRef.current = true;
+          onResetComplete();
+        }
+        return;
+      }
+
+      setCountdown(formatDownloadResetCountdown(remainingMs));
+    };
+
+    tick();
+    const intervalId = window.setInterval(tick, 1000);
+    return () => window.clearInterval(intervalId);
+  }, [onResetComplete, open, resetAt]);
+
+  useEffect(() => {
     if (!isMounted || !isVisible) {
       return;
     }
@@ -130,6 +178,8 @@ function DailyDownloadLimitModalComponent({
   if (!isMounted || typeof document === "undefined") {
     return null;
   }
+
+  const showPartialRemaining = remaining > 0 && remaining < limit;
 
   return createPortal(
     <div
@@ -208,11 +258,53 @@ function DailyDownloadLimitModalComponent({
                 color: LIMIT_MODAL.bodyColor,
               }}
             >
-              You&apos;ve downloaded your{" "}
-              <span className="font-medium text-black">3 free</span> images for
-              today. More downloads will be available tomorrow. Thanks for your
-              patience!
+              {showPartialRemaining ? (
+                <>
+                  You have{" "}
+                  <span className="font-medium text-black">{remaining}</span>{" "}
+                  free download{remaining === 1 ? "" : "s"} remaining today.
+                  Select fewer assets to continue downloading.
+                </>
+              ) : (
+                <>
+                  You&apos;ve used all your free downloads for today.
+                </>
+              )}
             </p>
+
+            <div className="flex w-full flex-col items-center gap-1 pt-1">
+              <p
+                className="font-inter font-normal"
+                style={{
+                  fontSize: LIMIT_MODAL.bodySize,
+                  lineHeight: `${LIMIT_MODAL.bodyLineHeight}px`,
+                  color: LIMIT_MODAL.bodyColor,
+                }}
+              >
+                Downloads reset in
+              </p>
+              <p
+                id={timerId}
+                aria-live="polite"
+                className="font-inter font-medium tabular-nums text-black"
+                style={{
+                  fontSize: LIMIT_MODAL.timerSize,
+                  lineHeight: `${LIMIT_MODAL.timerLineHeight}px`,
+                }}
+              >
+                {countdown || "—"}
+              </p>
+              <p
+                className="font-inter font-normal"
+                style={{
+                  fontSize: LIMIT_MODAL.bodySize,
+                  lineHeight: `${LIMIT_MODAL.bodyLineHeight}px`,
+                  color: LIMIT_MODAL.bodyColor,
+                }}
+              >
+                Come back after the reset to continue downloading.
+              </p>
+            </div>
           </div>
         </div>
       </div>

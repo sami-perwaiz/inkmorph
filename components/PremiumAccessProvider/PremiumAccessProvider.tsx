@@ -16,6 +16,7 @@ import {
   hasPremiumAccess,
   PREMIUM_CHANGE_EVENT,
 } from "@/lib/premiumAccess";
+import { syncPremiumDownloadSession } from "@/lib/downloadLimitApi";
 
 interface PremiumAccessContextValue {
   /** Opens the site-wide Purchase Pro modal — never navigates away. */
@@ -50,8 +51,10 @@ export function PremiumAccessProvider({ children }: { children: ReactNode }) {
   );
 
   const syncPremiumState = useCallback(() => {
-    setHasPremium(hasPremiumAccess());
+    const next = hasPremiumAccess();
+    setHasPremium(next);
     setIsReady(true);
+    void syncPremiumDownloadSession(next);
   }, []);
 
   useEffect(() => {

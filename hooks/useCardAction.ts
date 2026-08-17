@@ -26,7 +26,7 @@ export function useCardAction(illustration: Illustration) {
   const { id, src, category } = illustration;
   const { hasPremiumAccess } = usePremiumAccess();
   const { requestPremiumAccess } = usePremiumAccessGate();
-  const { requestDownloadSlot, commitDownloadSlot } = useDownloadLimit();
+  const { requestDownloadSlots } = useDownloadLimit();
   const [actionState, setActionState] = useState<CardActionState>("idle");
   const [failedAction, setFailedAction] = useState<"copy" | "download" | null>(
     null
@@ -111,8 +111,11 @@ export function useCardAction(illustration: Illustration) {
         return;
       }
 
-      if (!requestDownloadSlot()) {
-        return;
+      if (!hasPremiumAccess) {
+        const { ok } = await requestDownloadSlots(1);
+        if (!ok) {
+          return;
+        }
       }
 
       setFailedAction(null);
@@ -124,7 +127,6 @@ export function useCardAction(illustration: Illustration) {
 
       try {
         await downloadImage(src, `${id}.png`, size);
-        commitDownloadSlot();
         trackImageDownload(id, category);
         setActionState("downloaded");
         setStatusMessage(
@@ -140,12 +142,11 @@ export function useCardAction(illustration: Illustration) {
     },
     [
       category,
-      commitDownloadSlot,
       handleLockedAction,
       hasPremiumAccess,
       id,
       isLocked,
-      requestDownloadSlot,
+      requestDownloadSlots,
       requestPremiumAccess,
       scheduleReset,
       src,

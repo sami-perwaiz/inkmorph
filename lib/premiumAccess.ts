@@ -1,4 +1,5 @@
 import { AUTH_CHANGE_EVENT, getAuthUser } from "@/lib/authSession";
+import { syncPremiumDownloadSession } from "@/lib/downloadLimitApi";
 
 const STORAGE_KEY = "inkmorph-premium-by-sub";
 export const PREMIUM_CHANGE_EVENT = "inkmorph-premium-change";
@@ -62,6 +63,7 @@ export function grantPremiumAccess(): void {
   map[user.sub] = true;
   writePremiumBySub(map);
   notifyPremiumChange();
+  void syncPremiumDownloadSession(true);
 }
 
 export { AUTH_CHANGE_EVENT };

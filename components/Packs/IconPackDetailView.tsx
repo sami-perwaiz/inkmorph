@@ -1,13 +1,17 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { Footer } from "@/components/Footer/Footer";
 import { Navbar } from "@/components/Navbar/Navbar";
 import { PackIconGrid } from "@/components/Packs/PackIconGrid";
-import { PackToolbar } from "@/components/Packs/PackToolbar";
+import {
+  PackToolbar,
+  type PackDownloadState,
+} from "@/components/Packs/PackToolbar";
 import { PremiumBanner } from "@/components/PremiumBanner/PremiumBanner";
+import { useDownloadLimit } from "@/components/DownloadLimitProvider/DownloadLimitProvider";
 import { usePremiumAccess } from "@/hooks/usePremiumAccess";
 import { downloadPackIcons } from "@/lib/packIconDownloads";
 import type { IconPack } from "@/lib/iconPacks";
@@ -26,8 +30,24 @@ export function IconPackDetailView({
 }: IconPackDetailViewProps) {
   const router = useRouter();
   const { hasPremiumAccess } = usePremiumAccess();
+  const { requestDownloadSlots, remaining, showLimitModal } = useDownloadLimit();
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
+  const [downloadState, setDownloadState] = useState<PackDownloadState>("idle");
+  const downloadResetTimeoutRef = useRef<number | null>(null);
+
+  const clearDownloadResetTimeout = useCallback(() => {
+    if (downloadResetTimeoutRef.current !== null) {
+      window.clearTimeout(downloadResetTimeoutRef.current);
+      downloadResetTimeoutRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      clearDownloadResetTimeout();
+    };
+  }, [clearDownloadResetTimeout]);
 
   const visibleIllustrations = useMemo(
     () => getAccessiblePackIllustrations(illustrations, hasPremiumAccess),
@@ -63,6 +83,10 @@ export function IconPackDetailView({
   }, []);
 
   const handleDownloadAll = useCallback(async () => {
+    if (downloadState === "preparing") {
+      return;
+    }
+
     if (selectionMode && selectedIds.size === 0) {
       return;
     }
@@ -74,17 +98,53 @@ export function IconPackDetailView({
 
     const wasSelecting = selectionMode;
 
+    clearDownloadResetTimeout();
+    setDownloadState("preparing");
+
     try {
+      if (!hasPremiumAccess) {
+        const freeRemaining = Number.isFinite(remaining) ? remaining : 0;
+
+        if (items.length > freeRemaining) {
+          showLimitModal();
+          setDownloadState("idle");
+          return;
+        }
+
+        const { ok } = await requestDownloadSlots(items.length);
+        if (!ok) {
+          setDownloadState("idle");
+          return;
+        }
+      }
+
       await downloadPackIcons(pack, items);
 
       if (wasSelecting) {
         setSelectionMode(false);
         setSelectedIds(new Set());
       }
+
+      setDownloadState("success");
+      downloadResetTimeoutRef.current = window.setTimeout(() => {
+        downloadResetTimeoutRef.current = null;
+        setDownloadState("idle");
+      }, 2000);
     } catch {
-      // Keep selection state if the download fails.
+      setDownloadState("idle");
     }
-  }, [visibleIllustrations, pack, selectedIds, selectionMode]);
+  }, [
+    clearDownloadResetTimeout,
+    downloadState,
+    hasPremiumAccess,
+    remaining,
+    requestDownloadSlots,
+    showLimitModal,
+    visibleIllustrations,
+    pack,
+    selectedIds,
+    selectionMode,
+  ]);
 
   return (
     <div className="min-h-screen w-full bg-white">
@@ -97,6 +157,8 @@ export function IconPackDetailView({
       <PackToolbar
         selectedCount={selectedIds.size}
         selectionMode={selectionMode}
+        downloadState={downloadState}
+        showDownloadAll={hasPremiumAccess}
         onEnterSelectionMode={handleEnterSelectionMode}
         onExitSelection={handleExitSelection}
         onDownloadAll={handleDownloadAll}
@@ -116,7 +178,11 @@ export function IconPackDetailView({
       <Footer onFilterChange={handleFilterChange} />
 
       <div className="sr-only" aria-live="polite" aria-atomic="true">
-        Viewing {pack.title} pack with {visibleIllustrations.length} icons
+        {downloadState === "preparing"
+          ? "Preparing download"
+          : downloadState === "success"
+            ? "Download started"
+            : `Viewing ${pack.title} pack with ${visibleIllustrations.length} icons`}
       </div>
     </div>
   );
