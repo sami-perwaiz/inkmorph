@@ -3,6 +3,12 @@ import { getStorageFilename } from "@/lib/canonicalAsset";
 
 export type IllustrationFilterLists = Record<FilterValue, Illustration[]>;
 
+/** Deduplicated gallery payload — each illustration stored once, tabs reference ids. */
+export interface GalleryCatalogData {
+  catalog: Record<string, Illustration>;
+  lists: Record<FilterValue, string[]>;
+}
+
 /** Free item counts per category (remaining items stay behind the paywall peek). */
 export const FREE_COUNTS = {
   avatar: 10,
@@ -149,6 +155,40 @@ export function buildIllustrationFilterLists(
     object,
     abstract,
   };
+}
+
+export function resolveGalleryList(
+  catalog: Record<string, Illustration>,
+  ids: string[]
+): Illustration[] {
+  const items: Illustration[] = [];
+
+  for (const id of ids) {
+    const item = catalog[id];
+    if (item) {
+      items.push(item);
+    }
+  }
+
+  return items;
+}
+
+/** Build deduplicated client payload for the homepage gallery. */
+export function buildGalleryCatalog(items: Illustration[]): GalleryCatalogData {
+  const lists = buildIllustrationFilterLists(items);
+  const catalog: Record<string, Illustration> = {};
+  const idLists = {} as Record<FilterValue, string[]>;
+
+  for (const key of Object.keys(lists) as FilterValue[]) {
+    idLists[key] = [];
+
+    for (const item of lists[key]) {
+      catalog[item.id] ??= item;
+      idLists[key].push(item.id);
+    }
+  }
+
+  return { catalog, lists: idLists };
 }
 
 export function filterIllustrations(

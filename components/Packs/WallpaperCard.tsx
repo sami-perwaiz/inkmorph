@@ -1,11 +1,11 @@
 "use client";
 
 import Image from "next/image";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
 
 import { LazyImage } from "@/components/LazyImage/LazyImage";
-import { PurchaseProModal } from "@/components/Packs/PurchaseProModal";
 import { usePremiumAccess } from "@/hooks/usePremiumAccess";
 import {
   ACTION,
@@ -13,10 +13,19 @@ import {
   PACK_WALLPAPER_THUMB_IMAGE_SIZES,
 } from "@/lib/constants";
 import { IMAGE_PREVIEW_QUALITY } from "@/lib/imageDelivery";
+import { buildWallpaperImageAlt } from "@/lib/seo/wallpapers";
 import {
   canAccessWallpaperPack,
   type WallpaperPack,
 } from "@/lib/wallpaperPacks";
+
+const PurchaseProModal = dynamic(
+  () =>
+    import("@/components/Packs/PurchaseProModal").then((module) => ({
+      default: module.PurchaseProModal,
+    })),
+  { ssr: false }
+);
 
 function WallpaperPremiumBadge() {
   return (
@@ -89,7 +98,7 @@ export function WallpaperCard({
       >
         <LazyImage
           src={pack.thumbnailSrc}
-          alt=""
+          alt={buildWallpaperImageAlt(pack)}
           sizes={PACK_WALLPAPER_THUMB_IMAGE_SIZES}
           priority={priority}
           quality={IMAGE_PREVIEW_QUALITY.grid}

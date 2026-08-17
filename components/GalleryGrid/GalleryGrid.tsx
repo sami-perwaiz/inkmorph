@@ -18,7 +18,8 @@ import { FILTERS } from "@/lib/constants";
 import { GALLERY_CARD_CLASS, GALLERY_GRID_CLASS } from "@/lib/imageDelivery";
 import {
   getVisibleGalleryItems,
-  type IllustrationFilterLists,
+  resolveGalleryList,
+  type GalleryCatalogData,
 } from "@/lib/filterIllustrations";
 import { shouldShowPaywalledTeaser } from "@/lib/premiumFeatureAccess";
 import { MOTION } from "@/lib/motion";
@@ -26,7 +27,7 @@ import { searchGalleryIllustrations } from "@/lib/searchIllustrations";
 import type { FilterValue, Illustration } from "@/types/illustration";
 
 interface GalleryGridProps {
-  lists: IllustrationFilterLists;
+  galleryData: GalleryCatalogData;
   activeFilter: FilterValue;
   /** Immediate search input (may lead the debounced query while typing). */
   inputSearchQuery?: string;
@@ -103,8 +104,28 @@ function GallerySearchSkeleton({ columnCount }: { columnCount: number }) {
   );
 }
 
+function GalleryFilterSkeleton({ columnCount }: { columnCount: number }) {
+  const placeholders = Math.min(columnCount * 4, 20);
+
+  return (
+    <div
+      aria-hidden
+      className={[GRID_CLASS_NAME, "pointer-events-none"].join(" ")}
+    >
+      {Array.from({ length: placeholders }, (_, index) => (
+        <div key={index} className={GALLERY_CARD_CLASS}>
+          <div
+            className="gallery-card-skeleton gallery-card-skeleton-shimmer absolute inset-0"
+            aria-hidden
+          />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export const GalleryGrid = memo(function GalleryGrid({
-  lists,
+  galleryData,
   activeFilter,
   inputSearchQuery = "",
   searchQuery = "",
@@ -124,7 +145,11 @@ export const GalleryGrid = memo(function GalleryGrid({
   const { hasPremiumAccess, isReady } = usePremiumAccess();
   const hasFullLibraryAccess = isReady && hasPremiumAccess;
 
-  const categoryItems = lists[renderedFilter];
+  const { catalog, lists } = galleryData;
+  const categoryItems = useMemo(
+    () => resolveGalleryList(catalog, lists[renderedFilter]),
+    [catalog, lists, renderedFilter]
+  );
   const resolvedQuery = searchQuery.trim();
   const hasResolvedSearch = resolvedQuery.length > 0;
   const hasInputSearch = inputSearchQuery.trim().length > 0;
@@ -144,7 +169,7 @@ export const GalleryGrid = memo(function GalleryGrid({
       }
 
       const results = searchGalleryIllustrations({
-        items: lists[activeFilter],
+        items: resolveGalleryList(catalog, lists[activeFilter]),
         query: resolvedQuery,
         hasPremiumAccess: effectivePremiumAccess,
         categoryFilter: activeFilter,
@@ -163,6 +188,7 @@ export const GalleryGrid = memo(function GalleryGrid({
     };
   }, [
     activeFilter,
+    catalog,
     hasPremiumAccess,
     hasResolvedSearch,
     isReady,
@@ -373,12 +399,19 @@ export const GalleryGrid = memo(function GalleryGrid({
         <div
           aria-hidden
           className={[
-            "motion-gallery-grid absolute inset-0 z-[3] bg-white",
-            isCovered ? "pointer-events-auto" : "pointer-events-none",
-            isCovered ? "opacity-100" : "opacity-0",
+            "motion-gallery-grid absolute inset-0 z-[3]",
+            isCovered ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0",
           ].join(" ")}
-        />
+        >
+          {isCovered ? <GalleryFilterSkeleton columnCount={columnCount} /> : null}
+        </div>
       </div>
+
+      {isCovered ? (
+        <div className="sr-only" aria-live="polite">
+          Loading illustrations
+        </div>
+      ) : null}
 
       {isSearchPending && hasInputSearch ? (
         <div className="sr-only" aria-live="polite">

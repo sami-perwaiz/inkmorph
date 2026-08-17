@@ -1,10 +1,21 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
+import { BreadcrumbNav } from "@/components/Seo/BreadcrumbNav";
+import { JsonLdScript } from "@/components/Seo/JsonLdScript";
 import { IconPackDetailGate } from "@/components/Packs/IconPackDetailGate";
 import { IconPackDetailView } from "@/components/Packs/IconPackDetailView";
 import { getIconPackById, getVisibleIconPacks } from "@/lib/iconPacks";
 import { getPackIllustrations } from "@/lib/packIllustrations";
+import {
+  buildBreadcrumbJsonLd,
+  buildPackCollectionJsonLd,
+} from "@/lib/seo/jsonLd";
+import { buildPageMetadata } from "@/lib/seo/metadata";
+import {
+  buildPackSeoDescription,
+  buildPackSeoTitle,
+} from "@/lib/seo/packs";
 
 interface PackDetailPageProps {
   params: Promise<{ packId: string }>;
@@ -24,10 +35,21 @@ export async function generateMetadata({
     return { title: "Icon Pack" };
   }
 
-  return {
-    title: pack.title,
-    description: pack.description,
-  };
+  return buildPageMetadata({
+    title: buildPackSeoTitle(pack),
+    description: buildPackSeoDescription(pack),
+    path: `/packs/${pack.id}`,
+    ogImage: pack.thumbnailSrc,
+    ogImageAlt: `${pack.title} 3D icon pack preview`,
+    absoluteTitle: true,
+    keywords: [
+      pack.title,
+      "3D icon pack",
+      "premium 3D icons",
+      "icon packs",
+      "UI design resources",
+    ],
+  });
 }
 
 export default async function PackDetailPage({ params }: PackDetailPageProps) {
@@ -39,10 +61,32 @@ export default async function PackDetailPage({ params }: PackDetailPageProps) {
   }
 
   const illustrations = getPackIllustrations(pack);
+  const breadcrumbs = [
+    { label: "Home", href: "/" },
+    { label: "Icon Packs", href: "/packs" },
+    { label: pack.title },
+  ];
 
-  if (pack.premium) {
-    return <IconPackDetailGate pack={pack} illustrations={illustrations} />;
-  }
+  const jsonLd = [
+    buildBreadcrumbJsonLd([
+      { name: "Home", path: "/" },
+      { name: "Icon Packs", path: "/packs" },
+      { name: pack.title, path: `/packs/${pack.id}` },
+    ]),
+    buildPackCollectionJsonLd(pack),
+  ];
 
-  return <IconPackDetailView pack={pack} illustrations={illustrations} />;
+  const content = pack.premium ? (
+    <IconPackDetailGate pack={pack} illustrations={illustrations} />
+  ) : (
+    <IconPackDetailView pack={pack} illustrations={illustrations} />
+  );
+
+  return (
+    <>
+      <BreadcrumbNav items={breadcrumbs} />
+      <JsonLdScript data={jsonLd} />
+      {content}
+    </>
+  );
 }

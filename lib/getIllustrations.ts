@@ -52,7 +52,13 @@ function toAltText(id: string, name?: string): string {
   return name && name.trim().length > 0 ? name : `3D icon ${id}`;
 }
 
+let illustrationsCache: Illustration[] | null = null;
+
 export function getIllustrations(): Illustration[] {
+  if (illustrationsCache) {
+    return illustrationsCache;
+  }
+
   const publicDir = join(process.cwd(), "public", "illustrations");
   const registry = loadAssetRegistry();
   const lookup = buildRegistryLookup(registry);
@@ -102,5 +108,11 @@ export function getIllustrations(): Illustration[] {
     }
   }
 
+  illustrationsCache = illustrations;
   return illustrations;
+}
+
+/** Clears the in-process illustration cache (used in dev ingest scripts). */
+export function clearIllustrationsCache(): void {
+  illustrationsCache = null;
 }

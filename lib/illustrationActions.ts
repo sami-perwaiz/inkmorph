@@ -1,4 +1,5 @@
 import type { DownloadSize } from "@/lib/constants";
+import type { DownloadProgressOptions } from "@/lib/downloadProgress";
 import { fetchOriginalAssetBlob } from "@/lib/originalAssetCache";
 
 /**
@@ -45,13 +46,18 @@ function loadImageElement(src: string): Promise<HTMLImageElement> {
  */
 export async function renderDownloadPng(
   src: string,
-  size: DownloadSize
+  size: DownloadSize,
+  options?: DownloadProgressOptions
 ): Promise<Blob> {
-  const sourceBlob = await fetchOriginalAssetBlob(src);
+  options?.onProgress?.({ phase: "preparing" });
+
+  const sourceBlob = await fetchOriginalAssetBlob(src, options);
 
   if (size === "1x") {
     return sourceBlob;
   }
+
+  options?.onProgress?.({ phase: "rendering" });
 
   const objectUrl = URL.createObjectURL(sourceBlob);
 
@@ -91,9 +97,12 @@ export async function renderDownloadPng(
 
 export async function copyImageToClipboard(
   src: string,
-  assetId: string
+  assetId: string,
+  options?: DownloadProgressOptions
 ): Promise<void> {
-  const blob = await fetchOriginalAssetBlob(src);
+  options?.onProgress?.({ phase: "preparing" });
+
+  const blob = await fetchOriginalAssetBlob(src, options);
 
   if (typeof ClipboardItem === "undefined" || !navigator.clipboard?.write) {
     throw new Error("Clipboard API is not supported.");
@@ -121,8 +130,10 @@ export async function copyImageToClipboard(
 export async function downloadImage(
   src: string,
   filename: string,
-  size: DownloadSize = "1x"
+  size: DownloadSize = "1x",
+  options?: DownloadProgressOptions
 ): Promise<void> {
-  const blob = await renderDownloadPng(src, size);
+  const blob = await renderDownloadPng(src, size, options);
+  options?.onProgress?.({ phase: "triggering" });
   triggerBrowserDownload(blob, filename);
 }

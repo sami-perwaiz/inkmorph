@@ -9,13 +9,14 @@ import {
   type SyntheticEvent,
 } from "react";
 
+import { useAdaptiveRootMargin } from "@/hooks/useAdaptiveRootMargin";
 import { useSharedInViewport } from "@/hooks/useSharedInViewport";
 import { GALLERY } from "@/lib/constants";
 import {
   hasIllustrationImageLoaded,
   markIllustrationImageLoaded,
 } from "@/lib/illustrationImageCache";
-import { IMAGE_PREVIEW_QUALITY } from "@/lib/imageDelivery";
+import { IMAGE_PREVIEW_QUALITY, PREVIEW_IMAGE_PROPS } from "@/lib/imageDelivery";
 
 interface LazyImageProps {
   src: string;
@@ -39,9 +40,10 @@ export function LazyImage({
   quality = IMAGE_PREVIEW_QUALITY.grid,
 }: LazyImageProps) {
   const cached = hasIllustrationImageLoaded(src);
+  const viewportMargin = useAdaptiveRootMargin(GALLERY.viewportRootMargin);
   const shouldObserve = !priority && !cached;
   const { ref, inViewport } = useSharedInViewport(
-    GALLERY.viewportRootMargin,
+    viewportMargin,
     shouldObserve
   );
 
@@ -110,6 +112,7 @@ export function LazyImage({
             ? { priority: true as const, fetchPriority: "high" as const }
             : {})}
           decoding="async"
+          {...PREVIEW_IMAGE_PROPS}
           onLoad={handleImageLoad}
         />
       ) : null}

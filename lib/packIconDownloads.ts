@@ -1,6 +1,7 @@
 import JSZip from "jszip";
 
 import { getCanonicalFilename } from "@/lib/canonicalAsset";
+import type { DownloadProgressOptions } from "@/lib/downloadProgress";
 import {
   renderDownloadPng,
   triggerBrowserDownload,
@@ -31,9 +32,16 @@ function iconFilename(item: Illustration): string {
   return getCanonicalFilename(item);
 }
 
+function throwIfAborted(signal?: AbortSignal): void {
+  if (signal?.aborted) {
+    throw new DOMException("Download cancelled.", "AbortError");
+  }
+}
+
 async function addIconsToSession(
   pack: IconPack,
-  items: Illustration[]
+  items: Illustration[],
+  options?: DownloadProgressOptions
 ): Promise<void> {
   let bucket = session.get(pack.id);
   if (!bucket) {
@@ -41,33 +49,60 @@ async function addIconsToSession(
     session.set(pack.id, bucket);
   }
 
-  const results = await Promise.all(
-    items.map(async (item) => {
-      const blob = await renderDownloadPng(item.src, "1x");
-      return {
-        id: item.id,
-        filename: iconFilename(item),
-        blob,
-      };
-    })
-  );
+  const totalItems = items.length;
 
-  for (const stored of results) {
-    bucket.icons.set(stored.id, {
-      filename: stored.filename,
-      blob: stored.blob,
+  options?.onProgress?.({
+    phase: "preparing",
+    completedItems: 0,
+    totalItems,
+  });
+
+  for (let index = 0; index < items.length; index += 1) {
+    throwIfAborted(options?.signal);
+
+    const item = items[index];
+
+    options?.onProgress?.({
+      phase: "fetching",
+      completedItems: index,
+      totalItems,
+    });
+
+    const blob = await renderDownloadPng(item.src, "1x", {
+      signal: options?.signal,
+      onProgress: (update) => {
+        options?.onProgress?.({
+          ...update,
+          completedItems: index,
+          totalItems,
+        });
+      },
+    });
+
+    bucket.icons.set(item.id, {
+      filename: iconFilename(item),
+      blob,
+    });
+
+    options?.onProgress?.({
+      phase: "fetching",
+      completedItems: index + 1,
+      totalItems,
     });
   }
 }
 
 async function downloadPackZip(
   pack: IconPack,
-  items: Illustration[]
+  items: Illustration[],
+  options?: DownloadProgressOptions
 ): Promise<void> {
   const bucket = session.get(pack.id);
   if (!bucket) {
     throw new Error("Failed to prepare pack download.");
   }
+
+  throwIfAborted(options?.signal);
 
   const folderName = sanitizeFolderName(pack.id);
   const zip = new JSZip();
@@ -83,11 +118,34 @@ async function downloadPackZip(
     }
   }
 
-  const blob = await zip.generateAsync({ type: "blob" });
+  options?.onProgress?.({
+    phase: "zipping",
+    completedItems: items.length,
+    totalItems: items.length,
+  });
+
+  const blob = await zip.generateAsync(
+    { type: "blob" },
+    (metadata) => {
+      options?.onProgress?.({
+        phase: "zipping",
+        completedItems: items.length,
+        totalItems: items.length,
+        loadedBytes: metadata.percent,
+        totalBytes: 100,
+      });
+    }
+  );
+
+  options?.onProgress?.({ phase: "triggering" });
   triggerBrowserDownload(blob, `${folderName}.zip`);
 }
 
-async function downloadSessionZip(): Promise<void> {
+async function downloadSessionZip(
+  options?: DownloadProgressOptions
+): Promise<void> {
+  throwIfAborted(options?.signal);
+
   const zip = new JSZip();
   const root = zip.folder(MULTI_PACK_ZIP_ROOT);
   if (!root) {
@@ -105,7 +163,20 @@ async function downloadSessionZip(): Promise<void> {
     }
   }
 
-  const blob = await zip.generateAsync({ type: "blob" });
+  options?.onProgress?.({ phase: "zipping" });
+
+  const blob = await zip.generateAsync(
+    { type: "blob" },
+    (metadata) => {
+      options?.onProgress?.({
+        phase: "zipping",
+        loadedBytes: metadata.percent,
+        totalBytes: 100,
+      });
+    }
+  );
+
+  options?.onProgress?.({ phase: "triggering" });
   triggerBrowserDownload(blob, MULTI_PACK_ZIP_FILENAME);
   session.clear();
 }
@@ -117,21 +188,22 @@ async function downloadSessionZip(): Promise<void> {
  */
 export async function downloadPackIcons(
   pack: IconPack,
-  items: Illustration[]
+  items: Illustration[],
+  options?: DownloadProgressOptions
 ): Promise<void> {
   if (items.length === 0) {
     throw new Error("No icons selected for download.");
   }
 
-  await addIconsToSession(pack, items);
+  await addIconsToSession(pack, items, options);
 
   if (session.size >= 2) {
-    await downloadSessionZip();
+    await downloadSessionZip(options);
     return;
   }
 
   if (items.length > 1) {
-    await downloadPackZip(pack, items);
+    await downloadPackZip(pack, items, options);
     return;
   }
 
@@ -141,5 +213,6 @@ export async function downloadPackIcons(
     throw new Error("Failed to prepare icon for download.");
   }
 
+  options?.onProgress?.({ phase: "triggering" });
   triggerBrowserDownload(stored.blob, stored.filename);
 }

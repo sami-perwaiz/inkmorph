@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { memo, useMemo } from "react";
+import { memo } from "react";
 
 import { ContentContainer } from "@/components/ContentContainer/ContentContainer";
 import { InkMorphLogo } from "@/components/InkMorphLogo/InkMorphLogo";
 import { FOOTER, FOOTER_FILTERS } from "@/lib/constants";
+import { getCategoryHref } from "@/lib/seo/routes";
 import type { FilterValue } from "@/types/illustration";
 
 interface FooterProps {
@@ -13,19 +14,6 @@ interface FooterProps {
 }
 
 export const Footer = memo(function Footer({ onFilterChange }: FooterProps) {
-  const filterClickHandlers = useMemo(() => {
-    const handlers = {} as Record<
-      (typeof FOOTER_FILTERS)[number]["value"],
-      () => void
-    >;
-
-    for (const { value } of FOOTER_FILTERS) {
-      handlers[value] = () => onFilterChange(value);
-    }
-
-    return handlers;
-  }, [onFilterChange]);
-
   return (
     <footer className="flex flex-col items-center gap-16 bg-white px-4 py-12 tablet:gap-16 tablet:px-[50px] tablet:pb-12 tablet:pt-16">
       <ContentContainer>
@@ -49,14 +37,14 @@ export const Footer = memo(function Footer({ onFilterChange }: FooterProps) {
             aria-label="Footer categories"
           >
             {FOOTER_FILTERS.map(({ value, label }) => (
-              <button
+              <Link
                 key={value}
-                type="button"
-                onClick={filterClickHandlers[value]}
+                href={getCategoryHref(value)}
+                onClick={() => onFilterChange(value)}
                 className="whitespace-nowrap rounded-sm bg-white px-[15px] py-2 font-inter text-base font-normal leading-6 text-gray-600 opacity-50 transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-900/30 focus-visible:ring-offset-2"
               >
                 {label}
-              </button>
+              </Link>
             ))}
           </nav>
         </div>

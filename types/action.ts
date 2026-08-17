@@ -72,3 +72,47 @@ export function getDownloadButtonState(
 
   return "default";
 }
+
+export function getCopyButtonLabel(
+  actionState: CardActionState,
+  failedAction: "copy" | "download" | null,
+  statusMessage = ""
+): string {
+  const state = getCopyButtonState(actionState, failedAction);
+
+  if (state === "loading") {
+    return statusMessage || ACTION_BUTTON_LABELS.copy.loading;
+  }
+
+  if (state === "success") {
+    return "Copied";
+  }
+
+  if (state === "error") {
+    return statusMessage || "Copy failed · Try again";
+  }
+
+  return ACTION_BUTTON_LABELS.copy.default;
+}
+
+export function getDownloadButtonLabel(
+  actionState: CardActionState,
+  failedAction: "copy" | "download" | null,
+  statusMessage = ""
+): string {
+  const state = getDownloadButtonState(actionState, failedAction);
+
+  if (state === "loading") {
+    return statusMessage || ACTION_BUTTON_LABELS.download.loading;
+  }
+
+  if (state === "success") {
+    return "Downloaded";
+  }
+
+  if (state === "error") {
+    return statusMessage || "Download failed · Try again";
+  }
+
+  return ACTION_BUTTON_LABELS.download.default;
+}

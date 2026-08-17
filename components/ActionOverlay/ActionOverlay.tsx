@@ -41,6 +41,7 @@ interface ActionOverlayProps {
   onCopy: () => void;
   onDownload: (size?: DownloadSize) => void;
   onLockedAction: () => void;
+  onCancel?: () => void;
 }
 
 const COMPACT_BTN =
@@ -79,6 +80,7 @@ function ActionOverlayComponent({
   onCopy,
   onDownload,
   onLockedAction,
+  onCancel,
 }: ActionOverlayProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [selectedSize, setSelectedSize] = useState<DownloadSize>("1x");
@@ -171,13 +173,29 @@ function ActionOverlayComponent({
       />
 
       <div
-        className="motion-overlay-panel absolute flex items-center"
+        className="motion-overlay-panel absolute flex flex-col items-end"
         style={{
           right: ACTION.compactInset,
           bottom: ACTION.compactInset,
-          gap: ACTION.compactGap,
+          gap: 8,
         }}
       >
+        {statusMessage &&
+        (actionState === "copying" ||
+          actionState === "downloading" ||
+          actionState === "error") ? (
+          <p
+            aria-live="polite"
+            className="max-w-[min(42vw,160px)] truncate rounded-[6px] bg-white/95 px-2 py-1 text-right font-poppins text-[11px] font-normal leading-4 text-[#797979] shadow-[0px_1px_2px_rgba(10,13,18,0.08)]"
+          >
+            {statusMessage}
+          </p>
+        ) : null}
+
+        <div
+          className="flex items-center"
+          style={{ gap: ACTION.compactGap }}
+        >
         <button
           type="button"
           className={[COMPACT_BTN, "motion-overlay-button"].join(" ")}
@@ -307,6 +325,21 @@ function ActionOverlayComponent({
               </button>
           </AnimatedDropdownPanel>
         </div>
+        </div>
+
+        {onCancel &&
+        (actionState === "copying" || actionState === "downloading") ? (
+          <button
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation();
+              onCancel();
+            }}
+            className="font-poppins text-[10px] font-normal leading-4 text-[#797979] underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-900/30 focus-visible:ring-offset-2"
+          >
+            Cancel
+          </button>
+        ) : null}
       </div>
 
       <span className="sr-only" aria-live="polite">

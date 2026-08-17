@@ -21,6 +21,7 @@ import {
   CATEGORY_NAV_ITEMS,
   isCategoryFilter,
 } from "@/lib/navMenuItems";
+import { getCategoryHref } from "@/lib/seo/routes";
 import {
   getMenuDropdownItemClassName,
   getMenuDropdownPanelClassName,
@@ -84,7 +85,7 @@ export function CategoriesNavMenu({
           {CATEGORY_NAV_ITEMS.map(({ filter, label }) => (
             <Link
               key={filter}
-              href={`/?filter=${filter}`}
+              href={getCategoryHref(filter)}
               aria-current={
                 showGalleryFilters && activeFilter === filter ? "page" : undefined
               }
@@ -157,7 +158,7 @@ function CategoriesNavMenuDesktop({
         {CATEGORY_NAV_ITEMS.map(({ filter, label }) => (
           <Link
             key={filter}
-            href={`/?filter=${filter}`}
+            href={getCategoryHref(filter)}
             role="menuitem"
             aria-current={
               showGalleryFilters && activeFilter === filter ? "page" : undefined

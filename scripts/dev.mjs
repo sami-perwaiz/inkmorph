@@ -52,7 +52,15 @@ function startNextDev() {
       return;
     }
 
-    process.exit(code ?? (signal ? 1 : 0));
+    console.log(
+      `\nNext.js dev exited (${signal ?? code ?? "unknown"}). Restarting in 1s...\n`
+    );
+
+    setTimeout(() => {
+      if (!intentionalExit) {
+        startDevSession();
+      }
+    }, 1000);
   });
 }
 

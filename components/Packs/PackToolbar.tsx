@@ -3,20 +3,27 @@
 import Image from "next/image";
 
 import { PackBackButton } from "@/components/Packs/PackBackButton";
-import { SpinnerIcon } from "@/components/icons/ActionIcons";
+import { CheckIcon, SpinnerIcon } from "@/components/icons/ActionIcons";
 import { ACTION } from "@/lib/constants";
 
-export type PackDownloadState = "idle" | "preparing" | "success";
+export type PackDownloadState =
+  | "idle"
+  | "preparing"
+  | "downloading"
+  | "success"
+  | "error";
 
 interface PackToolbarProps {
   selectedCount: number;
   selectionMode: boolean;
   downloadState?: PackDownloadState;
+  downloadStatusLabel?: string;
   isPremiumDownloadAll: boolean;
   onEnterSelectionMode: () => void;
   onExitSelection: () => void;
   onDownloadAll: () => void;
   onDownloadAllPremiumGate: () => void;
+  onCancelDownload?: () => void;
 }
 
 function ToolbarCrownIcon() {
@@ -49,24 +56,39 @@ export function PackToolbar({
   selectedCount,
   selectionMode,
   downloadState = "idle",
+  downloadStatusLabel,
   isPremiumDownloadAll,
   onEnterSelectionMode,
   onExitSelection,
   onDownloadAll,
   onDownloadAllPremiumGate,
+  onCancelDownload,
 }: PackToolbarProps) {
   const downloadDisabled = selectionMode && selectedCount === 0;
   const isPreparing = downloadState === "preparing";
+  const isDownloading = downloadState === "downloading";
+  const isBusy = isPreparing || isDownloading;
   const isSuccess = downloadState === "success";
+  const isError = downloadState === "error";
   const downloadLabel = selectionMode ? "Download Selected" : "Download All";
 
-  const downloadButtonLabel = isPreparing
-    ? "Preparing Download…"
-    : isSuccess
-      ? "Download Started"
-      : downloadLabel;
+  const downloadButtonLabel =
+    downloadStatusLabel ??
+    (isPreparing
+      ? "Preparing…"
+      : isDownloading
+        ? "Downloading…"
+        : isSuccess
+          ? "Download Complete"
+          : isError
+            ? "Download failed · Try again"
+            : downloadLabel);
 
   const handleDownloadAllClick = () => {
+    if (isBusy) {
+      return;
+    }
+
     if (selectionMode || isPremiumDownloadAll) {
       onDownloadAll();
       return;
@@ -94,15 +116,28 @@ export function PackToolbar({
                 <button
                   type="button"
                   onClick={handleDownloadAllClick}
-                  disabled={downloadDisabled || isPreparing}
-                  aria-busy={isPreparing}
+                  disabled={downloadDisabled || isBusy || isSuccess}
+                  aria-busy={isBusy}
                   className={toolbarActionClassName}
                 >
-                  {isPreparing ? (
+                  {isBusy ? (
                     <SpinnerIcon className="size-4 shrink-0" />
+                  ) : isSuccess ? (
+                    <CheckIcon className="size-4 shrink-0" />
                   ) : null}
-                  {downloadButtonLabel}
+                  <span className="max-w-[min(52vw,220px)] truncate">
+                    {downloadButtonLabel}
+                  </span>
                 </button>
+                {isBusy && onCancelDownload ? (
+                  <button
+                    type="button"
+                    onClick={onCancelDownload}
+                    className="shrink-0 font-poppins text-xs font-normal leading-4 text-[#797979] underline-offset-2 hover:underline"
+                  >
+                    Cancel
+                  </button>
+                ) : null}
                 <p
                   aria-live="polite"
                   aria-atomic
@@ -113,6 +148,7 @@ export function PackToolbar({
                 <button
                   type="button"
                   onClick={onExitSelection}
+                  disabled={isBusy}
                   className={[toolbarActionClassName, "tablet:ml-4"].join(" ")}
                 >
                   Cancel
@@ -123,8 +159,8 @@ export function PackToolbar({
                 <button
                   type="button"
                   onClick={handleDownloadAllClick}
-                  disabled={isPreparing}
-                  aria-busy={isPreparing}
+                  disabled={isBusy || isSuccess}
+                  aria-busy={isBusy}
                   aria-label={
                     isPremiumDownloadAll
                       ? "Download All"
@@ -132,17 +168,31 @@ export function PackToolbar({
                   }
                   className={toolbarActionClassName}
                 >
-                  {isPreparing ? (
+                  {isBusy ? (
                     <SpinnerIcon className="size-4 shrink-0" />
+                  ) : isSuccess ? (
+                    <CheckIcon className="size-4 shrink-0" />
                   ) : null}
-                  {downloadButtonLabel}
-                  {!isPremiumDownloadAll && !isPreparing && !isSuccess ? (
+                  <span className="max-w-[min(52vw,220px)] truncate">
+                    {downloadButtonLabel}
+                  </span>
+                  {!isPremiumDownloadAll && !isBusy && !isSuccess && !isError ? (
                     <ToolbarCrownIcon />
                   ) : null}
                 </button>
+                {isBusy && onCancelDownload ? (
+                  <button
+                    type="button"
+                    onClick={onCancelDownload}
+                    className="shrink-0 font-poppins text-xs font-normal leading-4 text-[#797979] underline-offset-2 hover:underline tablet:ml-2"
+                  >
+                    Cancel
+                  </button>
+                ) : null}
                 <button
                   type="button"
                   onClick={onEnterSelectionMode}
+                  disabled={isBusy}
                   className={[toolbarActionClassName, "tablet:ml-4"].join(" ")}
                 >
                   Select

@@ -1,10 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-export const metadata: Metadata = {
+import { buildPageMetadata } from "@/lib/seo/metadata";
+
+export const metadata: Metadata = buildPageMetadata({
   title: "Privacy Policy",
-  description: "InkMorph privacy policy.",
-};
+  description:
+    "Read the InkMorph privacy policy covering account features, gallery usage and product analytics.",
+  path: "/privacy",
+});
 
 export default function PrivacyPage() {
   return (

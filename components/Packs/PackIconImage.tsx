@@ -10,6 +10,7 @@ import {
   type SyntheticEvent,
 } from "react";
 
+import { useAdaptiveRootMargin } from "@/hooks/useAdaptiveRootMargin";
 import { useSharedInViewport } from "@/hooks/useSharedInViewport";
 import { PACK_ICON } from "@/lib/constants";
 import {
@@ -35,9 +36,10 @@ function PackIconImageComponent({
   priority = false,
 }: PackIconImageProps) {
   const cached = hasIllustrationImageLoaded(src);
+  const viewportMargin = useAdaptiveRootMargin(PACK_ICON.viewportRootMargin);
   const shouldObserve = !priority && !cached;
   const { ref, inViewport } = useSharedInViewport(
-    PACK_ICON.viewportRootMargin,
+    viewportMargin,
     shouldObserve
   );
 

@@ -16,12 +16,12 @@ import { PremiumBadge } from "@/components/ActionOverlay/PremiumBadge";
 import { ProtectedPremiumImage } from "@/components/ProtectedPremiumImage/ProtectedPremiumImage";
 import { useCardAction } from "@/hooks/useCardAction";
 import { usePremiumAccess } from "@/hooks/usePremiumAccess";
+import { useAdaptiveRootMargin } from "@/hooks/useAdaptiveRootMargin";
 import { useSharedInViewport } from "@/hooks/useSharedInViewport";
 import { GALLERY } from "@/lib/constants";
 import {
   shouldProtectGalleryAsset,
 } from "@/lib/premiumFeatureAccess";
-import { preloadOriginalAsset } from "@/lib/originalAssetCache";
 import {
   GALLERY_CARD_CLASS,
   GALLERY_CARD_IMAGE_SIZES,
@@ -61,6 +61,7 @@ function GalleryCardComponent({
     handleCopy,
     handleDownload,
     handleLockedAction,
+    cancelAction,
   } = useCardAction(illustration);
   const { hasPremiumAccess, isReady } = usePremiumAccess();
   const hasFullLibraryAccess = isReady && hasPremiumAccess;
@@ -75,9 +76,10 @@ function GalleryCardComponent({
     Boolean(illustration.premium) && isLoaded && !hasFullLibraryAccess;
 
   const cached = hasIllustrationImageLoaded(src);
+  const viewportMargin = useAdaptiveRootMargin(GALLERY.viewportRootMargin);
   const shouldObserve = !priority && !cached;
   const { ref: viewportRef, inViewport } = useSharedInViewport(
-    GALLERY.viewportRootMargin,
+    viewportMargin,
     shouldObserve
   );
   const shouldFetch = priority || cached || inViewport;
@@ -146,13 +148,10 @@ function GalleryCardComponent({
   );
 
   const handleMouseEnter = useCallback(() => {
-    if (!isLocked) {
-      preloadOriginalAsset(src);
-    }
     if (canShowOverlay) {
       setIsHovered(true);
     }
-  }, [canShowOverlay, isLocked, setIsHovered, src]);
+  }, [canShowOverlay, setIsHovered]);
 
   const handleMouseLeave = useCallback(() => {
     if (showDesktopOverlay) {
@@ -259,6 +258,7 @@ function GalleryCardComponent({
           onCopy={handleCopy}
           onDownload={handleDownload}
           onLockedAction={handleLockedAction}
+          onCancel={cancelAction}
         />
       )}
     </article>

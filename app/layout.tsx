@@ -33,20 +33,24 @@ const siteUrl = resolveSiteUrl();
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "InkMorph — Illustration Gallery",
+    default: "InkMorph — Premium 3D Icons, Illustrations & Wallpapers",
     template: "%s · InkMorph",
   },
   description:
-    "Browse and download premium 3D assets — avatars, characters, objects, and abstract elements from InkMorph.",
+    "Discover premium 3D icons, illustrations, wallpapers and creative assets for modern digital products, websites and designs.",
   applicationName: "InkMorph",
   authors: [{ name: "InkMorph" }],
   keywords: [
-    "InkMorph",
-    "illustration gallery",
+    "3D icons",
+    "3D icon packs",
+    "premium 3D icons",
+    "3D illustrations",
     "3D assets",
-    "avatars",
-    "characters",
-    "download PNG",
+    "3D avatars",
+    "3D wallpapers",
+    "creative assets",
+    "design assets",
+    "InkMorph",
   ],
   robots: {
     index: true,
@@ -57,23 +61,23 @@ export const metadata: Metadata = {
     locale: "en_US",
     url: siteUrl,
     siteName: "InkMorph",
-    title: "InkMorph — Illustration Gallery",
+    title: "InkMorph — Premium 3D Icons, Illustrations & Wallpapers",
     description:
-      "Browse and download premium 3D assets — avatars, characters, objects, and abstract elements from InkMorph.",
+      "Discover premium 3D icons, illustrations, wallpapers and creative assets for modern digital products, websites and designs.",
     images: [
       {
         url: "/logo.png",
         width: 512,
         height: 512,
-        alt: "InkMorph",
+        alt: "InkMorph logo",
       },
     ],
   },
   twitter: {
-    card: "summary",
-    title: "InkMorph — Illustration Gallery",
+    card: "summary_large_image",
+    title: "InkMorph — Premium 3D Icons, Illustrations & Wallpapers",
     description:
-      "Browse and download premium 3D assets — avatars, characters, objects, and abstract elements from InkMorph.",
+      "Discover premium 3D icons, illustrations, wallpapers and creative assets for modern digital products, websites and designs.",
     images: ["/logo.png"],
   },
   icons: {

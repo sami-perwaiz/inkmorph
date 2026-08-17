@@ -8,6 +8,7 @@ import { Navbar } from "@/components/Navbar/Navbar";
 import { PremiumBanner } from "@/components/PremiumBanner/PremiumBanner";
 import { PricingHero } from "@/components/Pricing/PricingHero";
 import { PricingPlans } from "@/components/Pricing/PricingPlans";
+import { getCategoryHref } from "@/lib/seo/routes";
 import type { FilterValue } from "@/types/illustration";
 
 const PRICING_PLANS_HASH = "#pricing-plans";
@@ -40,7 +41,7 @@ export function PricingView() {
 
   const handleFilterChange = useCallback(
     (filter: FilterValue) => {
-      router.push(filter === "all" ? "/" : `/?filter=${filter}`);
+      router.push(getCategoryHref(filter));
     },
     [router]
   );

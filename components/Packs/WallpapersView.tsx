@@ -7,6 +7,7 @@ import { Footer } from "@/components/Footer/Footer";
 import { Navbar } from "@/components/Navbar/Navbar";
 import { PremiumBanner } from "@/components/PremiumBanner/PremiumBanner";
 import { WallpapersGrid } from "@/components/Packs/WallpapersGrid";
+import { getCategoryHref } from "@/lib/seo/routes";
 import type { FilterValue } from "@/types/illustration";
 
 /** Figma 40004961:8876 — iPhone Wallpapers tab. */
@@ -15,7 +16,7 @@ export function WallpapersView() {
 
   const handleFilterChange = useCallback(
     (filter: FilterValue) => {
-      router.push(filter === "all" ? "/" : `/?filter=${filter}`);
+      router.push(getCategoryHref(filter));
     },
     [router]
   );

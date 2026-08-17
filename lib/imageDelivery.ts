@@ -7,18 +7,18 @@
 /** High-quality preview compression — sharp without visible artifacts. */
 export const IMAGE_PREVIEW_QUALITY = {
   /** Main gallery grid and pack/wallpaper listing cards. */
-  grid: 90,
+  grid: 75,
   /** Fixed-size tiles (pack icon grid). */
-  tile: 90,
+  tile: 80,
   /** Detail-page previews (wallpaper portrait, etc.). */
-  detail: 92,
+  detail: 85,
   /** Full-screen preview modal. */
-  modal: 92,
+  modal: 90,
 } as const;
 
-/** Homepage gallery — responsive cell widths with 2× retina headroom. */
+/** Fixed pixel widths — avoids over-fetching on mobile vs desktop viewports. */
 export const GALLERY_CARD_IMAGE_SIZES =
-  "(max-width: 767px) min(28vw, 104px), (max-width: 1199px) min(22vw, 140px), min(20vw, 384px)";
+  "(max-width: 767px) 104px, (max-width: 1199px) 140px, 384px";
 
 /** Gallery grid layout — mobile/tablet compact; desktop unchanged at `desktop:`. */
 export const GALLERY_GRID_CLASS =
@@ -30,7 +30,7 @@ export const GALLERY_CARD_CLASS =
 
 /** Pack detail icons — display capped at 150px across breakpoints. */
 export const PACK_ICON_IMAGE_SIZES =
-  "(max-width: 767px) min(33vw, 150px), (max-width: 1199px) min(25vw, 150px), 150px";
+  "(max-width: 767px) 150px, (max-width: 1199px) 150px, 150px";
 
 /** Pack + wallpaper listing thumbnails (654×400 Figma tile). */
 export const PACK_WALLPAPER_THUMB_IMAGE_SIZES =
@@ -48,7 +48,9 @@ export const IMAGE_PREVIEW_MODAL_SIZES =
  * Optimized Next/Image previews — resized WebP/AVIF for fast grid and modal display.
  * Download/copy actions use canonical originals via `lib/illustrationActions.ts`.
  */
-export const PREVIEW_IMAGE_PROPS = {} as const;
+export const PREVIEW_IMAGE_PROPS = {
+  loading: "lazy" as const,
+} as const;
 
 /**
  * @deprecated Prefer {@link PREVIEW_IMAGE_PROPS} for on-screen previews.

@@ -50,6 +50,8 @@ import { getModalBackdropStyle } from "@/lib/modalBackdrop";
 import {
   getCopyButtonState,
   getDownloadButtonState,
+  getCopyButtonLabel,
+  getDownloadButtonLabel,
   type ActionButtonState,
 } from "@/types/action";
 import type { Illustration } from "@/types/illustration";
@@ -211,6 +213,7 @@ function ImagePreviewModalComponent({
     handleCopy,
     handleDownload,
     handleLockedAction,
+    cancelAction,
   } = useCardAction(illustration);
 
   const { hasPremiumAccess, isReady } = usePremiumAccess();
@@ -230,12 +233,18 @@ function ImagePreviewModalComponent({
 
   const copyState = getCopyButtonState(actionState, failedAction);
   const downloadState = getDownloadButtonState(actionState, failedAction);
+  const copyLabel = getCopyButtonLabel(actionState, failedAction, statusMessage);
+  const downloadLabel = getDownloadButtonLabel(
+    actionState,
+    failedAction,
+    statusMessage
+  );
   const mutedMeta = isLocked ? "text-[#797979]" : "text-[#0a0a0a]";
   const isBusy =
     actionState === "copying" ||
-    actionState === "downloading" ||
-    actionState === "copied" ||
-    actionState === "downloaded";
+    actionState === "downloading";
+  const showCancel =
+    actionState === "copying" || actionState === "downloading";
 
   useEffect(() => {
     setIsImageLoaded(hasIllustrationImageLoaded(illustration.src));
@@ -660,7 +669,7 @@ function ImagePreviewModalComponent({
                   locked={isLocked}
                   defaultIcon={<CopyIcon />}
                 />
-                <span>Copy Image</span>
+                <span>{copyLabel}</span>
               </span>
               <span className={["leading-5", mutedMeta].join(" ")}>PNG</span>
             </button>
@@ -671,7 +680,7 @@ function ImagePreviewModalComponent({
                   type="button"
                   className={[rowButtonClass, "min-w-0 flex-1 justify-start"].join(" ")}
                   aria-label={
-                    isLocked ? "Unlock to download" : "Download PNG"
+                    isLocked ? "Unlock to download" : downloadLabel
                   }
                   disabled={
                     !isLocked &&
@@ -680,7 +689,7 @@ function ImagePreviewModalComponent({
                   onClick={handleDownloadClick}
                 >
                   <span
-                    className="inline-flex items-center"
+                    className="inline-flex min-w-0 items-center"
                     style={{ gap: PREVIEW_MODAL.iconLabelGap }}
                   >
                     {isLocked ? (
@@ -689,8 +698,8 @@ function ImagePreviewModalComponent({
                       <SpinnerIcon />
                     ) : downloadState === "success" ? (
                       <CheckIcon />
-                    ) : null}
-                    <span>Download PNG</span>
+                    ) : downloadState === "error" ? null : null}
+                    <span className="truncate">{downloadLabel}</span>
                   </span>
                 </button>
 
@@ -759,6 +768,25 @@ function ImagePreviewModalComponent({
                 </button>
               </AnimatedDropdownPanel>
             </div>
+
+            {showCancel ? (
+              <button
+                type="button"
+                onClick={cancelAction}
+                className="self-start font-inter text-xs font-normal leading-[18px] text-[#797979] underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-900/30 focus-visible:ring-offset-2"
+              >
+                Cancel
+              </button>
+            ) : null}
+
+            {!showCancel && statusMessage && (copyState === "loading" || downloadState === "loading") ? (
+              <p
+                aria-live="polite"
+                className="font-inter text-xs font-normal leading-[18px] text-[#797979]"
+              >
+                {statusMessage}
+              </p>
+            ) : null}
           </div>
         </div>
 

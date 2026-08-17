@@ -2,10 +2,10 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { useCallback, useState } from "react";
 
 import { LazyImage } from "@/components/LazyImage/LazyImage";
-import { PurchaseProModal } from "@/components/Packs/PurchaseProModal";
 import { usePremiumAccess } from "@/hooks/usePremiumAccess";
 import {
   ACTION,
@@ -14,6 +14,14 @@ import {
 } from "@/lib/constants";
 import { IMAGE_PREVIEW_QUALITY } from "@/lib/imageDelivery";
 import { canAccessIconPack, type IconPack } from "@/lib/iconPacks";
+
+const PurchaseProModal = dynamic(
+  () =>
+    import("@/components/Packs/PurchaseProModal").then((module) => ({
+      default: module.PurchaseProModal,
+    })),
+  { ssr: false }
+);
 
 function PackPremiumBadge() {
   return (
@@ -75,7 +83,7 @@ export function PackCard({
     <>
       <LazyImage
         src={pack.thumbnailSrc}
-        alt=""
+        alt={`${pack.title} 3D icon pack preview`}
         sizes={PACK_WALLPAPER_THUMB_IMAGE_SIZES}
         priority={priority}
         quality={IMAGE_PREVIEW_QUALITY.grid}
@@ -104,7 +112,7 @@ export function PackCard({
         ) : (
           <Link
             href={`/packs/${pack.id}`}
-            prefetch
+            prefetch={priority}
             aria-label={`Open ${pack.title}`}
             className={thumbnailClassName}
             style={{ aspectRatio: PACK_WALLPAPER_THUMB_ASPECT }}

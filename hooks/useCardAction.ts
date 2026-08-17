@@ -10,6 +10,7 @@ import {
   downloadImage,
 } from "@/lib/illustrationActions";
 import { getCanonicalFilename } from "@/lib/canonicalAsset";
+import { formatDownloadProgress } from "@/lib/downloadProgress";
 import { preloadOriginalAsset } from "@/lib/originalAssetCache";
 import { trackImageCopy, trackImageDownload } from "@/lib/analytics";
 import { ACTION, type DownloadSize } from "@/lib/constants";
@@ -21,7 +22,7 @@ import type { CardActionState } from "@/types/action";
 import type { Illustration } from "@/types/illustration";
 
 const SUCCESS_RESET_MS = ACTION.successResetMs;
-const ERROR_RESET_MS = 1800;
+const ERROR_RESET_MS = 2200;
 
 export function useCardAction(illustration: Illustration) {
   const { id, src, category } = illustration;
@@ -40,6 +41,7 @@ export function useCardAction(illustration: Illustration) {
   const [statusMessage, setStatusMessage] = useState("");
   const resetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const actionStateRef = useRef(actionState);
+  const abortControllerRef = useRef<AbortController | null>(null);
   const isLocked = isPremiumAssetLocked(illustration, hasPremiumAccess);
 
   useEffect(() => {
@@ -66,12 +68,19 @@ export function useCardAction(illustration: Illustration) {
   );
 
   const resetActionState = useCallback(() => {
+    abortControllerRef.current?.abort();
+    abortControllerRef.current = null;
     setActionState("idle");
     setFailedAction(null);
     setStatusMessage("");
   }, []);
 
-  useEffect(() => clearResetTimer, [clearResetTimer]);
+  useEffect(() => {
+    return () => {
+      clearResetTimer();
+      abortControllerRef.current?.abort();
+    };
+  }, [clearResetTimer]);
 
   const handleLockedAction = useCallback(() => {
     requestPremiumAccess();
@@ -108,13 +117,20 @@ export function useCardAction(illustration: Illustration) {
       return;
     }
 
-    if (actionStateRef.current !== "idle" && actionStateRef.current !== "error") {
+    if (
+      actionStateRef.current !== "idle" &&
+      actionStateRef.current !== "error"
+    ) {
       return;
     }
 
+    abortControllerRef.current?.abort();
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
     setFailedAction(null);
     setActionState("copying");
-    setStatusMessage("Copying image");
+    setStatusMessage("Preparing…");
 
     try {
       if (!(await ensureCreditsAvailable())) {
@@ -124,7 +140,12 @@ export function useCardAction(illustration: Illustration) {
 
       preloadOriginalAsset(src);
 
-      await copyImageToClipboard(src, id);
+      await copyImageToClipboard(src, id, {
+        signal: controller.signal,
+        onProgress: (update) => {
+          setStatusMessage(formatDownloadProgress(update));
+        },
+      });
 
       if (!(await consumeCreditAfterSuccess())) {
         resetActionState();
@@ -133,13 +154,26 @@ export function useCardAction(illustration: Illustration) {
 
       trackImageCopy(id, category);
       setActionState("copied");
-      setStatusMessage("Image copied to clipboard");
+      setStatusMessage("Copied");
       scheduleReset();
-    } catch {
+    } catch (error) {
+      if (controller.signal.aborted) {
+        resetActionState();
+        return;
+      }
+
       setFailedAction("copy");
       setActionState("error");
-      setStatusMessage("Unable to copy image");
+      setStatusMessage(
+        error instanceof Error && error.message.includes("Clipboard")
+          ? "Copy failed · Try again"
+          : "Copy failed · Try again"
+      );
       scheduleReset(ERROR_RESET_MS);
+    } finally {
+      if (abortControllerRef.current === controller) {
+        abortControllerRef.current = null;
+      }
     }
   }, [
     category,
@@ -165,15 +199,20 @@ export function useCardAction(illustration: Illustration) {
         return;
       }
 
-      if (actionStateRef.current !== "idle" && actionStateRef.current !== "error") {
+      if (
+        actionStateRef.current !== "idle" &&
+        actionStateRef.current !== "error"
+      ) {
         return;
       }
 
+      abortControllerRef.current?.abort();
+      const controller = new AbortController();
+      abortControllerRef.current = controller;
+
       setFailedAction(null);
       setActionState("downloading");
-      setStatusMessage(
-        size === "2x" ? "Downloading high-quality PNG" : "Downloading PNG"
-      );
+      setStatusMessage("Preparing…");
 
       try {
         if (!(await ensureCreditsAvailable())) {
@@ -183,7 +222,12 @@ export function useCardAction(illustration: Illustration) {
 
         preloadOriginalAsset(src);
 
-        await downloadImage(src, getCanonicalFilename(illustration), size);
+        await downloadImage(src, getCanonicalFilename(illustration), size, {
+          signal: controller.signal,
+          onProgress: (update) => {
+            setStatusMessage(formatDownloadProgress(update));
+          },
+        });
 
         if (!(await consumeCreditAfterSuccess())) {
           resetActionState();
@@ -192,15 +236,22 @@ export function useCardAction(illustration: Illustration) {
 
         trackImageDownload(id, category);
         setActionState("downloaded");
-        setStatusMessage(
-          size === "2x" ? "Downloaded high-quality PNG" : "Downloaded PNG"
-        );
+        setStatusMessage("Downloaded");
         scheduleReset();
-      } catch {
+      } catch (error) {
+        if (controller.signal.aborted) {
+          resetActionState();
+          return;
+        }
+
         setFailedAction("download");
         setActionState("error");
-        setStatusMessage("Unable to download image");
+        setStatusMessage("Download failed · Try again");
         scheduleReset(ERROR_RESET_MS);
+      } finally {
+        if (abortControllerRef.current === controller) {
+          abortControllerRef.current = null;
+        }
       }
     },
     [
@@ -218,6 +269,13 @@ export function useCardAction(illustration: Illustration) {
       src,
     ]
   );
+
+  const cancelAction = useCallback(() => {
+    abortControllerRef.current?.abort();
+    resetActionState();
+    setStatusMessage("Cancelled");
+    scheduleReset(900);
+  }, [resetActionState, scheduleReset]);
 
   const showOverlay =
     isHovered ||
@@ -238,5 +296,6 @@ export function useCardAction(illustration: Illustration) {
     handleCopy,
     handleDownload,
     handleLockedAction,
+    cancelAction,
   };
 }
