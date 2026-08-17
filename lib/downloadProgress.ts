@@ -2,7 +2,6 @@ export type DownloadPhase =
   | "preparing"
   | "fetching"
   | "rendering"
-  | "zipping"
   | "triggering";
 
 export interface DownloadProgressUpdate {
@@ -34,20 +33,15 @@ export function formatBytes(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-export function formatDownloadProgress(update: DownloadProgressUpdate): string {
-  const { phase, loadedBytes, totalBytes, completedItems, totalItems } = update;
+/** Copy-to-clipboard progress only — not used for download button labels. */
+export function formatCopyProgress(update: DownloadProgressUpdate): string {
+  const { phase, loadedBytes, totalBytes } = update;
 
-  if (
-    typeof completedItems === "number" &&
-    typeof totalItems === "number" &&
-    totalItems > 1
-  ) {
-    const itemLabel = `Downloading ${completedItems} of ${totalItems}`;
+  if (phase === "preparing") {
+    return "Preparing…";
+  }
 
-    if (phase === "zipping") {
-      return `Creating zip… ${completedItems} of ${totalItems}`;
-    }
-
+  if (phase === "fetching") {
     if (
       typeof loadedBytes === "number" &&
       loadedBytes > 0 &&
@@ -58,56 +52,17 @@ export function formatDownloadProgress(update: DownloadProgressUpdate): string {
         100,
         Math.round((loadedBytes / totalBytes) * 100)
       );
-      return `${itemLabel} · ${formatBytes(loadedBytes)} / ${formatBytes(totalBytes)} · ${percent}%`;
+      return `Copying… ${formatBytes(loadedBytes)} / ${formatBytes(totalBytes)} · ${percent}%`;
     }
 
     if (typeof loadedBytes === "number" && loadedBytes > 0) {
-      return `${itemLabel} · ${formatBytes(loadedBytes)} downloaded`;
+      return `Copying… ${formatBytes(loadedBytes)}`;
     }
 
-    if (phase === "preparing") {
-      return totalItems >= 10
-        ? `Preparing ${totalItems} files…`
-        : "Preparing download…";
-    }
-
-    return itemLabel;
+    return "Copying…";
   }
 
-  if (phase === "preparing") {
-    return "Preparing…";
-  }
-
-  if (phase === "rendering") {
-    return "Preparing high-quality PNG…";
-  }
-
-  if (phase === "zipping") {
-    return "Creating zip…";
-  }
-
-  if (phase === "triggering") {
-    return "Starting download…";
-  }
-
-  if (
-    typeof loadedBytes === "number" &&
-    loadedBytes > 0 &&
-    typeof totalBytes === "number" &&
-    totalBytes > 0
-  ) {
-    const percent = Math.min(
-      100,
-      Math.round((loadedBytes / totalBytes) * 100)
-    );
-    return `Downloading… ${formatBytes(loadedBytes)} / ${formatBytes(totalBytes)} · ${percent}%`;
-  }
-
-  if (typeof loadedBytes === "number" && loadedBytes > 0) {
-    return `Downloading… ${formatBytes(loadedBytes)} downloaded`;
-  }
-
-  return "Downloading…";
+  return "Copying…";
 }
 
 export function reportByteProgress(
@@ -121,21 +76,4 @@ export function reportByteProgress(
     loadedBytes: loaded,
     totalBytes: total,
   });
-}
-
-/** Label for multi-file download buttons — percentage reflects files started. */
-export function formatMultiDownloadButtonLabel(
-  completedItems: number,
-  totalItems: number
-): string {
-  if (totalItems <= 1) {
-    return "Downloading…";
-  }
-
-  const percent = Math.min(
-    100,
-    Math.round((completedItems / totalItems) * 100)
-  );
-
-  return `Downloading ${percent}%`;
 }

@@ -3,6 +3,15 @@ import type { DownloadProgressOptions } from "@/lib/downloadProgress";
 import { fetchOriginalAssetBlob } from "@/lib/originalAssetCache";
 
 const MULTI_DOWNLOAD_STAGGER_MS = 300;
+const MIN_PROGRESS_VISIBLE_MS = 350;
+
+function yieldToMain(): Promise<void> {
+  return new Promise((resolve) => {
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => resolve());
+    });
+  });
+}
 
 /** Same-origin direct download — Chrome handles fetch/progress in its Downloads UI. */
 export function triggerNativeFileDownload(url: string, filename: string): void {
@@ -22,80 +31,44 @@ interface NativeFileDownloadOptions {
   onProgress?: (completedItems: number, totalItems: number) => void;
 }
 
-/** Schedules native downloads and resolves once every file has been started. */
-export function triggerNativeFileDownloads(
+/** Starts native downloads sequentially so UI progress can update between files. */
+export async function triggerNativeFileDownloads(
   items: ReadonlyArray<{ url: string; filename: string }>,
   options?: NativeFileDownloadOptions
 ): Promise<void> {
-  if (items.length === 0) {
-    return Promise.resolve();
+  const totalItems = items.length;
+
+  if (totalItems === 0) {
+    return;
   }
 
-  if (items.length === 1) {
-    triggerNativeFileDownload(items[0].url, items[0].filename);
-    options?.onProgress?.(1, 1);
-    return Promise.resolve();
+  const delayMs = options?.delayMs ?? MULTI_DOWNLOAD_STAGGER_MS;
+
+  options?.onProgress?.(0, totalItems);
+  await yieldToMain();
+  await new Promise((resolve) =>
+    window.setTimeout(resolve, MIN_PROGRESS_VISIBLE_MS)
+  );
+
+  for (let index = 0; index < totalItems; index += 1) {
+    if (options?.signal?.aborted) {
+      throw new DOMException("Download cancelled.", "AbortError");
+    }
+
+    if (index > 0) {
+      await new Promise((resolve) => window.setTimeout(resolve, delayMs));
+    }
+
+    triggerNativeFileDownload(items[index].url, items[index].filename);
+    options?.onProgress?.(index + 1, totalItems);
+    await yieldToMain();
+
+    if (index + 1 === totalItems) {
+      await new Promise((resolve) =>
+        window.setTimeout(resolve, MIN_PROGRESS_VISIBLE_MS)
+      );
+    }
   }
-
-  return new Promise((resolve, reject) => {
-    const delayMs = options?.delayMs ?? MULTI_DOWNLOAD_STAGGER_MS;
-    const totalItems = items.length;
-    let completedItems = 0;
-    let settled = false;
-    const timeoutIds: number[] = [];
-
-    const settleResolve = () => {
-      if (settled) {
-        return;
-      }
-
-      settled = true;
-      resolve();
-    };
-
-    const settleReject = (error: DOMException) => {
-      if (settled) {
-        return;
-      }
-
-      settled = true;
-      reject(error);
-    };
-
-    const clearPending = () => {
-      for (const id of timeoutIds) {
-        window.clearTimeout(id);
-      }
-      timeoutIds.length = 0;
-    };
-
-    options?.signal?.addEventListener(
-      "abort",
-      () => {
-        clearPending();
-        settleReject(new DOMException("Download cancelled.", "AbortError"));
-      },
-      { once: true }
-    );
-
-    items.forEach((item, index) => {
-      const timeoutId = window.setTimeout(() => {
-        if (options?.signal?.aborted) {
-          return;
-        }
-
-        triggerNativeFileDownload(item.url, item.filename);
-        completedItems += 1;
-        options?.onProgress?.(completedItems, totalItems);
-
-        if (completedItems === totalItems) {
-          settleResolve();
-        }
-      }, index * delayMs);
-
-      timeoutIds.push(timeoutId);
-    });
-  });
 }
 
 export async function copyImageToClipboard(
@@ -130,6 +103,8 @@ export async function copyImageToClipboard(
   }
 }
 
+export const MIN_SINGLE_DOWNLOAD_UI_MS = 500;
+
 /** Starts a native browser download from the original asset URL (1x and 2x). */
 export async function downloadImage(
   src: string,
@@ -143,12 +118,6 @@ export async function downloadImage(
     throw new DOMException("Download cancelled.", "AbortError");
   }
 
-  options?.onProgress?.({ phase: "triggering" });
   triggerNativeFileDownload(src, filename);
-
-  await new Promise<void>((resolve) => {
-    window.requestAnimationFrame(() => {
-      window.requestAnimationFrame(() => resolve());
-    });
-  });
+  await yieldToMain();
 }

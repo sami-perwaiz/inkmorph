@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 
 import { useDownloadLimit } from "@/components/DownloadLimitProvider/DownloadLimitProvider";
 import { usePremiumAccessGate } from "@/components/PremiumAccessProvider/PremiumAccessProvider";
@@ -8,9 +9,10 @@ import { usePremiumAccess } from "@/hooks/usePremiumAccess";
 import {
   copyImageToClipboard,
   downloadImage,
+  MIN_SINGLE_DOWNLOAD_UI_MS,
 } from "@/lib/illustrationActions";
 import { getCanonicalFilename } from "@/lib/canonicalAsset";
-import { formatDownloadProgress } from "@/lib/downloadProgress";
+import { formatCopyProgress } from "@/lib/downloadProgress";
 import { preloadOriginalAsset } from "@/lib/originalAssetCache";
 import { trackImageCopy, trackImageDownload } from "@/lib/analytics";
 import { ACTION, type DownloadSize } from "@/lib/constants";
@@ -143,7 +145,7 @@ export function useCardAction(illustration: Illustration) {
       await copyImageToClipboard(src, id, {
         signal: controller.signal,
         onProgress: (update) => {
-          setStatusMessage(formatDownloadProgress(update));
+          setStatusMessage(formatCopyProgress(update));
         },
       });
 
@@ -209,10 +211,13 @@ export function useCardAction(illustration: Illustration) {
       abortControllerRef.current?.abort();
       const controller = new AbortController();
       abortControllerRef.current = controller;
+      const startedAt = Date.now();
 
-      setFailedAction(null);
-      setActionState("downloading");
-      setStatusMessage("Downloading…");
+      flushSync(() => {
+        setFailedAction(null);
+        setActionState("downloading");
+        setStatusMessage("Downloading...");
+      });
 
       try {
         if (!(await ensureCreditsAvailable())) {
@@ -224,14 +229,23 @@ export function useCardAction(illustration: Illustration) {
           signal: controller.signal,
         });
 
+        const elapsed = Date.now() - startedAt;
+        if (elapsed < MIN_SINGLE_DOWNLOAD_UI_MS) {
+          await new Promise((resolve) =>
+            window.setTimeout(resolve, MIN_SINGLE_DOWNLOAD_UI_MS - elapsed)
+          );
+        }
+
         if (!(await consumeCreditAfterSuccess())) {
           resetActionState();
           return;
         }
 
         trackImageDownload(id, category);
-        setActionState("downloaded");
-        setStatusMessage("Downloaded");
+        flushSync(() => {
+          setActionState("downloaded");
+          setStatusMessage("Downloaded");
+        });
         scheduleReset();
       } catch (error) {
         if (controller.signal.aborted) {

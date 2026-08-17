@@ -5,6 +5,7 @@ import Image from "next/image";
 import { PackBackButton } from "@/components/Packs/PackBackButton";
 import { CheckIcon } from "@/components/icons/ActionIcons";
 import { ACTION } from "@/lib/constants";
+import { PACK_DOWNLOAD_LABEL } from "@/lib/downloadButtonLabels";
 
 export type PackDownloadState =
   | "idle"
@@ -69,15 +70,13 @@ export function PackToolbar({
   const isError = downloadState === "error";
   const downloadLabel = selectionMode ? "Download Selected" : "Download All";
 
-  const downloadButtonLabel =
-    downloadStatusLabel ??
-    (isDownloading
-      ? "Downloading…"
-      : isSuccess
-        ? "Downloaded"
-        : isError
-          ? "Download failed · Try again"
-          : downloadLabel);
+  const downloadButtonLabel = isSuccess
+    ? PACK_DOWNLOAD_LABEL.downloaded
+    : isError
+      ? (downloadStatusLabel ?? PACK_DOWNLOAD_LABEL.error)
+      : isDownloading
+        ? (downloadStatusLabel ?? PACK_DOWNLOAD_LABEL.singleDownloading)
+        : downloadLabel;
 
   const handleDownloadAllClick = () => {
     if (isBusy) {

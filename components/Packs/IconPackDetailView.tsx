@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 
 import { Footer } from "@/components/Footer/Footer";
 import { Navbar } from "@/components/Navbar/Navbar";
@@ -15,7 +16,10 @@ import { useDownloadLimit } from "@/components/DownloadLimitProvider/DownloadLim
 import { usePremiumAccessGate } from "@/components/PremiumAccessProvider/PremiumAccessProvider";
 import { usePremiumAccess } from "@/hooks/usePremiumAccess";
 import { ACTION } from "@/lib/constants";
-import { formatMultiDownloadButtonLabel } from "@/lib/downloadProgress";
+import {
+  formatPackDownloadPercent,
+  PACK_DOWNLOAD_LABEL,
+} from "@/lib/downloadButtonLabels";
 import { downloadPackIcons } from "@/lib/packIconDownloads";
 import type { IconPack } from "@/lib/iconPacks";
 import { getAccessiblePackIllustrations } from "@/lib/premiumFeatureAccess";
@@ -172,6 +176,11 @@ export function IconPackDetailView({
       const controller = new AbortController();
       abortControllerRef.current = controller;
 
+      flushSync(() => {
+        setDownloadState("downloading");
+        setDownloadStatusLabel(formatPackDownloadPercent(0, items.length));
+      });
+
       try {
         if (!hasPremiumAccess) {
           const latest = await refreshStatus();
@@ -192,27 +201,24 @@ export function IconPackDetailView({
           }
         }
 
-        setDownloadState("downloading");
-        setDownloadStatusLabel(
-          formatMultiDownloadButtonLabel(0, items.length)
-        );
-
         await downloadPackIcons(pack, items, {
           signal: controller.signal,
           onProgress: (update) => {
+            const { completedItems, totalItems } = update;
+
             if (
-              typeof update.completedItems !== "number" ||
-              typeof update.totalItems !== "number"
+              typeof completedItems !== "number" ||
+              typeof totalItems !== "number"
             ) {
               return;
             }
 
-            setDownloadStatusLabel(
-              formatMultiDownloadButtonLabel(
-                update.completedItems,
-                update.totalItems
-              )
-            );
+            flushSync(() => {
+              setDownloadState("downloading");
+              setDownloadStatusLabel(
+                formatPackDownloadPercent(completedItems, totalItems)
+              );
+            });
           },
         });
 
@@ -221,7 +227,7 @@ export function IconPackDetailView({
           if (!consume.ok) {
             setDownloadError("Unable to update download allowance.");
             setDownloadState("error");
-            setDownloadStatusLabel("Download failed · Try again");
+            setDownloadStatusLabel(PACK_DOWNLOAD_LABEL.error);
             downloadResetTimeoutRef.current = window.setTimeout(() => {
               downloadResetTimeoutRef.current = null;
               setDownloadState("idle");
@@ -236,8 +242,10 @@ export function IconPackDetailView({
           setSelectedIds(new Set());
         }
 
-        setDownloadState("success");
-        setDownloadStatusLabel("Downloaded");
+        flushSync(() => {
+          setDownloadState("success");
+          setDownloadStatusLabel(PACK_DOWNLOAD_LABEL.downloaded);
+        });
         downloadResetTimeoutRef.current = window.setTimeout(() => {
           downloadResetTimeoutRef.current = null;
           setDownloadState("idle");
@@ -253,7 +261,7 @@ export function IconPackDetailView({
 
         setDownloadError("Unable to prepare download. Please try again.");
         setDownloadState("error");
-        setDownloadStatusLabel("Download failed · Try again");
+        setDownloadStatusLabel(PACK_DOWNLOAD_LABEL.error);
         downloadResetTimeoutRef.current = window.setTimeout(() => {
           downloadResetTimeoutRef.current = null;
           setDownloadState("idle");

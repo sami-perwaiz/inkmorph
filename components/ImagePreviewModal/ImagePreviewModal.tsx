@@ -47,11 +47,11 @@ import {
 import { MOTION } from "@/lib/motion";
 import { preloadOriginalAsset } from "@/lib/originalAssetCache";
 import { getModalBackdropStyle } from "@/lib/modalBackdrop";
+import { getPreviewDownloadLabel } from "@/lib/downloadButtonLabels";
 import {
   getCopyButtonState,
   getDownloadButtonState,
   getCopyButtonLabel,
-  getDownloadButtonLabel,
   type ActionButtonState,
 } from "@/types/action";
 import type { Illustration } from "@/types/illustration";
@@ -234,11 +234,7 @@ function ImagePreviewModalComponent({
   const copyState = getCopyButtonState(actionState, failedAction);
   const downloadState = getDownloadButtonState(actionState, failedAction);
   const copyLabel = getCopyButtonLabel(actionState, failedAction, statusMessage);
-  const downloadLabel = getDownloadButtonLabel(
-    actionState,
-    failedAction,
-    statusMessage
-  );
+  const downloadLabel = getPreviewDownloadLabel(actionState, failedAction);
   const mutedMeta = isLocked ? "text-[#797979]" : "text-[#0a0a0a]";
   const isBusy =
     actionState === "copying" ||

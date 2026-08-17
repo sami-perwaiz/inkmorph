@@ -21,14 +21,6 @@ export async function downloadPackIcons(
     throw new DOMException("Download cancelled.", "AbortError");
   }
 
-  const totalItems = items.length;
-
-  options?.onProgress?.({
-    phase: "triggering",
-    completedItems: 0,
-    totalItems,
-  });
-
   await triggerNativeFileDownloads(
     items.map((item) => ({
       url: item.src,
@@ -36,11 +28,11 @@ export async function downloadPackIcons(
     })),
     {
       signal: options?.signal,
-      onProgress: (completedItems, itemCount) => {
+      onProgress: (completedItems, totalItems) => {
         options?.onProgress?.({
           phase: "triggering",
           completedItems,
-          totalItems: itemCount,
+          totalItems,
         });
       },
     }
