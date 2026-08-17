@@ -90,14 +90,14 @@ function PackIconImageComponent({
     <div ref={ref} className="absolute inset-0">
       {!isLoaded && !hasError ? (
         <div
-          className="gallery-card-skeleton gallery-card-skeleton-shimmer absolute inset-0"
+          className="pack-icon-skeleton pack-icon-skeleton-shimmer absolute inset-0"
           aria-hidden
         />
       ) : null}
 
       {hasError ? (
         <div
-          className="gallery-card-skeleton absolute inset-0"
+          className="pack-icon-skeleton absolute inset-0"
           role="img"
           aria-label={`${alt} failed to load`}
         />
@@ -115,7 +115,9 @@ function PackIconImageComponent({
             "pack-icon-image gallery-card-image size-full object-contain object-center transition-opacity duration-200 ease-out",
             isLoaded ? "opacity-100" : "opacity-0",
           ].join(" ")}
-          {...(priority ? { priority: true as const, fetchPriority: "high" as const } : {})}
+          {...(priority
+            ? { priority: true as const, fetchPriority: "high" as const }
+            : {})}
           decoding="async"
           draggable={false}
           onLoad={handleImageLoad}

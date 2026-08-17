@@ -66,6 +66,12 @@ export function PackCard({
     router.push(`/packs/${pack.id}`);
   }, [isLocked, pack.id, router]);
 
+  const handlePrefetch = useCallback(() => {
+    if (!isLocked) {
+      router.prefetch(`/packs/${pack.id}`);
+    }
+  }, [isLocked, pack.id, router]);
+
   const handleClosePurchaseModal = useCallback(() => {
     setPurchaseModalOpen(false);
   }, []);
@@ -76,6 +82,8 @@ export function PackCard({
         <button
         type="button"
         onClick={handleOpen}
+        onMouseEnter={handlePrefetch}
+        onFocus={handlePrefetch}
         aria-label={
           isLocked
             ? `${pack.title} — premium pack, upgrade to open`

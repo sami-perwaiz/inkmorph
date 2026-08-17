@@ -25,17 +25,14 @@ export function IconPackDetailView({
   illustrations,
 }: IconPackDetailViewProps) {
   const router = useRouter();
-  const { hasPremiumAccess, isReady } = usePremiumAccess();
+  const { hasPremiumAccess } = usePremiumAccess();
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
 
-  const visibleIllustrations = useMemo(() => {
-    if (!isReady) {
-      return [];
-    }
-
-    return getAccessiblePackIllustrations(illustrations, hasPremiumAccess);
-  }, [hasPremiumAccess, illustrations, isReady]);
+  const visibleIllustrations = useMemo(
+    () => getAccessiblePackIllustrations(illustrations, hasPremiumAccess),
+    [hasPremiumAccess, illustrations]
+  );
 
   const handleFilterChange = useCallback(
     (filter: FilterValue) => {

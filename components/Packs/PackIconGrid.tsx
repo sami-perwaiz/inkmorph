@@ -67,7 +67,7 @@ const PackIconCell = memo(function PackIconCell({
           : illustration.alt
       }
       className={[
-        "relative aspect-square w-full max-w-[150px] overflow-hidden bg-[#FAFAFA] wide:size-[150px] wide:max-w-none",
+        "relative aspect-square w-full max-w-[150px] overflow-hidden wide:size-[150px] wide:max-w-none",
         selectionMode ? "cursor-pointer" : "cursor-default",
       ].join(" ")}
     >

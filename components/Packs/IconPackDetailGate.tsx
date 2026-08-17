@@ -22,34 +22,20 @@ export function IconPackDetailGate({
 }: IconPackDetailGateProps) {
   const router = useRouter();
   const { hasPremiumAccess, isReady } = usePremiumAccess();
-  const [allowed, setAllowed] = useState(false);
   const [purchaseModalOpen, setPurchaseModalOpen] = useState(false);
 
+  const blocked = isReady && !canAccessIconPack(pack, hasPremiumAccess);
+
   useEffect(() => {
-    if (!isReady) {
-      return;
-    }
-
-    if (!canAccessIconPack(pack, hasPremiumAccess)) {
-      setPurchaseModalOpen(true);
-      setAllowed(false);
-      return;
-    }
-
-    setPurchaseModalOpen(false);
-    setAllowed(true);
-  }, [pack, hasPremiumAccess, isReady]);
+    setPurchaseModalOpen(blocked);
+  }, [blocked]);
 
   const handleClosePurchaseModal = useCallback(() => {
     setPurchaseModalOpen(false);
     router.replace("/packs");
   }, [router]);
 
-  if (!isReady) {
-    return null;
-  }
-
-  if (!allowed) {
+  if (blocked) {
     return (
       <>
         <IconPacksView />

@@ -43,8 +43,8 @@ export const PACK_ICON = {
   displaySize: 150,
   imageSizes: "150px",
   /** Prefetch icons slightly before they scroll into view. */
-  viewportRootMargin: "400px",
-  previewQuality: 80,
+  viewportRootMargin: "300px",
+  previewQuality: 85,
 } as const;
 
 /** Pack detail toolbar — flush under fixed navbar (bar height + 1px border). */

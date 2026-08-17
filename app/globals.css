@@ -248,13 +248,38 @@
     }
   }
 
-  /* Pack icon grid — hide bitmap until fully decoded to avoid partial/cropped paint */
+  /* Pack icon grid — hide bitmap until fully decoded; keep PNG alpha intact */
   .pack-icon-image {
     visibility: hidden;
+    background-color: transparent;
   }
 
   .pack-icon-image.opacity-100 {
     visibility: visible;
+  }
+
+  /* Loading placeholder only — transparent base, no fill behind the icon */
+  .pack-icon-skeleton {
+    background-color: transparent;
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.05);
+    pointer-events: none;
+  }
+
+  .pack-icon-skeleton-shimmer {
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(0, 0, 0, 0.035) 50%,
+      transparent 100%
+    );
+    background-size: 200% 100%;
+    animation: gallery-skeleton-shimmer 1.8s ease-in-out infinite;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .pack-icon-skeleton-shimmer {
+      animation: none;
+    }
   }
 
   /* Safari 15–16.3 lazy-load gray border workaround */
