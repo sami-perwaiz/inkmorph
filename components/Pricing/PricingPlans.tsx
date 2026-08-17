@@ -2,12 +2,11 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useCallback, useState } from "react";
+import { useCallback } from "react";
 
-import { SignInToPurchaseModal } from "@/components/Pricing/SignInToPurchaseModal";
-import { getAuthEntryHref, isSignedIn } from "@/lib/authSession";
-import { grantPremiumAccess } from "@/lib/premiumAccess";
+import { getAuthEntryHref } from "@/lib/authSession";
 import { PRICING_PLANS, type PricingPlan } from "@/lib/pricingPlans";
+import { runPurchaseAction } from "@/lib/testingPremiumAccess";
 
 /** Figma check instance — 20×20 with stroke mark. */
 function CheckIcon() {
@@ -145,58 +144,39 @@ function PricingCard({
 
 /** Figma 40004706:9735 — plan cards */
 export function PricingPlans() {
-  const [signInModalOpen, setSignInModalOpen] = useState(false);
-
   const handlePurchaseClick = useCallback(() => {
-    if (!isSignedIn()) {
-      setSignInModalOpen(true);
-      return;
-    }
-
-    // Checkout stub — persists premium access for the signed-in account.
-    grantPremiumAccess();
-  }, []);
-
-  const closeSignInModal = useCallback(() => {
-    setSignInModalOpen(false);
+    runPurchaseAction();
   }, []);
 
   return (
-    <>
-      <section
-        id="pricing-plans"
-        className="relative mx-auto flex w-full max-w-[1260px] flex-col items-center gap-[50px] desktop:px-[50px]"
-        aria-labelledby="pricing-plans-heading"
-      >
-        <div className="motion-pricing-plans-copy flex w-full max-w-[660px] flex-col items-center gap-[18px] px-4 text-center tablet:px-0">
-          <h2
-            id="pricing-plans-heading"
-            className="w-full font-poppins text-[32px] font-medium leading-[38px] text-black"
-          >
-            Choose the Plan That Fits You
-          </h2>
-          <p className="w-full font-poppins text-base font-normal leading-6 text-[#797979]">
-            Start free with daily credits or unlock unlimited access to every
-            illustration, high-resolution downloads, and transparent PNG exports
-            with InkMorph.
-          </p>
-        </div>
+    <section
+      id="pricing-plans"
+      className="relative mx-auto flex w-full max-w-[1260px] flex-col items-center gap-[50px] desktop:px-[50px]"
+      aria-labelledby="pricing-plans-heading"
+    >
+      <div className="motion-pricing-plans-copy flex w-full max-w-[660px] flex-col items-center gap-[18px] px-4 text-center tablet:px-0">
+        <h2
+          id="pricing-plans-heading"
+          className="w-full font-poppins text-[32px] font-medium leading-[38px] text-black"
+        >
+          Choose the Plan That Fits You
+        </h2>
+        <p className="w-full font-poppins text-base font-normal leading-6 text-[#797979]">
+          Start free with daily credits or unlock unlimited access to every
+          illustration, high-resolution downloads, and transparent PNG exports
+          with InkMorph.
+        </p>
+      </div>
 
-        <div className="flex w-full max-w-[1160px] flex-col items-stretch gap-6 px-4 tablet:px-[50px] desktop:flex-row desktop:items-stretch desktop:gap-6 desktop:px-0">
-          {PRICING_PLANS.map((plan) => (
-            <PricingCard
-              key={plan.id}
-              plan={plan}
-              onPurchaseClick={handlePurchaseClick}
-            />
-          ))}
-        </div>
-      </section>
-
-      <SignInToPurchaseModal
-        open={signInModalOpen}
-        onClose={closeSignInModal}
-      />
-    </>
+      <div className="flex w-full max-w-[1160px] flex-col items-stretch gap-6 px-4 tablet:px-[50px] desktop:flex-row desktop:items-stretch desktop:gap-6 desktop:px-0">
+        {PRICING_PLANS.map((plan) => (
+          <PricingCard
+            key={plan.id}
+            plan={plan}
+            onPurchaseClick={handlePurchaseClick}
+          />
+        ))}
+      </div>
+    </section>
   );
 }

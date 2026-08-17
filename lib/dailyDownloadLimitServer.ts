@@ -7,6 +7,7 @@ import {
   resolveDailyActionLimit,
   SIGNED_IN_DAILY_ACTION_LIMIT,
 } from "@/lib/dailyDownloadReset";
+import { isTestingPremiumUser } from "@/lib/testingPremiumAccess";
 
 const ACTION_COOKIE = "inkmorph-dl-limit";
 const PREMIUM_COOKIE = "inkmorph-dl-premium";
@@ -15,6 +16,10 @@ const SIGNED_IN_COOKIE = "inkmorph-dl-signed-in";
 interface ActionLimitPayload {
   periodKey: string;
   count: number;
+}
+
+interface PremiumCookiePayload {
+  email: string;
 }
 
 export interface DownloadLimitStatus {
@@ -91,7 +96,51 @@ function decodeSignedPayload(raw: string | undefined): ActionLimitPayload | null
 async function readPremiumCookie(): Promise<boolean> {
   const cookieStore = await cookies();
   const raw = cookieStore.get(PREMIUM_COOKIE)?.value;
-  return raw === sign("premium-active");
+  const email = decodePremiumCookie(raw);
+  return isTestingPremiumUser(email);
+}
+
+function decodePremiumCookie(raw: string | undefined): string | null {
+  if (!raw) {
+    return null;
+  }
+
+  const [body, signature] = raw.split(".");
+  if (!body || !signature) {
+    return null;
+  }
+
+  const expected = sign(body);
+  const expectedBuffer = Buffer.from(expected);
+  const signatureBuffer = Buffer.from(signature);
+
+  if (
+    expectedBuffer.length !== signatureBuffer.length ||
+    !timingSafeEqual(expectedBuffer, signatureBuffer)
+  ) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(
+      Buffer.from(body, "base64url").toString("utf8")
+    ) as Partial<PremiumCookiePayload>;
+
+    if (typeof parsed.email !== "string" || !parsed.email) {
+      return null;
+    }
+
+    return parsed.email;
+  } catch {
+    return null;
+  }
+}
+
+function encodePremiumCookie(email: string): string {
+  const body = Buffer.from(JSON.stringify({ email } satisfies PremiumCookiePayload), "utf8").toString(
+    "base64url"
+  );
+  return `${body}.${sign(body)}`;
 }
 
 async function readSignedInCookie(): Promise<boolean> {
@@ -128,7 +177,10 @@ async function writeActionPayload(payload: ActionLimitPayload): Promise<void> {
   });
 }
 
-export async function setPremiumDownloadSession(active: boolean): Promise<void> {
+export async function setPremiumDownloadSession(
+  active: boolean,
+  email?: string | null
+): Promise<void> {
   const cookieStore = await cookies();
 
   if (!active) {
@@ -136,7 +188,11 @@ export async function setPremiumDownloadSession(active: boolean): Promise<void> 
     return;
   }
 
-  cookieStore.set(PREMIUM_COOKIE, sign("premium-active"), {
+  if (!isTestingPremiumUser(email)) {
+    return;
+  }
+
+  cookieStore.set(PREMIUM_COOKIE, encodePremiumCookie(email!), {
     httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",

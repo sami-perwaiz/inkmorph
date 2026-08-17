@@ -1,18 +1,11 @@
 import { AUTH_CHANGE_EVENT, getAuthUser } from "@/lib/authSession";
-import { syncPremiumDownloadSession } from "@/lib/downloadLimitApi";
+import { isTestingPremiumUser } from "@/lib/testingPremiumAccess";
 
 const STORAGE_KEY = "inkmorph-premium-by-sub";
 export const PREMIUM_CHANGE_EVENT = "inkmorph-premium-change";
 
 function isBrowser(): boolean {
   return typeof window !== "undefined";
-}
-
-function notifyPremiumChange(): void {
-  if (!isBrowser()) {
-    return;
-  }
-  window.dispatchEvent(new Event(PREMIUM_CHANGE_EVENT));
 }
 
 function readPremiumBySub(): Record<string, boolean> {
@@ -35,18 +28,15 @@ function readPremiumBySub(): Record<string, boolean> {
   }
 }
 
-function writePremiumBySub(map: Record<string, boolean>): void {
-  if (!isBrowser()) {
-    return;
-  }
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(map));
-}
-
-/** True when the signed-in user has purchased premium access. */
+/** True when the signed-in user has premium access (testing account or purchased). */
 export function hasPremiumAccess(): boolean {
   const user = getAuthUser();
   if (!user) {
     return false;
+  }
+
+  if (isTestingPremiumUser(user.email)) {
+    return true;
   }
 
   return Boolean(readPremiumBySub()[user.sub]);
@@ -54,16 +44,7 @@ export function hasPremiumAccess(): boolean {
 
 /** Grants premium access to the current signed-in user (checkout stub). */
 export function grantPremiumAccess(): void {
-  const user = getAuthUser();
-  if (!user) {
-    return;
-  }
-
-  const map = readPremiumBySub();
-  map[user.sub] = true;
-  writePremiumBySub(map);
-  notifyPremiumChange();
-  void syncPremiumDownloadSession(true);
+  // Disabled during testing — only isTestingPremiumUser grants premium access.
 }
 
 export { AUTH_CHANGE_EVENT };

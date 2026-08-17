@@ -1,5 +1,6 @@
 "use client";
 
+import { getAuthUser } from "@/lib/authSession";
 import {
   ANONYMOUS_DAILY_ACTION_LIMIT,
   getClientTimezoneOffsetMinutes,
@@ -79,10 +80,15 @@ export async function authorizeDownloadSlots(
 }
 
 export async function syncPremiumDownloadSession(active: boolean): Promise<void> {
+  const user = getAuthUser();
+
   await fetch("/api/downloads/premium", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ active }),
+    body: JSON.stringify({
+      active,
+      email: user?.email ?? null,
+    }),
   }).catch(() => {
     // Non-blocking — client premium state still applies for UI.
   });
