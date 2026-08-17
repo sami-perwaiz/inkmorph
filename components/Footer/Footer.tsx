@@ -6,14 +6,26 @@ import { memo } from "react";
 import { ContentContainer } from "@/components/ContentContainer/ContentContainer";
 import { InkMorphLogo } from "@/components/InkMorphLogo/InkMorphLogo";
 import { FOOTER, FOOTER_FILTERS } from "@/lib/constants";
+import { useLegalNavigation } from "@/hooks/useLegalNavigation";
 import { getCategoryHref } from "@/lib/seo/routes";
 import type { FilterValue } from "@/types/illustration";
+
+const LEGAL_LINKS = [
+  { href: "/license", label: "License" },
+  { href: "/privacy", label: "Privacy" },
+  { href: "/terms", label: "Terms" },
+] as const;
+
+const LEGAL_LINK_CLASS =
+  "footer-legal-link font-poppins text-base font-normal leading-6 text-gray-500 no-underline decoration-transparent underline-offset-0 transition-colors hover:text-gray-900 hover:no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-900/30 focus-visible:ring-offset-2";
 
 interface FooterProps {
   onFilterChange: (filter: FilterValue) => void;
 }
 
 export const Footer = memo(function Footer({ onFilterChange }: FooterProps) {
+  const handleLegalLinkClick = useLegalNavigation();
+
   return (
     <footer className="flex flex-col items-center gap-16 bg-white px-4 py-12 tablet:gap-16 tablet:px-[50px] tablet:pb-12 tablet:pt-16">
       <ContentContainer>
@@ -56,12 +68,22 @@ export const Footer = memo(function Footer({ onFilterChange }: FooterProps) {
           <p className="min-h-6 w-full text-center font-inter text-base font-normal leading-6 text-gray-500 tablet:flex-1 tablet:text-left">
             {FOOTER.copyright}
           </p>
-          <Link
-            href="/privacy"
-            className="shrink-0 font-poppins text-base font-normal leading-6 text-gray-500 underline decoration-solid underline-offset-[from-font] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-900/30 focus-visible:ring-offset-2"
+          <nav
+            className="flex shrink-0 flex-col items-center gap-3 tablet:flex-row tablet:flex-wrap tablet:items-center tablet:justify-end tablet:gap-x-8 tablet:gap-y-2"
+            aria-label="Legal"
           >
-            Privacy Policy
-          </Link>
+            {LEGAL_LINKS.map(({ href, label }) => (
+              <Link
+                key={href}
+                href={href}
+                scroll={false}
+                onClick={handleLegalLinkClick}
+                className={`${LEGAL_LINK_CLASS} whitespace-nowrap`}
+              >
+                {label}
+              </Link>
+            ))}
+          </nav>
         </div>
       </ContentContainer>
     </footer>

@@ -7,6 +7,7 @@ import { memo, useCallback, useEffect, useId, useLayoutEffect, useState } from "
 
 import { ContentContainer } from "@/components/ContentContainer/ContentContainer";
 import { GoPremiumButton } from "@/components/GoPremiumButton/GoPremiumButton";
+import { useLegalNavigation } from "@/hooks/useLegalNavigation";
 import { AllNavLink } from "@/components/Navbar/AllNavLink";
 import { CategoriesNavMenu } from "@/components/Navbar/CategoriesNavMenu";
 import {
@@ -28,6 +29,7 @@ import {
   signOut,
 } from "@/lib/authSession";
 import { NAV } from "@/lib/constants";
+import { isLegalPagePath } from "@/lib/legalScroll";
 import { MEDIA_QUERIES } from "@/lib/breakpoints";
 import {
   getMenuSubItemClassName,
@@ -105,6 +107,7 @@ function AccountMenuSection({
   const [displayName, setDisplayName] = useState("");
   const panelId = useId();
   const expanded = openAccordion === "account";
+  const handleLegalLinkClick = useLegalNavigation();
 
   useEffect(() => {
     const syncAuth = () => {
@@ -171,7 +174,11 @@ function AccountMenuSection({
           <Link
             href="/privacy"
             role="menuitem"
-            onClick={onNavigate}
+            scroll={false}
+            onClick={() => {
+              handleLegalLinkClick();
+              onNavigate();
+            }}
             className={getMenuSubItemClassName({ active: false })}
           >
             Privacy Policy
@@ -294,7 +301,8 @@ export const Navbar = memo(function Navbar({
     packsActive ||
     pathname.startsWith("/packs") ||
     pathname.startsWith("/wallpapers");
-  const showSearch = !isPricingPage && !isPacksPage;
+  const isLegalPage = isLegalPagePath(pathname);
+  const showSearch = !isPricingPage && !isPacksPage && !isLegalPage;
   const showGalleryFilters = !isPricingPage && !isPacksPage;
 
   const closeMenu = useCallback(() => setIsMenuOpen(false), []);
@@ -303,7 +311,7 @@ export const Navbar = memo(function Navbar({
     setOpenAccordion(id);
   }, []);
 
-  const galleryFilter = activeFilter ?? "all";
+  const galleryFilter = activeFilter ?? (isLegalPage ? null : "all");
   const isAllActive = showGalleryFilters && galleryFilter === "all";
 
   useLayoutEffect(() => {

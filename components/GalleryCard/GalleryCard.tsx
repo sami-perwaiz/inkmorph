@@ -5,9 +5,11 @@ import {
   memo,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   type KeyboardEvent,
+  type RefObject,
   type SyntheticEvent,
 } from "react";
 
@@ -39,7 +41,11 @@ interface GalleryCardProps {
   teaser?: boolean;
 }
 
-function useGalleryImageLoad(src: string) {
+function useGalleryImageLoad(
+  src: string,
+  containerRef: RefObject<HTMLDivElement | null>,
+  enabled = true
+) {
   const [isLoaded, setIsLoaded] = useState(() => hasIllustrationImageLoaded(src));
   const srcRef = useRef(src);
 
@@ -80,8 +86,23 @@ function useGalleryImageLoad(src: string) {
     [revealImage, src]
   );
 
+  /** Cached / unoptimized images may finish before `onLoad` attaches. */
+  useLayoutEffect(() => {
+    if (!enabled || isLoaded) {
+      return;
+    }
+
+    const img = containerRef.current?.querySelector("img");
+    if (img?.complete && img.naturalWidth > 0) {
+      revealImage();
+    }
+  }, [containerRef, enabled, isLoaded, revealImage, src]);
+
   return { isLoaded, handleImageLoad };
 }
+
+const GALLERY_CARD_SKELETON_CLASS =
+  "gallery-card-skeleton gallery-card-skeleton-shimmer absolute inset-0";
 
 /** Paywalled peek tile — no action hooks or overlays. */
 function GalleryTeaserCard({
@@ -92,8 +113,13 @@ function GalleryTeaserCard({
   priority?: boolean;
 }) {
   const { id, src } = illustration;
-  const { isLoaded, handleImageLoad } = useGalleryImageLoad(src);
   const { ref, shouldFetch } = useLazyPreviewFetch(src, priority);
+  const { isLoaded, handleImageLoad } = useGalleryImageLoad(
+    src,
+    ref,
+    shouldFetch
+  );
+  const showSkeleton = !isLoaded;
 
   return (
     <article
@@ -103,8 +129,8 @@ function GalleryTeaserCard({
       ].join(" ")}
       aria-hidden
     >
-      {!isLoaded ? (
-        <div className="gallery-card-skeleton absolute inset-0" aria-hidden />
+      {showSkeleton ? (
+        <div className={GALLERY_CARD_SKELETON_CLASS} aria-hidden />
       ) : null}
 
       <div ref={ref} className="absolute inset-0">
@@ -156,10 +182,15 @@ function GalleryInteractiveCard({
     illustration,
     hasFullLibraryAccess
   );
-  const { isLoaded, handleImageLoad } = useGalleryImageLoad(src);
   const { ref, shouldFetch } = useLazyPreviewFetch(src, priority);
+  const { isLoaded, handleImageLoad } = useGalleryImageLoad(
+    src,
+    ref,
+    shouldFetch
+  );
   const showPremiumBadge =
     Boolean(illustration.premium) && isLoaded && !hasFullLibraryAccess;
+  const showSkeleton = !isLoaded;
 
   useEffect(() => {
     setIsHovered(false);
@@ -209,8 +240,8 @@ function GalleryInteractiveCard({
       onClick={handleOpenPreview}
       onKeyDown={handleKeyDown}
     >
-      {!isLoaded ? (
-        <div className="gallery-card-skeleton absolute inset-0" aria-hidden />
+      {showSkeleton ? (
+        <div className={GALLERY_CARD_SKELETON_CLASS} aria-hidden />
       ) : null}
 
       <div ref={ref} className="absolute inset-0">

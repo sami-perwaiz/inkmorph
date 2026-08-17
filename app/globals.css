@@ -105,6 +105,17 @@
     pointer-events: none;
   }
 
+  /* Footer legal links — never show visited/default underline */
+  .footer-legal-link,
+  .footer-legal-link:link,
+  .footer-legal-link:visited,
+  .footer-legal-link:hover,
+  .footer-legal-link:active,
+  .footer-legal-link:focus {
+    text-decoration: none;
+    text-decoration-line: none;
+  }
+
   /* Filter tabs — color only */
   .motion-filter-tab {
     transition-property: color, background-color, border-color;

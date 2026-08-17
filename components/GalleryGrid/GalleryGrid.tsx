@@ -241,11 +241,40 @@ export const GalleryGrid = memo(function GalleryGrid({
 
   const priorityIds = useMemo(() => {
     const ids = new Set<string>();
-    for (const item of illustrations.slice(0, columnCount)) {
+    // All tab: prioritize the first three visible rows for faster LCP.
+    const priorityRows = activeFilter === "all" && !hasResolvedSearch ? 3 : 1;
+    const priorityCount = columnCount * priorityRows;
+
+    for (const item of illustrations.slice(0, priorityCount)) {
       ids.add(item.id);
     }
+
     return ids;
-  }, [illustrations, columnCount]);
+  }, [activeFilter, columnCount, hasResolvedSearch, illustrations]);
+
+  useEffect(() => {
+    if (activeFilter !== "all" || hasResolvedSearch) {
+      return;
+    }
+
+    const preloadCount = columnCount * 2;
+    const links: HTMLLinkElement[] = [];
+
+    for (const item of illustrations.slice(0, preloadCount)) {
+      const link = document.createElement("link");
+      link.rel = "preload";
+      link.as = "image";
+      link.href = item.src;
+      document.head.appendChild(link);
+      links.push(link);
+    }
+
+    return () => {
+      for (const link of links) {
+        link.remove();
+      }
+    };
+  }, [activeFilter, columnCount, hasResolvedSearch, illustrations]);
 
   useEffect(() => {
     activeFilterRef.current = activeFilter;

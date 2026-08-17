@@ -12,6 +12,7 @@ import {
 
 import { AnimatedDropdownPanel } from "@/components/AnimatedDropdownPanel/AnimatedDropdownPanel";
 import { useNavDropdown } from "@/components/Navbar/NavDropdownContext";
+import { useLegalNavigation } from "@/hooks/useLegalNavigation";
 import {
   AUTH_CHANGE_EVENT,
   isSignedIn,
@@ -78,6 +79,7 @@ export function ProfileMenu() {
     () => setActiveDropdown(null),
     [setActiveDropdown]
   );
+  const handleLegalLinkClick = useLegalNavigation();
 
   const handleTriggerKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
     if (event.key === "ArrowDown" || event.key === "Enter" || event.key === " ") {
@@ -131,7 +133,11 @@ export function ProfileMenu() {
         <Link
           href="/privacy"
           role="menuitem"
-          onClick={close}
+          scroll={false}
+          onClick={() => {
+            handleLegalLinkClick();
+            close();
+          }}
           className={getMenuDropdownItemClassName({ active: false })}
         >
           Privacy Policy

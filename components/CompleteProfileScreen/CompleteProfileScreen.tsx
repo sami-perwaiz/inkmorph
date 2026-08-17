@@ -14,6 +14,7 @@ import {
   type FormEvent,
 } from "react";
 
+import { BackButton } from "@/components/BackButton/BackButton";
 import { InkMorphLogo } from "@/components/InkMorphLogo/InkMorphLogo";
 import {
   getAuthEntryHref,
@@ -151,20 +152,12 @@ export function CompleteProfileScreen() {
           <InkMorphLogo size={42} radius={6} alt="" />
         </Link>
       ) : (
-        <Link
-          href="/"
-          aria-label="Back to home"
-          className="absolute left-4 top-5 z-10 inline-flex size-6 items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 focus-visible:ring-offset-2 tablet:left-8 tablet:top-8"
-        >
-          <Image
-            src="/icons/arrow-left.svg"
-            alt=""
-            width={16}
-            height={14}
-            className="size-4"
-            aria-hidden
-          />
-        </Link>
+        <BackButton
+          ariaLabel="Back"
+          useHistoryBack
+          fallbackHref="/"
+          className="absolute left-4 top-5 z-10 tablet:left-8 tablet:top-8"
+        />
       )}
 
       <section className="flex w-full flex-1 items-center justify-center px-4 py-16 tablet:px-8 tablet:py-20">

@@ -15,6 +15,10 @@ import { useIsDesktop } from "@/hooks/useIsDesktop";
 import { trackCategoryChange } from "@/lib/analytics";
 import { FILTERS } from "@/lib/constants";
 import type { GalleryCatalogData } from "@/lib/filterIllustrations";
+import {
+  getSavedSearchQuery,
+  savePageSearch,
+} from "@/lib/legalScroll";
 import { filterFromPathname, getCategoryHref } from "@/lib/seo/routes";
 import type { FilterValue } from "@/types/illustration";
 
@@ -61,6 +65,7 @@ export function Gallery({
     routeFilter !== "all" ? routeFilter : initialFilter
   );
   const [searchQuery, setSearchQuery] = useState("");
+  const restoredSearchForPathRef = useRef<string | null>(null);
   const {
     debouncedQuery: debouncedSearchQuery,
     isPending: isSearchPending,
@@ -84,6 +89,19 @@ export function Gallery({
   const handleSearchChange = useCallback((query: string) => {
     setSearchQuery(query);
   }, []);
+
+  useEffect(() => {
+    if (restoredSearchForPathRef.current === pathname) {
+      return;
+    }
+
+    restoredSearchForPathRef.current = pathname;
+    setSearchQuery(getSavedSearchQuery(pathname));
+  }, [pathname]);
+
+  useEffect(() => {
+    savePageSearch(pathname, searchQuery);
+  }, [pathname, searchQuery]);
 
   useEffect(() => {
     const nextFilter =
