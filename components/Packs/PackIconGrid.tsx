@@ -3,7 +3,6 @@
 import { memo, useMemo } from "react";
 
 import { PackIconImage } from "@/components/Packs/PackIconImage";
-import { CheckIcon } from "@/components/icons/ActionIcons";
 import { usePackIconColumnCount } from "@/hooks/usePackIconColumnCount";
 import type { Illustration } from "@/types/illustration";
 
@@ -15,32 +14,7 @@ interface PackIconCellProps {
   onToggleSelect: (id: string) => void;
 }
 
-/** Figma 40004972:9454 — selection badge (empty vs checked). */
-function SelectionBadge({ checked }: { checked: boolean }) {
-  return (
-    <div
-      className="absolute bottom-[10px] right-[10px] flex size-9 items-center justify-center rounded-[6px] shadow-[0px_8px_8px_-4px_rgba(10,13,18,0.03),0px_20px_12px_rgba(10,13,18,0.08)]"
-      style={{
-        backgroundImage:
-          "linear-gradient(180deg, rgba(255,255,255,0.2) 0%, rgba(99,99,99,0.2) 100%), linear-gradient(90deg, #000 0%, #000 100%)",
-      }}
-      aria-hidden
-    >
-      <span
-        className={[
-          "flex size-6 items-center justify-center rounded-[6px] border border-solid",
-          checked
-            ? "border-white bg-white"
-            : "border-[#D4D4D4] bg-transparent",
-        ].join(" ")}
-      >
-        {checked ? <CheckIcon className="size-3.5 text-black" /> : null}
-      </span>
-    </div>
-  );
-}
-
-/** Figma 40004941:48483 — 150px pack icon tile with optional selection. */
+/** Figma 40005024:8937 — unselected vs selected pack icon tiles. */
 const PackIconCell = memo(function PackIconCell({
   illustration,
   selectionMode,
@@ -67,7 +41,8 @@ const PackIconCell = memo(function PackIconCell({
           : illustration.alt
       }
       className={[
-        "relative aspect-square w-full max-w-[150px] overflow-hidden wide:size-[150px] wide:max-w-none",
+        "pack-icon-cell relative aspect-square w-full max-w-[150px] overflow-hidden rounded-[16px] wide:size-[150px] wide:max-w-none",
+        selectionMode && selected ? "border border-solid border-[#D8D8D8]" : "",
         selectionMode ? "cursor-pointer" : "cursor-default",
       ].join(" ")}
     >
@@ -76,13 +51,11 @@ const PackIconCell = memo(function PackIconCell({
         alt={illustration.alt}
         priority={priority}
       />
-      {selectionMode ? (
-        <>
-          {selected ? (
-            <div className="absolute inset-0 bg-black/10" aria-hidden />
-          ) : null}
-          <SelectionBadge checked={selected} />
-        </>
+      {selectionMode && selected ? (
+        <div
+          className="pointer-events-none absolute inset-0 bg-[rgba(255,255,255,0.1)]"
+          aria-hidden
+        />
       ) : null}
     </button>
   );

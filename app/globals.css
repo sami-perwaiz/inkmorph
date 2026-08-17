@@ -282,6 +282,12 @@
     }
   }
 
+  /* Skip layout/paint for off-screen pack icons until scrolled near */
+  .pack-icon-cell {
+    content-visibility: auto;
+    contain-intrinsic-size: 150px 150px;
+  }
+
   /* Safari 15–16.3 lazy-load gray border workaround */
   @supports (font: -apple-system-body) and (-webkit-appearance: none) {
     img[loading="lazy"] {

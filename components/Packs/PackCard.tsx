@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useCallback, useState } from "react";
 
 import { LazyImage } from "@/components/LazyImage/LazyImage";
@@ -53,61 +53,63 @@ export function PackCard({
   pack: IconPack;
   priority?: boolean;
 }) {
-  const router = useRouter();
   const { hasPremiumAccess } = usePremiumAccess();
   const [purchaseModalOpen, setPurchaseModalOpen] = useState(false);
   const isLocked = !canAccessIconPack(pack, hasPremiumAccess);
 
   const handleOpen = useCallback(() => {
-    if (isLocked) {
-      setPurchaseModalOpen(true);
-      return;
-    }
-    router.push(`/packs/${pack.id}`);
-  }, [isLocked, pack.id, router]);
-
-  const handlePrefetch = useCallback(() => {
-    if (!isLocked) {
-      router.prefetch(`/packs/${pack.id}`);
-    }
-  }, [isLocked, pack.id, router]);
+    setPurchaseModalOpen(true);
+  }, []);
 
   const handleClosePurchaseModal = useCallback(() => {
     setPurchaseModalOpen(false);
   }, []);
 
+  const thumbnailClassName = [
+    "group relative block w-full min-w-0 overflow-hidden bg-[#FAFAFA] text-left",
+    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-900/30 focus-visible:ring-offset-2",
+  ].join(" ");
+
+  const thumbnailContent = (
+    <>
+      <LazyImage
+        src={pack.thumbnailSrc}
+        alt=""
+        sizes={PACK_WALLPAPER_THUMB_IMAGE_SIZES}
+        priority={priority}
+        className={[
+          "object-cover object-center",
+          isLocked ? "opacity-90 group-hover:opacity-100" : "",
+        ].join(" ")}
+      />
+      {pack.premium ? <PackPremiumBadge /> : null}
+    </>
+  );
+
   return (
     <>
       <article className="flex min-w-0 flex-col gap-5">
-        <button
-        type="button"
-        onClick={handleOpen}
-        onMouseEnter={handlePrefetch}
-        onFocus={handlePrefetch}
-        aria-label={
-          isLocked
-            ? `${pack.title} — premium pack, upgrade to open`
-            : `Open ${pack.title}`
-        }
-        className={[
-          "group relative w-full min-w-0 overflow-hidden bg-[#FAFAFA] text-left",
-          isLocked ? "cursor-pointer" : "cursor-pointer",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-900/30 focus-visible:ring-offset-2",
-        ].join(" ")}
-        style={{ aspectRatio: PACK_WALLPAPER_THUMB_ASPECT }}
-      >
-        <LazyImage
-          src={pack.thumbnailSrc}
-          alt=""
-          sizes={PACK_WALLPAPER_THUMB_IMAGE_SIZES}
-          priority={priority}
-          className={[
-            "object-cover object-center",
-            isLocked ? "opacity-90 group-hover:opacity-100" : "",
-          ].join(" ")}
-        />
-        {pack.premium ? <PackPremiumBadge /> : null}
-        </button>
+        {isLocked ? (
+          <button
+            type="button"
+            onClick={handleOpen}
+            aria-label={`${pack.title} — premium pack, upgrade to open`}
+            className={thumbnailClassName}
+            style={{ aspectRatio: PACK_WALLPAPER_THUMB_ASPECT }}
+          >
+            {thumbnailContent}
+          </button>
+        ) : (
+          <Link
+            href={`/packs/${pack.id}`}
+            prefetch
+            aria-label={`Open ${pack.title}`}
+            className={thumbnailClassName}
+            style={{ aspectRatio: PACK_WALLPAPER_THUMB_ASPECT }}
+          >
+            {thumbnailContent}
+          </Link>
+        )}
 
         <div className="flex flex-col gap-1.5">
           <div className="flex flex-wrap items-center gap-3">

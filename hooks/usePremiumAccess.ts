@@ -8,12 +8,22 @@ import {
   PREMIUM_CHANGE_EVENT,
 } from "@/lib/premiumAccess";
 
+function readPremiumAccessSync(): boolean {
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  return hasPremiumAccess();
+}
+
 export function usePremiumAccess(): {
   hasPremiumAccess: boolean;
   isReady: boolean;
 } {
-  const [hasPremium, setHasPremium] = useState(false);
-  const [isReady, setIsReady] = useState(false);
+  const [hasPremium, setHasPremium] = useState(readPremiumAccessSync);
+  const [isReady, setIsReady] = useState(
+    () => typeof window !== "undefined"
+  );
 
   const sync = useCallback(() => {
     setHasPremium(hasPremiumAccess());

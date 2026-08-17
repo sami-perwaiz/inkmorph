@@ -2,11 +2,16 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { IconPackDetailGate } from "@/components/Packs/IconPackDetailGate";
-import { getIconPackById } from "@/lib/iconPacks";
+import { IconPackDetailView } from "@/components/Packs/IconPackDetailView";
+import { getIconPackById, getVisibleIconPacks } from "@/lib/iconPacks";
 import { getPackIllustrations } from "@/lib/packIllustrations";
 
 interface PackDetailPageProps {
   params: Promise<{ packId: string }>;
+}
+
+export function generateStaticParams() {
+  return getVisibleIconPacks().map((pack) => ({ packId: pack.id }));
 }
 
 export async function generateMetadata({
@@ -35,5 +40,9 @@ export default async function PackDetailPage({ params }: PackDetailPageProps) {
 
   const illustrations = getPackIllustrations(pack);
 
-  return <IconPackDetailGate pack={pack} illustrations={illustrations} />;
+  if (pack.premium) {
+    return <IconPackDetailGate pack={pack} illustrations={illustrations} />;
+  }
+
+  return <IconPackDetailView pack={pack} illustrations={illustrations} />;
 }

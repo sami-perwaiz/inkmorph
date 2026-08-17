@@ -10,7 +10,7 @@ import {
   type SyntheticEvent,
 } from "react";
 
-import { useInViewport } from "@/hooks/useInViewport";
+import { useSharedInViewport } from "@/hooks/useSharedInViewport";
 import { PACK_ICON } from "@/lib/constants";
 import {
   hasIllustrationImageLoaded,
@@ -31,10 +31,10 @@ function PackIconImageComponent({
 }: PackIconImageProps) {
   const cached = hasIllustrationImageLoaded(src);
   const shouldObserve = !priority && !cached;
-  const { ref, inViewport } = useInViewport({
-    rootMargin: PACK_ICON.viewportRootMargin,
-    enabled: shouldObserve,
-  });
+  const { ref, inViewport } = useSharedInViewport(
+    PACK_ICON.viewportRootMargin,
+    shouldObserve
+  );
 
   const [isLoaded, setIsLoaded] = useState(cached);
   const [hasError, setHasError] = useState(false);
