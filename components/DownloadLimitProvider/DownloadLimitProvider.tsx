@@ -14,14 +14,16 @@ import {
 import { DailyDownloadLimitModal } from "@/components/DailyDownloadLimitModal/DailyDownloadLimitModal";
 import { usePremiumAccess } from "@/hooks/usePremiumAccess";
 import { trackDownloadLimitPopup } from "@/lib/analytics";
+import { AUTH_CHANGE_EVENT, isSignedIn } from "@/lib/authSession";
 import {
   authorizeDownloadSlots,
   fetchDownloadLimitStatus,
+  syncSignedInDownloadSession,
   type DownloadLimitStatus,
 } from "@/lib/downloadLimitApi";
-import { DAILY_DOWNLOAD_LIMIT } from "@/lib/dailyDownloadReset";
+import { ANONYMOUS_DAILY_ACTION_LIMIT } from "@/lib/dailyDownloadReset";
 
-export interface DownloadSlotsResult {
+export interface ActionSlotsResult {
   ok: boolean;
   allowedCount: number;
 }
@@ -31,7 +33,8 @@ interface DownloadLimitContextValue {
   remaining: number;
   resetAt: number | null;
   refreshStatus: () => Promise<void>;
-  requestDownloadSlots: (count: number) => Promise<DownloadSlotsResult>;
+  /** Authorize shared Copy + Download actions (1 action = 1 slot). */
+  requestActionSlots: (count: number) => Promise<ActionSlotsResult>;
   showLimitModal: () => void;
 }
 
@@ -39,27 +42,44 @@ const DownloadLimitContext = createContext<DownloadLimitContextValue | null>(
   null
 );
 
+async function syncAuthSessions(): Promise<void> {
+  await syncSignedInDownloadSession(isSignedIn());
+}
+
 export function DownloadLimitProvider({ children }: { children: ReactNode }) {
   const { hasPremiumAccess, isReady } = usePremiumAccess();
   const [status, setStatus] = useState<DownloadLimitStatus | null>(null);
   const [isLimitOpen, setIsLimitOpen] = useState(false);
-  const authorizeInFlightRef = useRef<Promise<DownloadSlotsResult> | null>(
-    null
-  );
+  const authorizeInFlightRef = useRef<Promise<ActionSlotsResult> | null>(null);
 
   const refreshStatus = useCallback(async () => {
     const next = await fetchDownloadLimitStatus();
     setStatus(next);
-    return;
   }, []);
+
+  const syncSessionsAndRefresh = useCallback(async () => {
+    await syncAuthSessions();
+    await refreshStatus();
+  }, [refreshStatus]);
 
   useEffect(() => {
     if (!isReady) {
       return;
     }
 
-    void refreshStatus();
-  }, [isReady, hasPremiumAccess, refreshStatus]);
+    void syncSessionsAndRefresh();
+  }, [isReady, hasPremiumAccess, syncSessionsAndRefresh]);
+
+  useEffect(() => {
+    const handleAuthChange = () => {
+      void syncSessionsAndRefresh();
+    };
+
+    window.addEventListener(AUTH_CHANGE_EVENT, handleAuthChange);
+    return () => {
+      window.removeEventListener(AUTH_CHANGE_EVENT, handleAuthChange);
+    };
+  }, [syncSessionsAndRefresh]);
 
   const showLimitModal = useCallback(() => {
     void refreshStatus().finally(() => {
@@ -68,8 +88,8 @@ export function DownloadLimitProvider({ children }: { children: ReactNode }) {
     });
   }, [refreshStatus]);
 
-  const requestDownloadSlots = useCallback(
-    async (count: number): Promise<DownloadSlotsResult> => {
+  const requestActionSlots = useCallback(
+    async (count: number): Promise<ActionSlotsResult> => {
       const normalizedCount = Math.max(0, Math.floor(count));
 
       if (normalizedCount === 0) {
@@ -84,7 +104,7 @@ export function DownloadLimitProvider({ children }: { children: ReactNode }) {
         return authorizeInFlightRef.current;
       }
 
-      const pending = (async (): Promise<DownloadSlotsResult> => {
+      const pending = (async (): Promise<ActionSlotsResult> => {
         const result = await authorizeDownloadSlots(normalizedCount);
 
         setStatus({
@@ -93,6 +113,7 @@ export function DownloadLimitProvider({ children }: { children: ReactNode }) {
           remaining: result.remaining,
           resetAt: result.resetAt,
           isPremium: result.isPremium,
+          isSignedIn: result.isSignedIn,
         });
 
         if (!result.authorized) {
@@ -118,9 +139,9 @@ export function DownloadLimitProvider({ children }: { children: ReactNode }) {
   );
 
   const handleResetComplete = useCallback(async () => {
-    await refreshStatus();
+    await syncSessionsAndRefresh();
     setIsLimitOpen(false);
-  }, [refreshStatus]);
+  }, [syncSessionsAndRefresh]);
 
   const closeLimitModal = useCallback(() => {
     setIsLimitOpen(false);
@@ -129,7 +150,7 @@ export function DownloadLimitProvider({ children }: { children: ReactNode }) {
   const remaining =
     hasPremiumAccess || status?.isPremium
       ? Number.POSITIVE_INFINITY
-      : (status?.remaining ?? DAILY_DOWNLOAD_LIMIT);
+      : (status?.remaining ?? ANONYMOUS_DAILY_ACTION_LIMIT);
 
   const resetAt = status?.resetAt ?? null;
 
@@ -139,13 +160,13 @@ export function DownloadLimitProvider({ children }: { children: ReactNode }) {
       remaining,
       resetAt,
       refreshStatus,
-      requestDownloadSlots,
+      requestActionSlots,
       showLimitModal,
     }),
     [
       remaining,
       refreshStatus,
-      requestDownloadSlots,
+      requestActionSlots,
       resetAt,
       showLimitModal,
       status,
@@ -159,7 +180,7 @@ export function DownloadLimitProvider({ children }: { children: ReactNode }) {
         open={isLimitOpen}
         resetAt={resetAt}
         remaining={status?.remaining ?? 0}
-        limit={status?.limit ?? 3}
+        limit={status?.limit ?? ANONYMOUS_DAILY_ACTION_LIMIT}
         onClose={closeLimitModal}
         onResetComplete={handleResetComplete}
       />

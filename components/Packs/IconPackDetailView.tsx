@@ -12,6 +12,7 @@ import {
 } from "@/components/Packs/PackToolbar";
 import { PremiumBanner } from "@/components/PremiumBanner/PremiumBanner";
 import { useDownloadLimit } from "@/components/DownloadLimitProvider/DownloadLimitProvider";
+import { usePremiumAccessGate } from "@/components/PremiumAccessProvider/PremiumAccessProvider";
 import { usePremiumAccess } from "@/hooks/usePremiumAccess";
 import { downloadPackIcons } from "@/lib/packIconDownloads";
 import type { IconPack } from "@/lib/iconPacks";
@@ -30,7 +31,8 @@ export function IconPackDetailView({
 }: IconPackDetailViewProps) {
   const router = useRouter();
   const { hasPremiumAccess } = usePremiumAccess();
-  const { requestDownloadSlots, remaining, showLimitModal } = useDownloadLimit();
+  const { requestPremiumAccess } = usePremiumAccessGate();
+  const { requestActionSlots, remaining, showLimitModal } = useDownloadLimit();
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
   const [downloadState, setDownloadState] = useState<PackDownloadState>("idle");
@@ -54,6 +56,14 @@ export function IconPackDetailView({
     [hasPremiumAccess, illustrations]
   );
 
+  const freeRemaining = useMemo(() => {
+    if (hasPremiumAccess) {
+      return Number.POSITIVE_INFINITY;
+    }
+
+    return Number.isFinite(remaining) ? remaining : 0;
+  }, [hasPremiumAccess, remaining]);
+
   const handleFilterChange = useCallback(
     (filter: FilterValue) => {
       router.push(filter === "all" ? "/" : `/?filter=${filter}`);
@@ -62,28 +72,54 @@ export function IconPackDetailView({
   );
 
   const handleEnterSelectionMode = useCallback(() => {
+    if (!hasPremiumAccess && freeRemaining <= 0) {
+      showLimitModal();
+      return;
+    }
+
     setSelectionMode(true);
-  }, []);
+  }, [freeRemaining, hasPremiumAccess, showLimitModal]);
 
   const handleExitSelection = useCallback(() => {
     setSelectionMode(false);
     setSelectedIds(new Set());
   }, []);
 
-  const handleToggleSelect = useCallback((id: string) => {
-    setSelectedIds((current) => {
-      const next = new Set(current);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
+  const handleToggleSelect = useCallback(
+    (id: string) => {
+      setSelectedIds((current) => {
+        const next = new Set(current);
+
+        if (next.has(id)) {
+          next.delete(id);
+          return next;
+        }
+
+        if (!hasPremiumAccess) {
+          if (freeRemaining <= 0) {
+            showLimitModal();
+            return current;
+          }
+
+          if (next.size >= freeRemaining) {
+            showLimitModal();
+            return current;
+          }
+        }
+
         next.add(id);
-      }
-      return next;
-    });
-  }, []);
+        return next;
+      });
+    },
+    [freeRemaining, hasPremiumAccess, showLimitModal]
+  );
 
   const handleDownloadAll = useCallback(async () => {
     if (downloadState === "preparing") {
+      return;
+    }
+
+    if (!hasPremiumAccess) {
       return;
     }
 
@@ -91,10 +127,9 @@ export function IconPackDetailView({
       return;
     }
 
-    const items =
-      selectionMode
-        ? visibleIllustrations.filter((item) => selectedIds.has(item.id))
-        : visibleIllustrations;
+    const items = selectionMode
+      ? visibleIllustrations.filter((item) => selectedIds.has(item.id))
+      : visibleIllustrations;
 
     const wasSelecting = selectionMode;
 
@@ -102,22 +137,6 @@ export function IconPackDetailView({
     setDownloadState("preparing");
 
     try {
-      if (!hasPremiumAccess) {
-        const freeRemaining = Number.isFinite(remaining) ? remaining : 0;
-
-        if (items.length > freeRemaining) {
-          showLimitModal();
-          setDownloadState("idle");
-          return;
-        }
-
-        const { ok } = await requestDownloadSlots(items.length);
-        if (!ok) {
-          setDownloadState("idle");
-          return;
-        }
-      }
-
       await downloadPackIcons(pack, items);
 
       if (wasSelecting) {
@@ -137,14 +156,80 @@ export function IconPackDetailView({
     clearDownloadResetTimeout,
     downloadState,
     hasPremiumAccess,
-    remaining,
-    requestDownloadSlots,
-    showLimitModal,
     visibleIllustrations,
     pack,
     selectedIds,
     selectionMode,
   ]);
+
+  const handleDownloadSelected = useCallback(async () => {
+    if (downloadState === "preparing") {
+      return;
+    }
+
+    if (selectedIds.size === 0) {
+      return;
+    }
+
+    const items = visibleIllustrations.filter((item) =>
+      selectedIds.has(item.id)
+    );
+
+    clearDownloadResetTimeout();
+    setDownloadState("preparing");
+
+    try {
+      if (!hasPremiumAccess) {
+        if (items.length > freeRemaining) {
+          showLimitModal();
+          setDownloadState("idle");
+          return;
+        }
+
+        const { ok } = await requestActionSlots(items.length);
+        if (!ok) {
+          setDownloadState("idle");
+          return;
+        }
+      }
+
+      await downloadPackIcons(pack, items);
+
+      setSelectionMode(false);
+      setSelectedIds(new Set());
+
+      setDownloadState("success");
+      downloadResetTimeoutRef.current = window.setTimeout(() => {
+        downloadResetTimeoutRef.current = null;
+        setDownloadState("idle");
+      }, 2000);
+    } catch {
+      setDownloadState("idle");
+    }
+  }, [
+    clearDownloadResetTimeout,
+    downloadState,
+    freeRemaining,
+    hasPremiumAccess,
+    pack,
+    requestActionSlots,
+    selectedIds,
+    showLimitModal,
+    visibleIllustrations,
+  ]);
+
+  const handleDownloadAllPremiumGate = useCallback(() => {
+    requestPremiumAccess();
+  }, [requestPremiumAccess]);
+
+  const handleToolbarDownload = useCallback(() => {
+    if (selectionMode) {
+      void handleDownloadSelected();
+      return;
+    }
+
+    void handleDownloadAll();
+  }, [handleDownloadAll, handleDownloadSelected, selectionMode]);
 
   return (
     <div className="min-h-screen w-full bg-white">
@@ -158,10 +243,11 @@ export function IconPackDetailView({
         selectedCount={selectedIds.size}
         selectionMode={selectionMode}
         downloadState={downloadState}
-        showDownloadAll={hasPremiumAccess}
+        isPremiumDownloadAll={hasPremiumAccess}
         onEnterSelectionMode={handleEnterSelectionMode}
         onExitSelection={handleExitSelection}
-        onDownloadAll={handleDownloadAll}
+        onDownloadAll={handleToolbarDownload}
+        onDownloadAllPremiumGate={handleDownloadAllPremiumGate}
       />
 
       <main className="flex w-full flex-col pt-[169px] desktop:pt-[205px]">

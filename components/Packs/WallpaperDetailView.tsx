@@ -34,7 +34,7 @@ export function WallpaperDetailView({ pack }: WallpaperDetailViewProps) {
   const router = useRouter();
   const { hasPremiumAccess } = usePremiumAccess();
   const { requestPremiumAccess } = usePremiumAccessGate();
-  const { requestDownloadSlots } = useDownloadLimit();
+  const { requestActionSlots } = useDownloadLimit();
 
   const handleFilterChange = useCallback(
     (filter: FilterValue) => {
@@ -50,7 +50,7 @@ export function WallpaperDetailView({ pack }: WallpaperDetailViewProps) {
     }
 
     if (!hasPremiumAccess) {
-      const { ok } = await requestDownloadSlots(1);
+      const { ok } = await requestActionSlots(1);
       if (!ok) {
         return;
       }
@@ -58,7 +58,7 @@ export function WallpaperDetailView({ pack }: WallpaperDetailViewProps) {
 
     const src = getWallpaperDownloadSrc(pack);
     await downloadImage(src, getWallpaperDownloadFilename(pack), "1x");
-  }, [hasPremiumAccess, pack, requestDownloadSlots, requestPremiumAccess]);
+  }, [hasPremiumAccess, pack, requestActionSlots, requestPremiumAccess]);
 
   return (
     <div className="min-h-screen w-full bg-white">

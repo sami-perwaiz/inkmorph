@@ -2,15 +2,17 @@ import { createHmac, timingSafeEqual } from "crypto";
 import { cookies } from "next/headers";
 
 import {
-  DAILY_DOWNLOAD_LIMIT,
   getLocalPeriodKey,
   getNextResetTimestamp,
+  resolveDailyActionLimit,
+  SIGNED_IN_DAILY_ACTION_LIMIT,
 } from "@/lib/dailyDownloadReset";
 
-const DOWNLOAD_COOKIE = "inkmorph-dl-limit";
+const ACTION_COOKIE = "inkmorph-dl-limit";
 const PREMIUM_COOKIE = "inkmorph-dl-premium";
+const SIGNED_IN_COOKIE = "inkmorph-dl-signed-in";
 
-interface DownloadLimitPayload {
+interface ActionLimitPayload {
   periodKey: string;
   count: number;
 }
@@ -21,6 +23,7 @@ export interface DownloadLimitStatus {
   remaining: number;
   resetAt: number;
   isPremium: boolean;
+  isSignedIn: boolean;
 }
 
 function getSecret(): string {
@@ -34,14 +37,14 @@ function sign(value: string): string {
   return createHmac("sha256", getSecret()).update(value).digest("base64url");
 }
 
-function encodeSignedPayload(payload: DownloadLimitPayload): string {
+function encodeSignedPayload(payload: ActionLimitPayload): string {
   const body = Buffer.from(JSON.stringify(payload), "utf8").toString(
     "base64url"
   );
   return `${body}.${sign(body)}`;
 }
 
-function decodeSignedPayload(raw: string | undefined): DownloadLimitPayload | null {
+function decodeSignedPayload(raw: string | undefined): ActionLimitPayload | null {
   if (!raw) {
     return null;
   }
@@ -65,7 +68,7 @@ function decodeSignedPayload(raw: string | undefined): DownloadLimitPayload | nu
   try {
     const parsed = JSON.parse(
       Buffer.from(body, "base64url").toString("utf8")
-    ) as Partial<DownloadLimitPayload>;
+    ) as Partial<ActionLimitPayload>;
 
     if (
       typeof parsed.periodKey !== "string" ||
@@ -91,11 +94,17 @@ async function readPremiumCookie(): Promise<boolean> {
   return raw === sign("premium-active");
 }
 
-async function readDownloadPayload(
-  timezoneOffsetMinutes: number
-): Promise<DownloadLimitPayload> {
+async function readSignedInCookie(): Promise<boolean> {
   const cookieStore = await cookies();
-  const decoded = decodeSignedPayload(cookieStore.get(DOWNLOAD_COOKIE)?.value);
+  const raw = cookieStore.get(SIGNED_IN_COOKIE)?.value;
+  return raw === sign("signed-in-active");
+}
+
+async function readActionPayload(
+  timezoneOffsetMinutes: number
+): Promise<ActionLimitPayload> {
+  const cookieStore = await cookies();
+  const decoded = decodeSignedPayload(cookieStore.get(ACTION_COOKIE)?.value);
   const periodKey = getLocalPeriodKey(timezoneOffsetMinutes);
 
   if (!decoded || decoded.periodKey !== periodKey) {
@@ -104,13 +113,13 @@ async function readDownloadPayload(
 
   return {
     periodKey,
-    count: Math.min(decoded.count, DAILY_DOWNLOAD_LIMIT),
+    count: decoded.count,
   };
 }
 
-async function writeDownloadPayload(payload: DownloadLimitPayload): Promise<void> {
+async function writeActionPayload(payload: ActionLimitPayload): Promise<void> {
   const cookieStore = await cookies();
-  cookieStore.set(DOWNLOAD_COOKIE, encodeSignedPayload(payload), {
+  cookieStore.set(ACTION_COOKIE, encodeSignedPayload(payload), {
     httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
@@ -136,33 +145,63 @@ export async function setPremiumDownloadSession(active: boolean): Promise<void> 
   });
 }
 
-export async function getDownloadLimitStatus(
-  timezoneOffsetMinutes: number
-): Promise<DownloadLimitStatus> {
-  const isPremium = await readPremiumCookie();
+export async function setSignedInDownloadSession(active: boolean): Promise<void> {
+  const cookieStore = await cookies();
+
+  if (!active) {
+    cookieStore.delete(SIGNED_IN_COOKIE);
+    return;
+  }
+
+  cookieStore.set(SIGNED_IN_COOKIE, sign("signed-in-active"), {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: 60 * 60 * 24 * 365,
+  });
+}
+
+function buildStatus(
+  payload: ActionLimitPayload,
+  timezoneOffsetMinutes: number,
+  isPremium: boolean,
+  isSignedIn: boolean
+): DownloadLimitStatus {
   const resetAt = getNextResetTimestamp(timezoneOffsetMinutes);
+  const limit = resolveDailyActionLimit(isPremium, isSignedIn);
+  const used = payload.count;
 
   if (isPremium) {
     return {
-      limit: DAILY_DOWNLOAD_LIMIT,
+      limit,
       used: 0,
-      remaining: DAILY_DOWNLOAD_LIMIT,
+      remaining: limit,
       resetAt,
       isPremium: true,
+      isSignedIn,
     };
   }
 
-  const payload = await readDownloadPayload(timezoneOffsetMinutes);
-  const used = Math.min(payload.count, DAILY_DOWNLOAD_LIMIT);
-  const remaining = Math.max(0, DAILY_DOWNLOAD_LIMIT - used);
+  const remaining = Math.max(0, limit - used);
 
   return {
-    limit: DAILY_DOWNLOAD_LIMIT,
+    limit,
     used,
     remaining,
     resetAt,
     isPremium: false,
+    isSignedIn,
   };
+}
+
+export async function getDownloadLimitStatus(
+  timezoneOffsetMinutes: number
+): Promise<DownloadLimitStatus> {
+  const isPremium = await readPremiumCookie();
+  const isSignedIn = await readSignedInCookie();
+  const payload = await readActionPayload(timezoneOffsetMinutes);
+  return buildStatus(payload, timezoneOffsetMinutes, isPremium, isSignedIn);
 }
 
 export interface AuthorizeDownloadsResult {
@@ -173,6 +212,7 @@ export interface AuthorizeDownloadsResult {
   remaining: number;
   resetAt: number;
   isPremium: boolean;
+  isSignedIn: boolean;
 }
 
 export async function authorizeDownloads(
@@ -180,63 +220,51 @@ export async function authorizeDownloads(
   timezoneOffsetMinutes: number
 ): Promise<AuthorizeDownloadsResult> {
   const count = Math.max(0, Math.floor(requestedCount));
-  const resetAt = getNextResetTimestamp(timezoneOffsetMinutes);
   const isPremium = await readPremiumCookie();
+  const isSignedIn = await readSignedInCookie();
+  const payload = await readActionPayload(timezoneOffsetMinutes);
+  const status = buildStatus(
+    payload,
+    timezoneOffsetMinutes,
+    isPremium,
+    isSignedIn
+  );
 
   if (isPremium) {
     return {
       authorized: true,
       allowedCount: count,
-      limit: DAILY_DOWNLOAD_LIMIT,
-      used: 0,
-      remaining: DAILY_DOWNLOAD_LIMIT,
-      resetAt,
-      isPremium: true,
+      ...status,
     };
   }
 
-  const payload = await readDownloadPayload(timezoneOffsetMinutes);
-  const used = Math.min(payload.count, DAILY_DOWNLOAD_LIMIT);
-  const remaining = Math.max(0, DAILY_DOWNLOAD_LIMIT - used);
-
-  if (count === 0) {
+  if (count === 0 || count > status.remaining) {
     return {
       authorized: false,
       allowedCount: 0,
-      limit: DAILY_DOWNLOAD_LIMIT,
-      used,
-      remaining,
-      resetAt,
-      isPremium: false,
+      ...status,
     };
   }
 
-  if (count > remaining) {
-    return {
-      authorized: false,
-      allowedCount: 0,
-      limit: DAILY_DOWNLOAD_LIMIT,
-      used,
-      remaining,
-      resetAt,
-      isPremium: false,
-    };
-  }
-
-  const nextPayload: DownloadLimitPayload = {
+  const nextPayload: ActionLimitPayload = {
     periodKey: payload.periodKey,
-    count: used + count,
+    count: payload.count + count,
   };
 
-  await writeDownloadPayload(nextPayload);
+  await writeActionPayload(nextPayload);
+
+  const nextStatus = buildStatus(
+    nextPayload,
+    timezoneOffsetMinutes,
+    isPremium,
+    isSignedIn
+  );
 
   return {
     authorized: true,
     allowedCount: count,
-    limit: DAILY_DOWNLOAD_LIMIT,
-    used: nextPayload.count,
-    remaining: Math.max(0, DAILY_DOWNLOAD_LIMIT - nextPayload.count),
-    resetAt,
-    isPremium: false,
+    ...nextStatus,
   };
 }
+
+export { SIGNED_IN_DAILY_ACTION_LIMIT };

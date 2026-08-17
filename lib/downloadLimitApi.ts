@@ -1,7 +1,7 @@
 "use client";
 
 import {
-  DAILY_DOWNLOAD_LIMIT,
+  ANONYMOUS_DAILY_ACTION_LIMIT,
   getClientTimezoneOffsetMinutes,
 } from "@/lib/dailyDownloadReset";
 
@@ -11,6 +11,7 @@ export interface DownloadLimitStatus {
   remaining: number;
   resetAt: number;
   isPremium: boolean;
+  isSignedIn: boolean;
 }
 
 export interface AuthorizeDownloadsResult extends DownloadLimitStatus {
@@ -19,11 +20,12 @@ export interface AuthorizeDownloadsResult extends DownloadLimitStatus {
 }
 
 const DEFAULT_STATUS: DownloadLimitStatus = {
-  limit: DAILY_DOWNLOAD_LIMIT,
+  limit: ANONYMOUS_DAILY_ACTION_LIMIT,
   used: 0,
-  remaining: DAILY_DOWNLOAD_LIMIT,
+  remaining: ANONYMOUS_DAILY_ACTION_LIMIT,
   resetAt: Date.now() + 60 * 60 * 1000,
   isPremium: false,
+  isSignedIn: false,
 };
 
 export async function fetchDownloadLimitStatus(): Promise<DownloadLimitStatus> {
@@ -74,6 +76,24 @@ export async function syncPremiumDownloadSession(active: boolean): Promise<void>
 
 export async function clearPremiumDownloadSession(): Promise<void> {
   await fetch("/api/downloads/premium", { method: "DELETE" }).catch(() => {
+    // Ignore network failures during sign-out.
+  });
+}
+
+export async function syncSignedInDownloadSession(
+  signedIn: boolean
+): Promise<void> {
+  await fetch("/api/downloads/session", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ signedIn }),
+  }).catch(() => {
+    // Non-blocking — server session sync retried on next status fetch.
+  });
+}
+
+export async function clearSignedInDownloadSession(): Promise<void> {
+  await fetch("/api/downloads/session", { method: "DELETE" }).catch(() => {
     // Ignore network failures during sign-out.
   });
 }

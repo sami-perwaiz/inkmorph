@@ -26,7 +26,7 @@ export function useCardAction(illustration: Illustration) {
   const { id, src, category } = illustration;
   const { hasPremiumAccess } = usePremiumAccess();
   const { requestPremiumAccess } = usePremiumAccessGate();
-  const { requestDownloadSlots } = useDownloadLimit();
+  const { requestActionSlots } = useDownloadLimit();
   const [actionState, setActionState] = useState<CardActionState>("idle");
   const [failedAction, setFailedAction] = useState<"copy" | "download" | null>(
     null
@@ -60,6 +60,12 @@ export function useCardAction(illustration: Illustration) {
     [clearResetTimer]
   );
 
+  const resetActionState = useCallback(() => {
+    setActionState("idle");
+    setFailedAction(null);
+    setStatusMessage("");
+  }, []);
+
   useEffect(() => clearResetTimer, [clearResetTimer]);
 
   const handleLockedAction = useCallback(() => {
@@ -79,6 +85,15 @@ export function useCardAction(illustration: Illustration) {
     setFailedAction(null);
     setActionState("copying");
     setStatusMessage("Copying image");
+
+    if (!hasPremiumAccess) {
+      const { ok } = await requestActionSlots(1);
+      if (!ok) {
+        resetActionState();
+        return;
+      }
+    }
+
     preloadOriginalAsset(src);
 
     try {
@@ -93,7 +108,17 @@ export function useCardAction(illustration: Illustration) {
       setStatusMessage("Unable to copy image");
       scheduleReset(ERROR_RESET_MS);
     }
-  }, [category, handleLockedAction, id, isLocked, scheduleReset, src]);
+  }, [
+    category,
+    handleLockedAction,
+    hasPremiumAccess,
+    id,
+    isLocked,
+    requestActionSlots,
+    resetActionState,
+    scheduleReset,
+    src,
+  ]);
 
   const handleDownload = useCallback(
     async (size: DownloadSize = "1x") => {
@@ -111,18 +136,20 @@ export function useCardAction(illustration: Illustration) {
         return;
       }
 
-      if (!hasPremiumAccess) {
-        const { ok } = await requestDownloadSlots(1);
-        if (!ok) {
-          return;
-        }
-      }
-
       setFailedAction(null);
       setActionState("downloading");
       setStatusMessage(
         size === "2x" ? "Downloading high-quality PNG" : "Downloading PNG"
       );
+
+      if (!hasPremiumAccess) {
+        const { ok } = await requestActionSlots(1);
+        if (!ok) {
+          resetActionState();
+          return;
+        }
+      }
+
       preloadOriginalAsset(src);
 
       try {
@@ -146,8 +173,9 @@ export function useCardAction(illustration: Illustration) {
       hasPremiumAccess,
       id,
       isLocked,
-      requestDownloadSlots,
+      requestActionSlots,
       requestPremiumAccess,
+      resetActionState,
       scheduleReset,
       src,
     ]

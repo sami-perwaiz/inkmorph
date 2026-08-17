@@ -262,8 +262,8 @@ function DailyDownloadLimitModalComponent({
                 <>
                   You have{" "}
                   <span className="font-medium text-black">{remaining}</span>{" "}
-                  free download{remaining === 1 ? "" : "s"} remaining today.
-                  Select fewer assets to continue downloading.
+                  free action{remaining === 1 ? "" : "s"} remaining today.
+                  Select fewer assets to continue.
                 </>
               ) : (
                 <>
@@ -281,7 +281,7 @@ function DailyDownloadLimitModalComponent({
                   color: LIMIT_MODAL.bodyColor,
                 }}
               >
-                Downloads reset in
+                Resets in
               </p>
               <p
                 id={timerId}

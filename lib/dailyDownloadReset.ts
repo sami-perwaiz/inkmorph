@@ -1,5 +1,11 @@
-/** Figma 40004571:9074 — Free Plan daily download allowance. */
-export const DAILY_DOWNLOAD_LIMIT = 3;
+/** Anonymous users — shared Copy + Download actions per day. */
+export const ANONYMOUS_DAILY_ACTION_LIMIT = 5;
+
+/** Signed-up users — shared Copy + Download actions per day. */
+export const SIGNED_IN_DAILY_ACTION_LIMIT = 8;
+
+/** @deprecated Use tier-specific limits — kept for legacy imports. */
+export const DAILY_DOWNLOAD_LIMIT = ANONYMOUS_DAILY_ACTION_LIMIT;
 
 /** Local calendar date key for the user's timezone offset (minutes). */
 export function getLocalPeriodKey(
@@ -52,4 +58,17 @@ export function formatDownloadResetCountdown(remainingMs: number): string {
 
 export function getClientTimezoneOffsetMinutes(): number {
   return new Date().getTimezoneOffset();
+}
+
+export function resolveDailyActionLimit(
+  isPremium: boolean,
+  isSignedIn: boolean
+): number {
+  if (isPremium) {
+    return SIGNED_IN_DAILY_ACTION_LIMIT;
+  }
+
+  return isSignedIn
+    ? SIGNED_IN_DAILY_ACTION_LIMIT
+    : ANONYMOUS_DAILY_ACTION_LIMIT;
 }

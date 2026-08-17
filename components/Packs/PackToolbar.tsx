@@ -1,7 +1,10 @@
 "use client";
 
+import Image from "next/image";
+
 import { PackBackButton } from "@/components/Packs/PackBackButton";
 import { SpinnerIcon } from "@/components/icons/ActionIcons";
+import { ACTION } from "@/lib/constants";
 
 export type PackDownloadState = "idle" | "preparing" | "success";
 
@@ -9,10 +12,32 @@ interface PackToolbarProps {
   selectedCount: number;
   selectionMode: boolean;
   downloadState?: PackDownloadState;
-  showDownloadAll?: boolean;
+  isPremiumDownloadAll: boolean;
   onEnterSelectionMode: () => void;
   onExitSelection: () => void;
   onDownloadAll: () => void;
+  onDownloadAllPremiumGate: () => void;
+}
+
+function ToolbarCrownIcon() {
+  return (
+    <span
+      className="relative inline-flex shrink-0 items-center justify-center overflow-hidden"
+      style={{
+        width: ACTION.premiumCrownSize,
+        height: ACTION.premiumCrownSize,
+      }}
+      aria-hidden
+    >
+      <Image
+        src="/icons/crown.png"
+        alt=""
+        width={24}
+        height={24}
+        className="absolute left-[-22%] top-[-22%] size-[144%] max-w-none"
+      />
+    </span>
+  );
 }
 
 /** Figma 40004968:9223 / 9230 — borderless 44px toolbar actions. */
@@ -24,10 +49,11 @@ export function PackToolbar({
   selectedCount,
   selectionMode,
   downloadState = "idle",
-  showDownloadAll = false,
+  isPremiumDownloadAll,
   onEnterSelectionMode,
   onExitSelection,
   onDownloadAll,
+  onDownloadAllPremiumGate,
 }: PackToolbarProps) {
   const downloadDisabled = selectionMode && selectedCount === 0;
   const isPreparing = downloadState === "preparing";
@@ -39,6 +65,15 @@ export function PackToolbar({
     : isSuccess
       ? "Download Started"
       : downloadLabel;
+
+  const handleDownloadAllClick = () => {
+    if (selectionMode || isPremiumDownloadAll) {
+      onDownloadAll();
+      return;
+    }
+
+    onDownloadAllPremiumGate();
+  };
 
   return (
     <div className="fixed inset-x-0 top-[71px] z-40 w-full bg-white desktop:top-[91px]">
@@ -58,7 +93,7 @@ export function PackToolbar({
               <>
                 <button
                   type="button"
-                  onClick={onDownloadAll}
+                  onClick={handleDownloadAllClick}
                   disabled={downloadDisabled || isPreparing}
                   aria-busy={isPreparing}
                   className={toolbarActionClassName}
@@ -85,27 +120,30 @@ export function PackToolbar({
               </>
             ) : (
               <>
-                {showDownloadAll ? (
-                  <button
-                    type="button"
-                    onClick={onDownloadAll}
-                    disabled={isPreparing}
-                    aria-busy={isPreparing}
-                    className={toolbarActionClassName}
-                  >
-                    {isPreparing ? (
-                      <SpinnerIcon className="size-4 shrink-0" />
-                    ) : null}
-                    {downloadButtonLabel}
-                  </button>
-                ) : null}
+                <button
+                  type="button"
+                  onClick={handleDownloadAllClick}
+                  disabled={isPreparing}
+                  aria-busy={isPreparing}
+                  aria-label={
+                    isPremiumDownloadAll
+                      ? "Download All"
+                      : "Download All — Premium feature"
+                  }
+                  className={toolbarActionClassName}
+                >
+                  {isPreparing ? (
+                    <SpinnerIcon className="size-4 shrink-0" />
+                  ) : null}
+                  {downloadButtonLabel}
+                  {!isPremiumDownloadAll && !isPreparing && !isSuccess ? (
+                    <ToolbarCrownIcon />
+                  ) : null}
+                </button>
                 <button
                   type="button"
                   onClick={onEnterSelectionMode}
-                  className={[
-                    toolbarActionClassName,
-                    showDownloadAll ? "tablet:ml-4" : "",
-                  ].join(" ")}
+                  className={[toolbarActionClassName, "tablet:ml-4"].join(" ")}
                 >
                   Select
                 </button>

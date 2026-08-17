@@ -343,5 +343,6 @@ export function signOut(): void {
   window.localStorage.removeItem(STORAGE_KEY);
   window.localStorage.removeItem(USER_STORAGE_KEY);
   void fetch("/api/downloads/premium", { method: "DELETE" }).catch(() => {});
+  void fetch("/api/downloads/session", { method: "DELETE" }).catch(() => {});
   notifyAuthChange();
 }
