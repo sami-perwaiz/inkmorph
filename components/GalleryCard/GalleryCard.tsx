@@ -15,17 +15,13 @@ import { ActionOverlay } from "@/components/ActionOverlay/ActionOverlay";
 import { PremiumBadge } from "@/components/ActionOverlay/PremiumBadge";
 import { ProtectedPremiumImage } from "@/components/ProtectedPremiumImage/ProtectedPremiumImage";
 import { useCardAction } from "@/hooks/useCardAction";
+import { useLazyPreviewFetch } from "@/hooks/useLazyPreviewFetch";
 import { usePremiumAccess } from "@/hooks/usePremiumAccess";
-import { useAdaptiveRootMargin } from "@/hooks/useAdaptiveRootMargin";
-import { useSharedInViewport } from "@/hooks/useSharedInViewport";
-import { GALLERY } from "@/lib/constants";
-import {
-  shouldProtectGalleryAsset,
-} from "@/lib/premiumFeatureAccess";
+import { shouldProtectGalleryAsset } from "@/lib/premiumFeatureAccess";
 import {
   GALLERY_CARD_CLASS,
   GALLERY_CARD_IMAGE_SIZES,
-  PREVIEW_IMAGE_PROPS,
+  getPreviewImageProps,
   IMAGE_PREVIEW_QUALITY,
 } from "@/lib/imageDelivery";
 import {
@@ -43,13 +39,104 @@ interface GalleryCardProps {
   teaser?: boolean;
 }
 
-function GalleryCardComponent({
+function useGalleryImageLoad(src: string) {
+  const [isLoaded, setIsLoaded] = useState(() => hasIllustrationImageLoaded(src));
+  const srcRef = useRef(src);
+
+  useEffect(() => {
+    if (srcRef.current === src) {
+      return;
+    }
+
+    srcRef.current = src;
+    setIsLoaded(hasIllustrationImageLoaded(src));
+  }, [src]);
+
+  const revealImage = useCallback(() => {
+    markIllustrationImageLoaded(src);
+    setIsLoaded(true);
+  }, [src]);
+
+  const handleImageLoad = useCallback(
+    (event: SyntheticEvent<HTMLImageElement>) => {
+      const img = event.currentTarget;
+
+      if (!(img.complete && img.naturalWidth > 0)) {
+        return;
+      }
+
+      if (hasIllustrationImageLoaded(src)) {
+        setIsLoaded(true);
+        return;
+      }
+
+      if (typeof img.decode === "function") {
+        img.decode().then(revealImage).catch(revealImage);
+        return;
+      }
+
+      revealImage();
+    },
+    [revealImage, src]
+  );
+
+  return { isLoaded, handleImageLoad };
+}
+
+/** Paywalled peek tile — no action hooks or overlays. */
+function GalleryTeaserCard({
+  illustration,
+  priority = false,
+}: {
+  illustration: Illustration;
+  priority?: boolean;
+}) {
+  const { id, src } = illustration;
+  const { isLoaded, handleImageLoad } = useGalleryImageLoad(src);
+  const { ref, shouldFetch } = useLazyPreviewFetch(src, priority);
+
+  return (
+    <article
+      className={[
+        GALLERY_CARD_CLASS,
+        "pointer-events-none overflow-hidden bg-white",
+      ].join(" ")}
+      aria-hidden
+    >
+      {!isLoaded ? (
+        <div className="gallery-card-skeleton absolute inset-0" aria-hidden />
+      ) : null}
+
+      <div ref={ref} className="absolute inset-0">
+        {shouldFetch ? (
+          <Image
+            key={id}
+            src={src}
+            alt=""
+            fill
+            sizes={GALLERY_CARD_IMAGE_SIZES}
+            quality={IMAGE_PREVIEW_QUALITY.grid}
+            className={[
+              "gallery-card-image object-contain object-center",
+              isLoaded ? "opacity-100" : "opacity-0",
+            ].join(" ")}
+            {...getPreviewImageProps(priority)}
+            decoding="async"
+            draggable={false}
+            onLoad={handleImageLoad}
+          />
+        ) : null}
+      </div>
+    </article>
+  );
+}
+
+function GalleryInteractiveCard({
   illustration,
   isDesktop,
   onPreview,
   priority = false,
-  teaser = false,
-}: GalleryCardProps) {
+}: Omit<GalleryCardProps, "teaser">) {
   const { id, src, alt } = illustration;
   const {
     actionState,
@@ -69,82 +156,31 @@ function GalleryCardComponent({
     illustration,
     hasFullLibraryAccess
   );
-
-  const [isLoaded, setIsLoaded] = useState(() => hasIllustrationImageLoaded(src));
-  const srcRef = useRef(src);
+  const { isLoaded, handleImageLoad } = useGalleryImageLoad(src);
+  const { ref, shouldFetch } = useLazyPreviewFetch(src, priority);
   const showPremiumBadge =
     Boolean(illustration.premium) && isLoaded && !hasFullLibraryAccess;
 
-  const cached = hasIllustrationImageLoaded(src);
-  const viewportMargin = useAdaptiveRootMargin(GALLERY.viewportRootMargin);
-  const shouldObserve = !priority && !cached;
-  const { ref: viewportRef, inViewport } = useSharedInViewport(
-    viewportMargin,
-    shouldObserve
-  );
-  const shouldFetch = priority || cached || inViewport;
-
   useEffect(() => {
-    if (srcRef.current === src) {
-      return;
-    }
-
-    srcRef.current = src;
-    setIsLoaded(hasIllustrationImageLoaded(src));
     setIsHovered(false);
   }, [src, setIsHovered]);
 
-  const revealImage = useCallback(() => {
-    markIllustrationImageLoaded(src);
-    setIsLoaded(true);
-  }, [src]);
-
-  const handleImageLoad = useCallback(
-    (event: SyntheticEvent<HTMLImageElement>) => {
-      const img = event.currentTarget;
-
-      if (!(img.complete && img.naturalWidth > 0)) {
-        return;
-      }
-
-      // Cached this session: skip decode wait, reveal as soon as the element is ready.
-      if (hasIllustrationImageLoaded(src)) {
-        setIsLoaded(true);
-        return;
-      }
-
-      if (typeof img.decode === "function") {
-        img.decode().then(revealImage).catch(revealImage);
-        return;
-      }
-
-      revealImage();
-    },
-    [revealImage, src]
-  );
-
-  const showDesktopOverlay = !teaser && isDesktop === true;
+  const showDesktopOverlay = isDesktop === true;
   const canShowOverlay = showDesktopOverlay && isLoaded;
   const overlayVisible = canShowOverlay && showOverlay;
 
   const handleOpenPreview = useCallback(() => {
-    if (teaser) {
-      return;
-    }
     onPreview(illustration);
-  }, [illustration, onPreview, teaser]);
+  }, [illustration, onPreview]);
 
   const handleKeyDown = useCallback(
     (event: KeyboardEvent<HTMLElement>) => {
-      if (teaser) {
-        return;
-      }
       if (event.key === "Enter" || event.key === " ") {
         event.preventDefault();
         onPreview(illustration);
       }
     },
-    [illustration, onPreview, teaser]
+    [illustration, onPreview]
   );
 
   const handleMouseEnter = useCallback(() => {
@@ -158,46 +194,6 @@ function GalleryCardComponent({
       setIsHovered(false);
     }
   }, [setIsHovered, showDesktopOverlay]);
-
-  if (teaser) {
-    return (
-      <article
-        className={[
-          GALLERY_CARD_CLASS,
-          "pointer-events-none overflow-hidden bg-white",
-        ].join(" ")}
-        aria-hidden
-      >
-        {!isLoaded && (
-          <div className="gallery-card-skeleton absolute inset-0" aria-hidden />
-        )}
-
-        <div ref={viewportRef} className="absolute inset-0">
-          {shouldFetch ? (
-            <Image
-              key={id}
-              src={src}
-              alt=""
-              fill
-              sizes={GALLERY_CARD_IMAGE_SIZES}
-              quality={IMAGE_PREVIEW_QUALITY.grid}
-              className={[
-                "gallery-card-image object-contain object-center",
-                isLoaded ? "opacity-100" : "opacity-0",
-              ].join(" ")}
-              {...(priority
-                ? { priority: true as const, fetchPriority: "high" as const }
-                : {})}
-              decoding="async"
-              draggable={false}
-              {...PREVIEW_IMAGE_PROPS}
-              onLoad={handleImageLoad}
-            />
-          ) : null}
-        </div>
-      </article>
-    );
-  }
 
   return (
     <article
@@ -213,14 +209,11 @@ function GalleryCardComponent({
       onClick={handleOpenPreview}
       onKeyDown={handleKeyDown}
     >
-      {!isLoaded && (
-        <div
-          className="gallery-card-skeleton absolute inset-0"
-          aria-hidden
-        />
-      )}
+      {!isLoaded ? (
+        <div className="gallery-card-skeleton absolute inset-0" aria-hidden />
+      ) : null}
 
-      <div ref={viewportRef} className="absolute inset-0">
+      <div ref={ref} className="absolute inset-0">
         <ProtectedPremiumImage enabled={protectImage} className="absolute inset-0">
           {shouldFetch ? (
             <Image
@@ -234,12 +227,9 @@ function GalleryCardComponent({
                 "gallery-card-image object-contain object-center",
                 isLoaded ? "opacity-100" : "opacity-0",
               ].join(" ")}
-              {...(priority
-                ? { priority: true as const, fetchPriority: "high" as const }
-                : {})}
+              {...getPreviewImageProps(priority)}
               decoding="async"
               draggable={false}
-              {...PREVIEW_IMAGE_PROPS}
               onLoad={handleImageLoad}
             />
           ) : null}
@@ -248,7 +238,7 @@ function GalleryCardComponent({
 
       {showPremiumBadge ? <PremiumBadge /> : null}
 
-      {canShowOverlay && (
+      {canShowOverlay ? (
         <ActionOverlay
           actionState={actionState}
           failedAction={failedAction}
@@ -260,8 +250,29 @@ function GalleryCardComponent({
           onLockedAction={handleLockedAction}
           onCancel={cancelAction}
         />
-      )}
+      ) : null}
     </article>
+  );
+}
+
+function GalleryCardComponent({
+  illustration,
+  isDesktop,
+  onPreview,
+  priority = false,
+  teaser = false,
+}: GalleryCardProps) {
+  if (teaser) {
+    return <GalleryTeaserCard illustration={illustration} priority={priority} />;
+  }
+
+  return (
+    <GalleryInteractiveCard
+      illustration={illustration}
+      isDesktop={isDesktop}
+      onPreview={onPreview}
+      priority={priority}
+    />
   );
 }
 

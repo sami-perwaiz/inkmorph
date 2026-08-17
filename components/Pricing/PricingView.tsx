@@ -97,10 +97,10 @@ export function PricingView() {
 
       <main className="flex w-full flex-col pt-[70px] desktop:pt-[90px]">
         <PricingHero />
-        <div className="mt-[120px] flex flex-col">
+        <div className="mt-[120px]">
           <PricingPlans />
-          <PremiumBanner />
         </div>
+        <PremiumBanner alwaysShow />
       </main>
 
       <Footer onFilterChange={handleFilterChange} />

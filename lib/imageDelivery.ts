@@ -52,6 +52,13 @@ export const PREVIEW_IMAGE_PROPS = {
   loading: "lazy" as const,
 } as const;
 
+/** Priority LCP tiles must not combine with native lazy loading. */
+export function getPreviewImageProps(priority: boolean) {
+  return priority
+    ? { priority: true as const, fetchPriority: "high" as const }
+    : PREVIEW_IMAGE_PROPS;
+}
+
 /**
  * @deprecated Prefer {@link PREVIEW_IMAGE_PROPS} for on-screen previews.
  * Unoptimized canonical URLs force full-size PNG loads and break preview performance.

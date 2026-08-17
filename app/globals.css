@@ -288,18 +288,6 @@
     contain-intrinsic-size: 150px 150px;
   }
 
-  /* Skip layout/paint for off-screen gallery cards until scrolled near */
-  .gallery-grid-card {
-    content-visibility: auto;
-    contain-intrinsic-size: 104px 104px;
-  }
-
-  @media (min-width: 768px) {
-    .gallery-grid-card {
-      contain-intrinsic-size: 140px 140px;
-    }
-  }
-
   /* Safari 15–16.3 lazy-load gray border workaround */
   @supports (font: -apple-system-body) and (-webkit-appearance: none) {
     img[loading="lazy"] {

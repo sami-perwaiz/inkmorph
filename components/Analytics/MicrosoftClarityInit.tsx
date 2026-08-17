@@ -1,6 +1,5 @@
 "use client";
 
-import Clarity from "@microsoft/clarity";
 import { useEffect } from "react";
 
 import { CLARITY_PROJECT_ID } from "@/lib/clarityConfig";
@@ -11,17 +10,22 @@ import { CLARITY_PROJECT_ID } from "@/lib/clarityConfig";
  */
 export function MicrosoftClarityInit() {
   useEffect(() => {
-    const init = () => {
+    const init = async () => {
+      const { default: Clarity } = await import("@microsoft/clarity");
       Clarity.init(CLARITY_PROJECT_ID);
     };
 
     if (typeof window.requestIdleCallback === "function") {
-      const idleId = window.requestIdleCallback(init, { timeout: 4000 });
+      const idleId = window.requestIdleCallback(() => {
+        void init();
+      }, { timeout: 4000 });
       return () => window.cancelIdleCallback(idleId);
     }
 
-    const timeoutId = setTimeout(init, 2000);
-    return () => clearTimeout(timeoutId);
+    const timeoutId = window.setTimeout(() => {
+      void init();
+    }, 2000);
+    return () => window.clearTimeout(timeoutId);
   }, []);
 
   return null;

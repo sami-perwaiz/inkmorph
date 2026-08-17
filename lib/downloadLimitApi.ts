@@ -28,18 +28,32 @@ const DEFAULT_STATUS: DownloadLimitStatus = {
   isSignedIn: false,
 };
 
-export async function fetchDownloadLimitStatus(): Promise<DownloadLimitStatus> {
-  const timezoneOffsetMinutes = getClientTimezoneOffsetMinutes();
-  const response = await fetch(
-    `/api/downloads/status?timezoneOffsetMinutes=${timezoneOffsetMinutes}`,
-    { cache: "no-store" }
-  );
+let statusInflight: Promise<DownloadLimitStatus> | null = null;
 
-  if (!response.ok) {
-    return DEFAULT_STATUS;
+export async function fetchDownloadLimitStatus(): Promise<DownloadLimitStatus> {
+  if (statusInflight) {
+    return statusInflight;
   }
 
-  return (await response.json()) as DownloadLimitStatus;
+  statusInflight = (async () => {
+    const timezoneOffsetMinutes = getClientTimezoneOffsetMinutes();
+    const response = await fetch(
+      `/api/downloads/status?timezoneOffsetMinutes=${timezoneOffsetMinutes}`,
+      { cache: "no-store" }
+    );
+
+    if (!response.ok) {
+      return DEFAULT_STATUS;
+    }
+
+    return (await response.json()) as DownloadLimitStatus;
+  })();
+
+  try {
+    return await statusInflight;
+  } finally {
+    statusInflight = null;
+  }
 }
 
 export async function authorizeDownloadSlots(

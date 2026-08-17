@@ -69,6 +69,7 @@ export function DownloadLimitProvider({ children }: { children: ReactNode }) {
   const [partialReason, setPartialReason] =
     useState<PartialLimitReason>("remaining");
   const authorizeInFlightRef = useRef<Promise<ActionSlotsResult> | null>(null);
+  const lastVisibilityRefreshRef = useRef(0);
 
   const refreshStatus = useCallback(async (): Promise<DownloadLimitStatus | null> => {
     const next = await fetchDownloadLimitStatus();
@@ -102,9 +103,17 @@ export function DownloadLimitProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const handleVisibilityChange = () => {
-      if (document.visibilityState === "visible") {
-        void refreshStatus();
+      if (document.visibilityState !== "visible") {
+        return;
       }
+
+      const now = Date.now();
+      if (now - lastVisibilityRefreshRef.current < 30_000) {
+        return;
+      }
+
+      lastVisibilityRefreshRef.current = now;
+      void refreshStatus();
     };
 
     document.addEventListener("visibilitychange", handleVisibilityChange);

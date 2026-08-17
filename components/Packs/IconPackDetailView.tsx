@@ -69,10 +69,6 @@ export function IconPackDetailView({
     };
   }, [clearDownloadResetTimeout]);
 
-  useEffect(() => {
-    void refreshStatus();
-  }, [refreshStatus]);
-
   const visibleIllustrations = useMemo(
     () => getAccessiblePackIllustrations(illustrations, hasPremiumAccess),
     [hasPremiumAccess, illustrations]

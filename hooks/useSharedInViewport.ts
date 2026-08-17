@@ -3,8 +3,9 @@
 import { useEffect, useRef, useState } from "react";
 
 import { observeSharedViewport } from "@/lib/sharedIntersectionObserver";
+import { isNearViewport } from "@/lib/viewportNear";
 
-/** Single shared IntersectionObserver — one instance for the whole pack icon grid. */
+/** Shared IntersectionObserver — one instance per page, unobserve after visible. */
 export function useSharedInViewport(
   rootMargin: string,
   enabled: boolean
@@ -19,6 +20,11 @@ export function useSharedInViewport(
 
     const node = ref.current;
     if (!node) {
+      return;
+    }
+
+    if (isNearViewport(node, rootMargin)) {
+      setInViewport(true);
       return;
     }
 

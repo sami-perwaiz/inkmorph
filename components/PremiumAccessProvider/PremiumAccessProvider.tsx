@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import {
   createContext,
   useCallback,
@@ -10,13 +11,20 @@ import {
   type ReactNode,
 } from "react";
 
-import { PurchaseProModal } from "@/components/Packs/PurchaseProModal";
 import {
   AUTH_CHANGE_EVENT,
   hasPremiumAccess,
   PREMIUM_CHANGE_EVENT,
 } from "@/lib/premiumAccess";
 import { syncPremiumDownloadSession } from "@/lib/downloadLimitApi";
+
+const PurchaseProModal = dynamic(
+  () =>
+    import("@/components/Packs/PurchaseProModal").then((module) => ({
+      default: module.PurchaseProModal,
+    })),
+  { ssr: false }
+);
 
 interface PremiumAccessContextValue {
   /** Opens the site-wide Purchase Pro modal — never navigates away. */

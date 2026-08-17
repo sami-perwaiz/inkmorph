@@ -7,11 +7,16 @@ import { GoPremiumButton } from "@/components/GoPremiumButton/GoPremiumButton";
 import { usePremiumAccess } from "@/hooks/usePremiumAccess";
 import { CTA } from "@/lib/constants";
 
+interface PremiumBannerProps {
+  /** Keep visible on pages like /pricing where the CTA is part of the layout. */
+  alwaysShow?: boolean;
+}
+
 /** Premium promo banner — hidden for Pro users who already have full library access. */
-export function PremiumBanner() {
+export function PremiumBanner({ alwaysShow = false }: PremiumBannerProps) {
   const { hasPremiumAccess, isReady } = usePremiumAccess();
 
-  if (isReady && hasPremiumAccess) {
+  if (!alwaysShow && isReady && hasPremiumAccess) {
     return null;
   }
 

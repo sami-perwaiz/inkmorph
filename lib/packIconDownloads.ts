@@ -1,5 +1,3 @@
-import JSZip from "jszip";
-
 import { getCanonicalFilename } from "@/lib/canonicalAsset";
 import type { DownloadProgressOptions } from "@/lib/downloadProgress";
 import {
@@ -23,6 +21,11 @@ interface PackBucket {
 }
 
 const session = new Map<string, PackBucket>();
+
+async function createZip() {
+  const { default: JSZip } = await import("jszip");
+  return new JSZip();
+}
 
 function sanitizeFolderName(name: string): string {
   return name.replace(/[^\w.-]+/g, "-").replace(/^-+|-+$/g, "") || "icons";
@@ -105,7 +108,7 @@ async function downloadPackZip(
   throwIfAborted(options?.signal);
 
   const folderName = sanitizeFolderName(pack.id);
-  const zip = new JSZip();
+  const zip = await createZip();
   const folder = zip.folder(folderName);
   if (!folder) {
     throw new Error("Failed to create zip folder.");
@@ -146,7 +149,7 @@ async function downloadSessionZip(
 ): Promise<void> {
   throwIfAborted(options?.signal);
 
-  const zip = new JSZip();
+  const zip = await createZip();
   const root = zip.folder(MULTI_PACK_ZIP_ROOT);
   if (!root) {
     throw new Error("Failed to create zip folder.");

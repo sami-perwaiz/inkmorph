@@ -1,6 +1,6 @@
 type ViewportCallback = () => void;
 
-const callbackMap = new WeakMap<Element, ViewportCallback>();
+const callbackMap = new Map<Element, ViewportCallback>();
 
 let observer: IntersectionObserver | null = null;
 let observerRootMargin = "";
@@ -31,6 +31,10 @@ function ensureObserver(rootMargin: string): IntersectionObserver {
     },
     { rootMargin, threshold: 0.01 }
   );
+
+  for (const element of callbackMap.keys()) {
+    observer.observe(element);
+  }
 
   return observer;
 }

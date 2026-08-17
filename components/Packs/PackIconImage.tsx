@@ -10,11 +10,10 @@ import {
   type SyntheticEvent,
 } from "react";
 
-import { useAdaptiveRootMargin } from "@/hooks/useAdaptiveRootMargin";
-import { useSharedInViewport } from "@/hooks/useSharedInViewport";
+import { useLazyPreviewFetch } from "@/hooks/useLazyPreviewFetch";
 import { PACK_ICON } from "@/lib/constants";
 import {
-  PREVIEW_IMAGE_PROPS,
+  getPreviewImageProps,
   IMAGE_PREVIEW_QUALITY,
   PACK_ICON_IMAGE_SIZES,
 } from "@/lib/imageDelivery";
@@ -35,19 +34,16 @@ function PackIconImageComponent({
   alt,
   priority = false,
 }: PackIconImageProps) {
-  const cached = hasIllustrationImageLoaded(src);
-  const viewportMargin = useAdaptiveRootMargin(PACK_ICON.viewportRootMargin);
-  const shouldObserve = !priority && !cached;
-  const { ref, inViewport } = useSharedInViewport(
-    viewportMargin,
-    shouldObserve
+  const { ref, shouldFetch } = useLazyPreviewFetch(
+    src,
+    priority,
+    PACK_ICON.viewportRootMargin
   );
-
-  const [isLoaded, setIsLoaded] = useState(cached);
+  const [isLoaded, setIsLoaded] = useState(() =>
+    hasIllustrationImageLoaded(src)
+  );
   const [hasError, setHasError] = useState(false);
   const srcRef = useRef(src);
-
-  const shouldFetch = priority || cached || inViewport;
 
   useEffect(() => {
     if (srcRef.current === src) {
@@ -122,12 +118,9 @@ function PackIconImageComponent({
             "pack-icon-image gallery-card-image size-full object-contain object-center transition-opacity duration-200 ease-out",
             isLoaded ? "opacity-100" : "opacity-0",
           ].join(" ")}
-          {...(priority
-            ? { priority: true as const, fetchPriority: "high" as const }
-            : {})}
+          {...getPreviewImageProps(priority)}
           decoding="async"
           draggable={false}
-          {...PREVIEW_IMAGE_PROPS}
           onLoad={handleImageLoad}
           onError={handleImageError}
         />

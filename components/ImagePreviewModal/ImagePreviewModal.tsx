@@ -41,8 +41,8 @@ import {
 } from "@/lib/illustrationImageCache";
 import {
   IMAGE_PREVIEW_MODAL_SIZES,
-  PREVIEW_IMAGE_PROPS,
   IMAGE_PREVIEW_QUALITY,
+  getPreviewImageProps,
 } from "@/lib/imageDelivery";
 import { MOTION } from "@/lib/motion";
 import { preloadOriginalAsset } from "@/lib/originalAssetCache";
@@ -253,9 +253,21 @@ function ImagePreviewModalComponent({
   }, [illustration.src]);
 
   useEffect(() => {
-    if (visible && !isLocked) {
-      preloadOriginalAsset(illustration.src);
+    if (!visible || isLocked) {
+      return;
     }
+
+    const preload = () => {
+      preloadOriginalAsset(illustration.src);
+    };
+
+    if (typeof window.requestIdleCallback === "function") {
+      const idleId = window.requestIdleCallback(preload, { timeout: 1500 });
+      return () => window.cancelIdleCallback(idleId);
+    }
+
+    const timeoutId = window.setTimeout(preload, 600);
+    return () => window.clearTimeout(timeoutId);
   }, [visible, isLocked, illustration.src]);
 
   useEffect(() => {
@@ -596,10 +608,9 @@ function ImagePreviewModalComponent({
                   "gallery-card-image object-cover",
                   isImageLoaded ? "opacity-100" : "opacity-0",
                 ].join(" ")}
-                priority
+                {...getPreviewImageProps(true)}
                 decoding="async"
                 draggable={false}
-                {...PREVIEW_IMAGE_PROPS}
                 onLoad={handlePreviewImageLoad}
               />
             </ProtectedPremiumImage>
