@@ -333,7 +333,7 @@ export const GalleryGrid = memo(function GalleryGrid({
           <div className="flex w-full max-w-[476px] flex-col items-center gap-6">
             <div className="relative aspect-[1536/1024] w-full">
               <Image
-                src="/search/no-results.png"
+                src="/search/no-results.webp"
                 alt=""
                 fill
                 sizes="(max-width: 767px) 358px, 476px"

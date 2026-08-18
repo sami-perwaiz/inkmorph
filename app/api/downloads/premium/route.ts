@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 
 import { setPremiumDownloadSession } from "@/lib/dailyDownloadLimitServer";
-import { isTestingPremiumUser } from "@/lib/testingPremiumAccess";
 
 export async function POST(request: Request): Promise<NextResponse> {
   const body = (await request.json()) as {
@@ -10,12 +9,9 @@ export async function POST(request: Request): Promise<NextResponse> {
   };
 
   if (body.active) {
-    if (!isTestingPremiumUser(body.email)) {
-      return NextResponse.json({ ok: false }, { status: 403 });
-    }
-
-    await setPremiumDownloadSession(true, body.email);
-    return NextResponse.json({ ok: true });
+    // Checkout not live — reject premium session activation.
+    await setPremiumDownloadSession(false);
+    return NextResponse.json({ ok: false }, { status: 403 });
   }
 
   await setPremiumDownloadSession(false);

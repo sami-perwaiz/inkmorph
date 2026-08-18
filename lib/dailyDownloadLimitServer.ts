@@ -7,7 +7,6 @@ import {
   resolveDailyActionLimit,
   SIGNED_IN_DAILY_ACTION_LIMIT,
 } from "@/lib/dailyDownloadReset";
-import { isTestingPremiumUser } from "@/lib/testingPremiumAccess";
 
 const ACTION_COOKIE = "inkmorph-dl-limit";
 const PREMIUM_COOKIE = "inkmorph-dl-premium";
@@ -16,10 +15,6 @@ const SIGNED_IN_COOKIE = "inkmorph-dl-signed-in";
 interface ActionLimitPayload {
   periodKey: string;
   count: number;
-}
-
-interface PremiumCookiePayload {
-  email: string;
 }
 
 export interface DownloadLimitStatus {
@@ -95,52 +90,10 @@ function decodeSignedPayload(raw: string | undefined): ActionLimitPayload | null
 
 async function readPremiumCookie(): Promise<boolean> {
   const cookieStore = await cookies();
-  const raw = cookieStore.get(PREMIUM_COOKIE)?.value;
-  const email = decodePremiumCookie(raw);
-  return isTestingPremiumUser(email);
-}
-
-function decodePremiumCookie(raw: string | undefined): string | null {
-  if (!raw) {
-    return null;
+  if (cookieStore.get(PREMIUM_COOKIE)?.value) {
+    cookieStore.delete(PREMIUM_COOKIE);
   }
-
-  const [body, signature] = raw.split(".");
-  if (!body || !signature) {
-    return null;
-  }
-
-  const expected = sign(body);
-  const expectedBuffer = Buffer.from(expected);
-  const signatureBuffer = Buffer.from(signature);
-
-  if (
-    expectedBuffer.length !== signatureBuffer.length ||
-    !timingSafeEqual(expectedBuffer, signatureBuffer)
-  ) {
-    return null;
-  }
-
-  try {
-    const parsed = JSON.parse(
-      Buffer.from(body, "base64url").toString("utf8")
-    ) as Partial<PremiumCookiePayload>;
-
-    if (typeof parsed.email !== "string" || !parsed.email) {
-      return null;
-    }
-
-    return parsed.email;
-  } catch {
-    return null;
-  }
-}
-
-function encodePremiumCookie(email: string): string {
-  const body = Buffer.from(JSON.stringify({ email } satisfies PremiumCookiePayload), "utf8").toString(
-    "base64url"
-  );
-  return `${body}.${sign(body)}`;
+  return false;
 }
 
 async function readSignedInCookie(): Promise<boolean> {
@@ -179,26 +132,16 @@ async function writeActionPayload(payload: ActionLimitPayload): Promise<void> {
 
 export async function setPremiumDownloadSession(
   active: boolean,
-  email?: string | null
+  _email?: string | null
 ): Promise<void> {
   const cookieStore = await cookies();
+  cookieStore.delete(PREMIUM_COOKIE);
 
   if (!active) {
-    cookieStore.delete(PREMIUM_COOKIE);
     return;
   }
 
-  if (!isTestingPremiumUser(email)) {
-    return;
-  }
-
-  cookieStore.set(PREMIUM_COOKIE, encodePremiumCookie(email!), {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-    maxAge: 60 * 60 * 24 * 365,
-  });
+  // Checkout not live — never persist a premium download session.
 }
 
 export async function setSignedInDownloadSession(active: boolean): Promise<void> {

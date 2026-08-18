@@ -10,7 +10,6 @@ import {
   useState,
   type KeyboardEvent as ReactKeyboardEvent,
   type MouseEvent as ReactMouseEvent,
-  type ReactNode,
   type SyntheticEvent,
 } from "react";
 import { createPortal } from "react-dom";
@@ -18,23 +17,17 @@ import { createPortal } from "react-dom";
 import { AnimatedDropdownPanel } from "@/components/AnimatedDropdownPanel/AnimatedDropdownPanel";
 import { ProtectedPremiumImage } from "@/components/ProtectedPremiumImage/ProtectedPremiumImage";
 import {
-  CheckIcon,
   ChevronDownIcon,
   CopyIcon,
   CrownGoldIcon,
   DownloadIcon,
   LockIcon,
-  SpinnerIcon,
 } from "@/components/icons/ActionIcons";
 import { usePreviewCardAction } from "@/hooks/usePreviewCardAction";
 import { usePremiumAccess } from "@/hooks/usePremiumAccess";
 import { usePremiumAccessGate } from "@/components/PremiumAccessProvider/PremiumAccessProvider";
 import { shouldProtectGalleryAsset, requiresPremiumForDownloadSize } from "@/lib/premiumFeatureAccess";
 import { ACTION, type DownloadSize } from "@/lib/constants";
-import {
-  getMenuDropdownItemClassName,
-  getMenuDropdownPanelClassName,
-} from "@/lib/navTokens";
 import {
   hasIllustrationImageLoaded,
   markIllustrationImageLoaded,
@@ -47,12 +40,7 @@ import {
 import { MOTION } from "@/lib/motion";
 import { getPreviewAssetUrl } from "@/lib/previewAsset";
 import { getModalBackdropStyle } from "@/lib/modalBackdrop";
-import {
-  getPreviewCopyLabel,
-  getPreviewDownloadLabel,
-} from "@/lib/downloadButtonLabels";
 import type { Illustration } from "@/types/illustration";
-import type { PreviewActionState } from "@/hooks/usePreviewCardAction";
 
 /** Figma Images Open State — 40004699:9098 / 40004699:9408 (+ tags 40004900:12643) */
 const PREVIEW_MODAL = {
@@ -69,6 +57,7 @@ const PREVIEW_MODAL = {
   actionPy: 10,
   actionRadius: 8,
   iconLabelGap: 6,
+  premiumBadgeSize: 36,
   premiumBadgePad: 8,
   premiumBadgeRadius: 6,
   premiumCrownSize: 20,
@@ -131,47 +120,25 @@ function getFocusableElements(container: HTMLElement): HTMLElement[] {
   });
 }
 
-function PreviewActionIcon({
-  actionState,
-  failedAction,
-  locked,
-  showCopySpinner = false,
-  successState,
-  defaultIcon,
-}: {
-  actionState: PreviewActionState;
-  failedAction: "copy" | "download" | null;
-  locked: boolean;
-  showCopySpinner?: boolean;
-  successState: PreviewActionState;
-  defaultIcon: ReactNode;
-}) {
-  if (locked && (actionState === "idle" || actionState === "error")) {
-    return <LockIcon />;
-  }
+const PREVIEW_DROPDOWN_PANEL_CLASS =
+  "absolute bottom-[calc(100%+4px)] right-0 z-50 box-border flex w-[80px] flex-col gap-[3px] rounded-[8px] border border-solid border-[#F5F5F5] bg-white p-1";
 
-  if (showCopySpinner) {
-    return <SpinnerIcon />;
-  }
+const PREVIEW_DROPDOWN_ITEM_CLASS =
+  "flex w-full items-center justify-between rounded-[6px] px-[6px] py-1 font-poppins text-[14px] font-normal leading-5 outline-none focus-visible:ring-2 focus-visible:ring-gray-900/30 focus-visible:ring-offset-2";
 
-  if (actionState === successState) {
-    return <CheckIcon />;
-  }
-
-  if (actionState === "error" && failedAction) {
-    return defaultIcon;
-  }
-
-  return defaultIcon;
+function PreviewCopyIcon({ locked }: { locked: boolean }) {
+  return locked ? <LockIcon /> : <CopyIcon />;
 }
 
 function PreviewPremiumBadge() {
   return (
     <div
-      className="pointer-events-none absolute z-[2] flex items-center justify-center shadow-[0px_8px_8px_-4px_rgba(10,13,18,0.08),0px_20px_24px_-4px_rgba(10,13,18,0.14)]"
+      className="pointer-events-none absolute z-[2] flex items-center justify-center shadow-[0px_8px_4px_rgba(10,13,18,0.03),0px_20px_12px_rgba(10,13,18,0.08)]"
       style={{
-        left: ACTION.compactInset,
-        bottom: ACTION.compactInset,
+        left: PREVIEW_MODAL.padding,
+        bottom: PREVIEW_MODAL.padding,
+        width: PREVIEW_MODAL.premiumBadgeSize,
+        height: PREVIEW_MODAL.premiumBadgeSize,
         padding: PREVIEW_MODAL.premiumBadgePad,
         borderRadius: PREVIEW_MODAL.premiumBadgeRadius,
         backgroundImage:
@@ -217,7 +184,6 @@ function ImagePreviewModalComponent({
     actionState,
     failedAction,
     isLocked,
-    showCopySpinner,
     handleCopy,
     handleDownload,
     handleLockedAction,
@@ -240,8 +206,6 @@ function ImagePreviewModalComponent({
     hasFullLibraryAccess
   );
 
-  const copyLabel = getPreviewCopyLabel(actionState, failedAction);
-  const downloadLabel = getPreviewDownloadLabel(actionState, failedAction);
   const mutedMeta = isLocked ? "text-[#797979]" : "text-[#0a0a0a]";
   const copySucceeded = actionState === "copied";
   const downloadSucceeded = actionState === "downloaded";
@@ -469,24 +433,24 @@ function ImagePreviewModalComponent({
       return;
     }
 
-    if (isLocked || copySucceeded || downloadSucceeded) {
+    if (downloadSucceeded) {
       return;
     }
 
     handleDownload(selectedSize);
-  }, [copySucceeded, downloadSucceeded, handleDownload, handleLockedAction, isLocked, selectedSize]);
+  }, [downloadSucceeded, handleDownload, handleLockedAction, isLocked, selectedSize]);
 
   const handleMenuToggle = useCallback(
     (event: ReactMouseEvent<HTMLButtonElement>) => {
       event.stopPropagation();
 
-      if (isLocked || copySucceeded || downloadSucceeded) {
+      if (isLocked || downloadSucceeded) {
         return;
       }
 
       setMenuOpen((open) => !open);
     },
-    [copySucceeded, downloadSucceeded, isLocked]
+    [downloadSucceeded, isLocked]
   );
 
   const handleSelectSize = useCallback(
@@ -510,7 +474,7 @@ function ImagePreviewModalComponent({
   const previewTags = getPreviewTags(illustration);
 
   const rowClass =
-    "box-border flex w-full items-center justify-between border border-solid border-[#F5F5F5] bg-white font-poppins text-sm text-[#202020]";
+    "box-border flex w-full min-h-[43px] items-center justify-between border border-solid border-[#F5F5F5] bg-white font-poppins text-[14px] font-normal leading-5 text-[#202020]";
 
   const rowStyle = {
     paddingLeft: PREVIEW_MODAL.actionPx,
@@ -603,7 +567,7 @@ function ImagePreviewModalComponent({
                   className="pointer-events-none absolute inset-0 z-[1] flex items-center justify-center overflow-hidden"
                   aria-hidden
                 >
-                  <span className="rotate-45 select-none whitespace-nowrap font-poppins text-[clamp(40px,19vw,76px)] font-semibold leading-none text-black/[0.05]">
+                  <span className="rotate-45 select-none whitespace-nowrap font-poppins text-[76px] font-semibold leading-none text-black/[0.05]">
                     Ink Morph
                   </span>
                 </div>
@@ -637,11 +601,12 @@ function ImagePreviewModalComponent({
               ))}
             </ul>
           ) : null}
+        </div>
 
-          <div
-            className="flex w-full flex-col items-stretch"
-            style={{ gap: PREVIEW_MODAL.actionGap }}
-          >
+        <div
+          className="flex w-full flex-col items-stretch"
+          style={{ gap: PREVIEW_MODAL.actionGap }}
+        >
             <button
               type="button"
               className={[rowClass, "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-900/30 focus-visible:ring-offset-2"].join(" ")}
@@ -654,15 +619,8 @@ function ImagePreviewModalComponent({
                 className="inline-flex items-center"
                 style={{ gap: PREVIEW_MODAL.iconLabelGap }}
               >
-                <PreviewActionIcon
-                  actionState={actionState}
-                  failedAction={failedAction}
-                  locked={isLocked}
-                  showCopySpinner={showCopySpinner}
-                  successState="copied"
-                  defaultIcon={<CopyIcon />}
-                />
-                <span className="min-w-[5.5rem]">{copyLabel}</span>
+                <PreviewCopyIcon locked={isLocked} />
+                <span>Copy Image</span>
               </span>
               <span className={["leading-5", mutedMeta].join(" ")}>PNG</span>
             </button>
@@ -672,25 +630,21 @@ function ImagePreviewModalComponent({
                 <button
                   type="button"
                   className={[rowButtonClass, "min-w-0 flex-1 justify-start"].join(" ")}
-                  aria-label={
-                    isLocked ? "Unlock to download" : downloadLabel
-                  }
+                  aria-label={isLocked ? "Unlock to download" : "Download PNG"}
                   disabled={!isLocked && downloadSucceeded}
                   onClick={handleDownloadClick}
                 >
-                  <span
-                    className="inline-flex min-w-0 items-center"
-                    style={{ gap: PREVIEW_MODAL.iconLabelGap }}
-                  >
-                    <PreviewActionIcon
-                      actionState={actionState}
-                      failedAction={failedAction}
-                      locked={isLocked}
-                      successState="downloaded"
-                      defaultIcon={<DownloadIcon />}
-                    />
-                    <span className="truncate">{downloadLabel}</span>
-                  </span>
+                  {isLocked ? (
+                    <span
+                      className="inline-flex min-w-0 items-center"
+                      style={{ gap: PREVIEW_MODAL.iconLabelGap }}
+                    >
+                      <LockIcon />
+                      <span className="truncate">Download PNG</span>
+                    </span>
+                  ) : (
+                    <span className="truncate">Download PNG</span>
+                  )}
                 </button>
 
                 <span
@@ -708,7 +662,7 @@ function ImagePreviewModalComponent({
                     aria-haspopup={isLocked ? undefined : "menu"}
                     aria-expanded={isLocked ? undefined : menuOpen}
                     aria-controls={isLocked ? undefined : menuId}
-                    disabled={isLocked || copySucceeded || downloadSucceeded}
+                    disabled={isLocked || downloadSucceeded}
                     onClick={handleMenuToggle}
                   >
                     <ChevronDownIcon />
@@ -721,19 +675,17 @@ function ImagePreviewModalComponent({
                 id={menuId}
                 label="Download size"
                 position="above"
-                className={getMenuDropdownPanelClassName({
-                  align: "right",
-                  size: "compact",
-                  position: "above",
-                })}
+                className={PREVIEW_DROPDOWN_PANEL_CLASS}
               >
                 <button
                   type="button"
                   role="menuitem"
-                  className={getMenuDropdownItemClassName({
-                    active: selectedSize === "1x",
-                    size: "compact",
-                  })}
+                  className={[
+                    PREVIEW_DROPDOWN_ITEM_CLASS,
+                    selectedSize === "1x"
+                      ? "bg-[#F5F5F5] text-[#0a0a0a]"
+                      : "text-[#0a0a0a] hover:bg-[#F5F5F5]",
+                  ].join(" ")}
                   onClick={() => handleSelectSize("1x")}
                 >
                   <span className="min-w-0 flex-1 truncate text-left">1x</span>
@@ -746,11 +698,10 @@ function ImagePreviewModalComponent({
                 <button
                   type="button"
                   role="menuitem"
-                  className={getMenuDropdownItemClassName({
-                    active: selectedSize === "2x",
-                    premium: true,
-                    size: "compact",
-                  })}
+                  className={[
+                    PREVIEW_DROPDOWN_ITEM_CLASS,
+                    "text-[#F5C400] hover:bg-[#F5F5F5]",
+                  ].join(" ")}
                   onClick={() => handleSelectSize("2x")}
                 >
                   <span className="min-w-0 flex-1 truncate text-left">2x</span>
@@ -758,7 +709,6 @@ function ImagePreviewModalComponent({
                 </button>
               </AnimatedDropdownPanel>
             </div>
-          </div>
         </div>
 
         <p id={titleId} className="sr-only">

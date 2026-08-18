@@ -22,10 +22,6 @@ import {
 } from "@/components/icons/ActionIcons";
 import { ACTION, type DownloadSize } from "@/lib/constants";
 import {
-  getMenuDropdownItemClassName,
-  getMenuDropdownPanelClassName,
-} from "@/lib/navTokens";
-import {
   getCopyButtonState,
   getDownloadButtonState,
   type ActionButtonState,
@@ -36,16 +32,21 @@ interface ActionOverlayProps {
   actionState: CardActionState;
   failedAction?: "copy" | "download" | null;
   visible: boolean;
-  statusMessage?: string;
   locked?: boolean;
   onCopy: () => void;
   onDownload: (size?: DownloadSize) => void;
   onLockedAction: () => void;
-  onCancel?: () => void;
 }
 
+/** Figma 40004699:9284 — borderless white pill, px-12 py-10, rounded-8. */
 const COMPACT_BTN =
-  "box-border inline-flex shrink-0 items-center justify-center border border-solid border-action-border-default bg-white text-gray-900 shadow-[0px_1px_2px_rgba(10,13,18,0.05)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-900/30 focus-visible:ring-offset-2 desktop:hover:border-gray-300 desktop:hover:shadow-action-hover";
+  "inline-flex shrink-0 items-center justify-center bg-white text-[#0a0a0a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-900/30 focus-visible:ring-offset-2";
+
+const OVERLAY_DROPDOWN_PANEL_CLASS =
+  "absolute bottom-[calc(100%+4px)] right-0 z-50 box-border flex w-[80px] flex-col gap-[3px] rounded-[8px] border border-solid border-[#F5F5F5] bg-white p-1";
+
+const OVERLAY_DROPDOWN_ITEM_CLASS =
+  "flex w-full items-center justify-between rounded-[6px] px-[6px] py-1 font-poppins text-[14px] font-normal leading-5 outline-none focus-visible:ring-2 focus-visible:ring-gray-900/30 focus-visible:ring-offset-2";
 
 function CompactIcon({
   state,
@@ -75,12 +76,10 @@ function ActionOverlayComponent({
   actionState,
   failedAction = null,
   visible,
-  statusMessage = "",
   locked = false,
   onCopy,
   onDownload,
   onLockedAction,
-  onCancel,
 }: ActionOverlayProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [selectedSize, setSelectedSize] = useState<DownloadSize>("1x");
@@ -162,6 +161,14 @@ function ActionOverlayComponent({
     [onDownload]
   );
 
+  const buttonStyle = {
+    paddingLeft: ACTION.compactPx,
+    paddingRight: ACTION.compactPx,
+    paddingTop: ACTION.compactPy,
+    paddingBottom: ACTION.compactPy,
+    borderRadius: ACTION.compactRadius,
+  };
+
   return (
     <div
       className="motion-overlay-root absolute inset-0 z-10 rounded-2xl"
@@ -173,39 +180,17 @@ function ActionOverlayComponent({
       />
 
       <div
-        className="motion-overlay-panel absolute flex flex-col items-end"
+        className="motion-overlay-panel absolute flex items-center"
         style={{
           right: ACTION.compactInset,
           bottom: ACTION.compactInset,
-          gap: 8,
+          gap: ACTION.compactGap,
         }}
       >
-        {statusMessage &&
-        (actionState === "copying" ||
-          actionState === "downloading" ||
-          actionState === "error") ? (
-          <p
-            aria-live="polite"
-            className="max-w-[min(42vw,160px)] truncate rounded-[6px] bg-white/95 px-2 py-1 text-right font-poppins text-[11px] font-normal leading-4 text-[#797979] shadow-[0px_1px_2px_rgba(10,13,18,0.08)]"
-          >
-            {statusMessage}
-          </p>
-        ) : null}
-
-        <div
-          className="flex items-center"
-          style={{ gap: ACTION.compactGap }}
-        >
         <button
           type="button"
           className={[COMPACT_BTN, "motion-overlay-button"].join(" ")}
-          style={{
-            paddingLeft: ACTION.compactPx,
-            paddingRight: ACTION.compactPx,
-            paddingTop: ACTION.compactPy,
-            paddingBottom: ACTION.compactPy,
-            borderRadius: ACTION.compactRadius,
-          }}
+          style={buttonStyle}
           aria-label={locked ? "Unlock to copy" : "Copy image"}
           disabled={
             !locked &&
@@ -232,12 +217,8 @@ function ActionOverlayComponent({
               locked ? "text-[#797979]" : "text-[#0a0a0a]",
             ].join(" ")}
             style={{
-              gap: ACTION.compactDividerGap,
-              paddingLeft: ACTION.compactPx,
-              paddingRight: ACTION.compactPx,
-              paddingTop: ACTION.compactPy,
-              paddingBottom: ACTION.compactPy,
-              borderRadius: ACTION.compactRadius,
+              ...buttonStyle,
+              gap: downloadCompact ? undefined : ACTION.compactDividerGap,
             }}
             aria-label={
               locked
@@ -287,64 +268,42 @@ function ActionOverlayComponent({
             id={menuId}
             label="Download size"
             position="above"
-            className={getMenuDropdownPanelClassName({
-              align: "right",
-              size: "compact",
-              position: "above",
-            })}
+            className={OVERLAY_DROPDOWN_PANEL_CLASS}
             onClick={(event) => event.stopPropagation()}
           >
-              <button
-                type="button"
-                role="menuitem"
-                className={getMenuDropdownItemClassName({
-                  active: selectedSize === "1x",
-                  size: "compact",
-                })}
-                onClick={() => handleSelectSize("1x")}
-              >
-                <span className="min-w-0 flex-1 truncate text-left">1x</span>
-                <DownloadIcon
-                  width={14}
-                  height={14}
-                  className="size-[14px] shrink-0 text-[#202020]"
-                />
-              </button>
-              <button
-                type="button"
-                role="menuitem"
-                className={getMenuDropdownItemClassName({
-                  active: selectedSize === "2x",
-                  premium: true,
-                  size: "compact",
-                })}
-                onClick={() => handleSelectSize("2x")}
-              >
-                <span className="min-w-0 flex-1 truncate text-left">2x</span>
-                <CrownGoldIcon />
-              </button>
+            <button
+              type="button"
+              role="menuitem"
+              className={[
+                OVERLAY_DROPDOWN_ITEM_CLASS,
+                selectedSize === "1x"
+                  ? "bg-[#F5F5F5] text-[#0a0a0a]"
+                  : "text-[#0a0a0a] hover:bg-[#F5F5F5]",
+              ].join(" ")}
+              onClick={() => handleSelectSize("1x")}
+            >
+              <span className="min-w-0 flex-1 truncate text-left">1x</span>
+              <DownloadIcon
+                width={14}
+                height={14}
+                className="size-[14px] shrink-0 text-[#202020]"
+              />
+            </button>
+            <button
+              type="button"
+              role="menuitem"
+              className={[
+                OVERLAY_DROPDOWN_ITEM_CLASS,
+                "text-[#F5C400] hover:bg-[#F5F5F5]",
+              ].join(" ")}
+              onClick={() => handleSelectSize("2x")}
+            >
+              <span className="min-w-0 flex-1 truncate text-left">2x</span>
+              <CrownGoldIcon />
+            </button>
           </AnimatedDropdownPanel>
         </div>
-        </div>
-
-        {onCancel &&
-        (actionState === "copying" || actionState === "downloading") ? (
-          <button
-            type="button"
-            onClick={(event) => {
-              event.stopPropagation();
-              onCancel();
-            }}
-            className="font-poppins text-[10px] font-normal leading-4 text-[#797979] underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-900/30 focus-visible:ring-offset-2"
-          >
-            Cancel
-          </button>
-        ) : null}
       </div>
-
-      <span className="sr-only" aria-live="polite">
-        {statusMessage}
-      </span>
     </div>
   );
 }

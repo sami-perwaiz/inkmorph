@@ -107,7 +107,7 @@ export const FOOTER_FILTERS = [
 ];
 
 export const ACTION = {
-  overlayBlur: 2,
+  overlayBlur: 3,
   overlayTint: "rgba(0,0,0,0.04)",
   buttonGap: 20,
   buttonWidth: 150,

@@ -12,7 +12,7 @@ import {
 } from "@/lib/constants";
 import { IMAGE_PREVIEW_QUALITY } from "@/lib/imageDelivery";
 import { canAccessIconPack, type IconPack } from "@/lib/iconPacks";
-import { runPurchaseAction } from "@/lib/testingPremiumAccess";
+import { runPurchaseAction } from "@/lib/purchaseAccess";
 
 function PackPremiumBadge() {
   return (
@@ -83,7 +83,7 @@ export function PackCard({
       {isLocked ? (
         <button
           type="button"
-          onClick={runPurchaseAction}
+          onClick={() => runPurchaseAction({ returnPath: "/packs" })}
           aria-label={`${pack.title} — premium pack, upgrade to open`}
           className={thumbnailClassName}
           style={{ aspectRatio: PACK_WALLPAPER_THUMB_ASPECT }}

@@ -181,12 +181,10 @@ function GalleryInteractiveCard({
     failedAction,
     isLocked,
     showOverlay,
-    statusMessage,
     setIsHovered,
     handleCopy,
     handleDownload,
     handleLockedAction,
-    cancelAction,
   } = useCardAction(illustration);
   const { hasPremiumAccess, isReady } = usePremiumAccess();
   const hasFullLibraryAccess = isReady && hasPremiumAccess;
@@ -288,12 +286,10 @@ function GalleryInteractiveCard({
           actionState={actionState}
           failedAction={failedAction}
           visible={overlayVisible}
-          statusMessage={statusMessage}
           locked={isLocked}
           onCopy={handleCopy}
           onDownload={handleDownload}
           onLockedAction={handleLockedAction}
-          onCancel={cancelAction}
         />
       ) : null}
     </article>

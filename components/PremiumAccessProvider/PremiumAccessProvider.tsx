@@ -16,7 +16,7 @@ import {
   PREMIUM_CHANGE_EVENT,
 } from "@/lib/premiumAccess";
 import { syncPremiumDownloadSession } from "@/lib/downloadLimitApi";
-import { runPurchaseAction } from "@/lib/testingPremiumAccess";
+import { runPurchaseAction } from "@/lib/purchaseAccess";
 
 interface PremiumAccessContextValue {
   /** Opens the site-wide Purchase Pro modal — never navigates away. */

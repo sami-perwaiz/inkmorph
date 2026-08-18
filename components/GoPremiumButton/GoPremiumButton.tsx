@@ -4,7 +4,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { useCallback, type MouseEvent } from "react";
 
-import { runPurchaseAction } from "@/lib/testingPremiumAccess";
+import { isSignedIn } from "@/lib/authSession";
+import { runPurchaseAction } from "@/lib/purchaseAccess";
 
 interface GoPremiumButtonProps {
   className?: string;
@@ -15,8 +16,10 @@ const PRICING_PLANS_HREF = "/pricing#pricing-plans";
 /** Figma Go Premium control — black glass button with crown. */
 export function GoPremiumButton({ className = "" }: GoPremiumButtonProps) {
   const handleClick = useCallback((event: MouseEvent<HTMLAnchorElement>) => {
-    event.preventDefault();
-    runPurchaseAction();
+    if (!isSignedIn()) {
+      event.preventDefault();
+      runPurchaseAction({ returnPath: "/pricing" });
+    }
   }, []);
 
   return (

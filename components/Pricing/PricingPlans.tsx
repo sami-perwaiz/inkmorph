@@ -6,7 +6,7 @@ import { useCallback } from "react";
 
 import { getAuthEntryHref } from "@/lib/authSession";
 import { PRICING_PLANS, type PricingPlan } from "@/lib/pricingPlans";
-import { runPurchaseAction } from "@/lib/testingPremiumAccess";
+import { runPurchaseAction } from "@/lib/purchaseAccess";
 
 /** Figma check instance — 20×20 with stroke mark. */
 function CheckIcon() {
@@ -145,7 +145,7 @@ function PricingCard({
 /** Figma 40004706:9735 — plan cards */
 export function PricingPlans() {
   const handlePurchaseClick = useCallback(() => {
-    runPurchaseAction();
+    runPurchaseAction({ returnPath: "/pricing" });
   }, []);
 
   return (

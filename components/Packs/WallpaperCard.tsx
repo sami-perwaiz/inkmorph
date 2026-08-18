@@ -17,7 +17,7 @@ import {
   canAccessWallpaperPack,
   type WallpaperPack,
 } from "@/lib/wallpaperPacks";
-import { runPurchaseAction } from "@/lib/testingPremiumAccess";
+import { runPurchaseAction } from "@/lib/purchaseAccess";
 
 function WallpaperPremiumBadge() {
   return (
@@ -64,7 +64,7 @@ export function WallpaperCard({
 
   const handleOpen = useCallback(() => {
     if (isLocked) {
-      runPurchaseAction();
+      runPurchaseAction({ returnPath: "/wallpapers" });
       return;
     }
     router.push(`/wallpapers/${pack.id}`);

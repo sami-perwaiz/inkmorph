@@ -13,7 +13,7 @@ export const PREVIEW_DOWNLOAD_LABEL = {
 } as const;
 
 export const PACK_DOWNLOAD_LABEL = {
-  downloaded: "Downloaded",
+  downloaded: "Download Completed",
   error: "Download failed · Try again",
 } as const;
 

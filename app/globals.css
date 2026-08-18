@@ -169,8 +169,8 @@
 
   .motion-overlay-root[data-visible="true"] .motion-overlay-scrim {
     opacity: 1;
-    backdrop-filter: blur(2px);
-    -webkit-backdrop-filter: blur(2px);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
   }
 
   .motion-overlay-panel {
@@ -693,8 +693,8 @@
     }
 
     .motion-overlay-root[data-visible="true"] .motion-overlay-scrim {
-      backdrop-filter: blur(2px);
-      -webkit-backdrop-filter: blur(2px);
+      backdrop-filter: blur(3px);
+      -webkit-backdrop-filter: blur(3px);
     }
 
     .motion-overlay-button,

@@ -1,50 +1,24 @@
 import { AUTH_CHANGE_EVENT, getAuthUser } from "@/lib/authSession";
-import { isTestingPremiumUser } from "@/lib/testingPremiumAccess";
 
-const STORAGE_KEY = "inkmorph-premium-by-sub";
 export const PREMIUM_CHANGE_EVENT = "inkmorph-premium-change";
 
 function isBrowser(): boolean {
   return typeof window !== "undefined";
 }
 
-function readPremiumBySub(): Record<string, boolean> {
-  if (!isBrowser()) {
-    return {};
-  }
-
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) {
-      return {};
-    }
-    const parsed = JSON.parse(raw) as unknown;
-    if (!parsed || typeof parsed !== "object") {
-      return {};
-    }
-    return parsed as Record<string, boolean>;
-  } catch {
-    return {};
-  }
-}
-
-/** True when the signed-in user has premium access (testing account or purchased). */
+/** True when the signed-in user has premium from a completed purchase. */
 export function hasPremiumAccess(): boolean {
-  const user = getAuthUser();
-  if (!user) {
+  if (!isBrowser() || !getAuthUser()) {
     return false;
   }
 
-  if (isTestingPremiumUser(user.email)) {
-    return true;
-  }
-
-  return Boolean(readPremiumBySub()[user.sub]);
+  // Checkout not live — no premium grants until real payment integration ships.
+  return false;
 }
 
-/** Grants premium access to the current signed-in user (checkout stub). */
+/** Reserved for checkout completion — intentionally inert until payment ships. */
 export function grantPremiumAccess(): void {
-  // Disabled during testing — only isTestingPremiumUser grants premium access.
+  // No-op until checkout integration grants access.
 }
 
 export { AUTH_CHANGE_EVENT };

@@ -2,9 +2,9 @@
 
 import Image from "next/image";
 
+import { backButtonClassName } from "@/components/BackButton/BackButton";
 import { PackBackButton } from "@/components/Packs/PackBackButton";
 import { CheckIcon } from "@/components/icons/ActionIcons";
-import { ACTION } from "@/lib/constants";
 import { PACK_DOWNLOAD_LABEL } from "@/lib/downloadButtonLabels";
 
 export type PackDownloadState =
@@ -28,14 +28,15 @@ interface PackToolbarProps {
   onCancelDownload?: () => void;
 }
 
+const TOOLBAR_ACTION_CLASS =
+  "inline-flex h-[44px] shrink-0 items-center justify-center rounded-[6px] px-[18px] py-[14px] font-poppins text-[14px] font-medium leading-[20px] text-[#494949] transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-900/30 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50";
+
+const TOOLBAR_ACTION_BORDER_CLASS = `${TOOLBAR_ACTION_CLASS} border border-solid border-[#EAEAEA] bg-white`;
+
 function ToolbarCrownIcon() {
   return (
     <span
-      className="relative inline-flex shrink-0 items-center justify-center overflow-hidden"
-      style={{
-        width: ACTION.premiumCrownSize,
-        height: ACTION.premiumCrownSize,
-      }}
+      className="relative inline-flex size-[14px] shrink-0 items-center justify-center overflow-hidden"
       aria-hidden
     >
       <Image
@@ -49,57 +50,64 @@ function ToolbarCrownIcon() {
   );
 }
 
-/** Figma 40004968:9223 / 9230 — borderless 44px toolbar actions. */
-const toolbarActionClassName =
-  "inline-flex h-[44px] shrink-0 items-center justify-center gap-2 rounded-[6px] bg-white px-[18px] py-[14px] font-poppins text-[14px] font-normal leading-[16px] tracking-[-0.14px] text-black transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-900/30 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-40";
+function CancelDownloadButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`${backButtonClassName} h-auto gap-[10px] px-[9px] py-[9px] font-poppins text-[14px] font-medium leading-[20px] text-[#494949]`}
+    >
+      <Image
+        src="/icons/close.svg"
+        alt=""
+        width={24}
+        height={24}
+        className="size-6 shrink-0"
+        aria-hidden
+      />
+      Cancel Download
+    </button>
+  );
+}
 
-function PackDownloadProgress({
-  percent,
-  onCancel,
-  visible,
-}: {
-  percent: number;
-  onCancel: () => void;
-  visible: boolean;
-}) {
+function DownloadProgressGroup({ percent }: { percent: number }) {
+  const clampedProgress = Math.max(0, Math.min(100, percent));
+  const percentLabel = `${Math.round(clampedProgress)}%`;
+
   return (
     <div
-      className={[
-        "flex h-[44px] w-full min-w-0 items-center gap-3 transition-opacity duration-300 ease-out",
-        visible ? "opacity-100" : "pointer-events-none opacity-0",
-      ].join(" ")}
-      aria-hidden={!visible}
+      className="flex w-full min-w-0 max-w-[220px] items-center gap-3"
+      role="progressbar"
+      aria-valuenow={clampedProgress}
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-label={`Download progress ${percentLabel}`}
     >
-      <div
-        className="min-w-[88px] flex-1"
-        role="progressbar"
-        aria-valuenow={percent}
-        aria-valuemin={0}
-        aria-valuemax={100}
-        aria-label="Pack download progress"
-      >
-        <div className="h-[6px] w-full overflow-hidden rounded-full bg-[#EAEAEA]">
-          <div
-            className="h-full rounded-full bg-black transition-[width] duration-300 ease-out"
-            style={{ width: `${percent}%` }}
-          />
-        </div>
+      <div className="h-2 min-w-0 flex-1 overflow-hidden rounded-[4px] bg-[#F5F5F5]">
+        <div
+          className="h-full rounded-[4px] bg-black transition-[width] duration-150 ease-out"
+          style={{ width: `${clampedProgress}%` }}
+        />
       </div>
-      <span className="shrink-0 font-poppins text-[14px] font-normal leading-[16px] tracking-[-0.14px] tabular-nums text-black">
-        {percent}%
+      <span className="shrink-0 font-inter text-[14px] font-medium leading-[20px] text-[#494949]">
+        {percentLabel}
       </span>
-      <button
-        type="button"
-        onClick={onCancel}
-        className={toolbarActionClassName}
-      >
-        Cancel
-      </button>
     </div>
   );
 }
 
-/** Figma 40004968:9234 — 1340×84 toolbar (44px row + 20px vertical padding). */
+function DownloadCompletedState() {
+  return (
+    <div className="inline-flex h-[44px] shrink-0 items-center justify-center gap-2 rounded-[6px] px-[18px] py-[14px]">
+      <span className="font-poppins text-[14px] font-medium leading-[20px] text-[#494949]">
+        {PACK_DOWNLOAD_LABEL.downloaded}
+      </span>
+      <CheckIcon className="size-6 shrink-0 text-[#494949]" />
+    </div>
+  );
+}
+
+/** Figma 40005086:9142 — pack icon toolbar (default, selection, downloading, completed). */
 export function PackToolbar({
   selectedCount,
   selectionMode,
@@ -114,20 +122,14 @@ export function PackToolbar({
   onCancelDownload,
 }: PackToolbarProps) {
   const downloadDisabled = selectionMode && selectedCount === 0;
-  const isDownloading = downloadState === "downloading";
-  const isBusy = isDownloading;
+  const isDownloading =
+    downloadState === "preparing" || downloadState === "downloading";
   const isSuccess = downloadState === "success";
   const isError = downloadState === "error";
-  const downloadLabel = selectionMode ? "Download Selected" : "Download All";
-
-  const downloadButtonLabel = isSuccess
-    ? PACK_DOWNLOAD_LABEL.downloaded
-    : isError
-      ? (downloadErrorLabel ?? PACK_DOWNLOAD_LABEL.error)
-      : downloadLabel;
+  const isBusy = isDownloading;
 
   const handleDownloadAllClick = () => {
-    if (isBusy) {
+    if (isBusy || isSuccess) {
       return;
     }
 
@@ -139,92 +141,96 @@ export function PackToolbar({
     onDownloadAllPremiumGate();
   };
 
-  const downloadControl = (
-    <div className="relative h-[44px] w-[min(72vw,360px)] shrink-0">
-      <div className="absolute inset-0">
-        <PackDownloadProgress
-          percent={downloadProgressPercent}
-          visible={isDownloading}
-          onCancel={() => onCancelDownload?.()}
-        />
-      </div>
+  const showPremiumCrown =
+    !selectionMode && !isPremiumDownloadAll && !isBusy && !isSuccess && !isError;
+
+  const downloadAllButton = (
+    <button
+      type="button"
+      onClick={handleDownloadAllClick}
+      disabled={downloadDisabled || isSuccess || isBusy}
+      aria-busy={isBusy}
+      aria-label={
+        selectionMode
+          ? "Download All"
+          : isPremiumDownloadAll
+            ? "Download All"
+            : "Download All — Premium feature"
+      }
+      className={`${TOOLBAR_ACTION_BORDER_CLASS} gap-2`}
+    >
+      Download All
+      {showPremiumCrown ? <ToolbarCrownIcon /> : null}
+    </button>
+  );
+
+  const errorButton = (
+    <button
+      type="button"
+      onClick={handleDownloadAllClick}
+      className={TOOLBAR_ACTION_BORDER_CLASS}
+    >
+      {downloadErrorLabel ?? PACK_DOWNLOAD_LABEL.error}
+    </button>
+  );
+
+  const leftControl = isDownloading ? (
+    <CancelDownloadButton onClick={() => onCancelDownload?.()} />
+  ) : selectionMode ? (
+    <PackBackButton
+      ariaLabel="Exit selection"
+      onClose={onExitSelection}
+    />
+  ) : (
+    <PackBackButton href="/packs" ariaLabel="Back to icon packs" />
+  );
+
+  const rightControl = isDownloading ? (
+    <DownloadProgressGroup percent={downloadProgressPercent} />
+  ) : isSuccess ? (
+    <DownloadCompletedState />
+  ) : isError ? (
+    errorButton
+  ) : selectionMode ? (
+    <>
+      {downloadAllButton}
+      <span
+        aria-live="polite"
+        aria-atomic
+        className="inline-flex h-[44px] shrink-0 items-center font-poppins text-[16px] font-normal leading-[20px] text-[#494949]/50 tabular-nums"
+      >
+        {selectedCount} Selected
+      </span>
       <button
         type="button"
-        onClick={handleDownloadAllClick}
-        disabled={downloadDisabled || isSuccess || isDownloading}
-        aria-busy={isBusy}
-        aria-label={
-          selectionMode
-            ? "Download Selected"
-            : isPremiumDownloadAll
-              ? "Download All"
-              : "Download All — Premium feature"
-        }
-        className={[
-          toolbarActionClassName,
-          "absolute inset-0 w-full transition-opacity duration-300 ease-out",
-          isDownloading ? "pointer-events-none opacity-0" : "opacity-100",
-        ].join(" ")}
+        onClick={onExitSelection}
+        disabled={isBusy}
+        className={TOOLBAR_ACTION_BORDER_CLASS}
       >
-        {isSuccess ? <CheckIcon className="size-4 shrink-0" /> : null}
-        <span className="max-w-[min(52vw,220px)] truncate">{downloadButtonLabel}</span>
-        {!selectionMode &&
-        !isPremiumDownloadAll &&
-        !isBusy &&
-        !isSuccess &&
-        !isError ? (
-          <ToolbarCrownIcon />
-        ) : null}
+        Cancel
       </button>
-    </div>
+    </>
+  ) : (
+    <>
+      {downloadAllButton}
+      <button
+        type="button"
+        onClick={onEnterSelectionMode}
+        disabled={isBusy}
+        className={TOOLBAR_ACTION_BORDER_CLASS}
+      >
+        Select
+      </button>
+    </>
   );
 
   return (
     <div className="fixed inset-x-0 top-[71px] z-40 w-full bg-white desktop:top-[91px]">
-      <div className="flex w-full min-w-0 max-w-[1340px] overflow-x-hidden px-4 py-3 tablet:mx-auto tablet:px-[50px] tablet:py-5">
-        <div className="flex min-h-[44px] w-full min-w-0 items-center justify-between gap-2">
-          {!selectionMode ? (
-            <PackBackButton href="/packs" ariaLabel="Back to icon packs" />
-          ) : null}
-
-          <div
-            className={[
-              "flex h-[44px] min-w-0 items-center justify-end gap-2 tablet:gap-0",
-              selectionMode ? "w-full" : "shrink",
-            ].join(" ")}
-          >
-            {selectionMode ? (
-              <>
-                {downloadControl}
-                <p
-                  aria-live="polite"
-                  aria-atomic
-                  className="shrink-0 whitespace-nowrap font-poppins text-[16px] font-normal leading-[18px] text-black opacity-50 tabular-nums tablet:ml-4"
-                >
-                  {selectedCount} Selected
-                </p>
-                <button
-                  type="button"
-                  onClick={onExitSelection}
-                  disabled={isBusy}
-                  className={[toolbarActionClassName, "tablet:ml-4"].join(" ")}
-                >
-                  Cancel
-                </button>
-              </>
-            ) : (
-              <>
-                {downloadControl}
-                <button
-                  type="button"
-                  onClick={onEnterSelectionMode}
-                  disabled={isBusy}
-                  className={[toolbarActionClassName, "tablet:ml-4"].join(" ")}
-                >
-                  Select
-                </button>
-              </>
-            )}
+      <div className="mx-auto flex w-full min-w-0 max-w-[1340px] overflow-x-hidden px-4 py-3 tablet:px-[50px] tablet:py-5">
+        <div className="flex min-h-[44px] w-full min-w-0 items-center justify-between gap-4">
+          {leftControl}
+          <div className="flex min-w-0 shrink-0 items-center justify-end gap-2 tablet:gap-4">
+            {rightControl}
           </div>
         </div>
       </div>

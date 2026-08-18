@@ -364,10 +364,16 @@ export const Navbar = memo(function Navbar({
               className="flex min-w-0 flex-1 items-center"
               style={{ gap: NAV.logoToFiltersGap }}
             >
-              <InkMorphLogo
-                size={NAV.logoDesktopTablet}
-                radius={NAVBAR.logoRadius}
-              />
+              <Link
+                href="/"
+                aria-label="InkMorph home"
+                className="shrink-0 rounded-[6px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-900/30 focus-visible:ring-offset-2"
+              >
+                <InkMorphLogo
+                  size={NAV.logoDesktopTablet}
+                  radius={NAVBAR.logoRadius}
+                />
+              </Link>
               <div className="flex min-w-0 items-center gap-4 desktop:gap-5">
                 <AllNavLink active={isAllActive} />
                 <CategoriesNavMenu
@@ -411,7 +417,14 @@ export const Navbar = memo(function Navbar({
         <div className="motion-mobile-panel relative">
           <div className="motion-mobile-header">
             <div className="motion-mobile-header-row flex h-full w-full min-w-0 items-center gap-2 px-4 tablet:gap-3 tablet:px-[30px]">
-              <InkMorphLogo size={42} radius={NAVBAR.logoRadius} />
+              <Link
+                href="/"
+                aria-label="InkMorph home"
+                onClick={closeMenu}
+                className="shrink-0 rounded-[6px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-900/30 focus-visible:ring-offset-2"
+              >
+                <InkMorphLogo size={42} radius={NAVBAR.logoRadius} />
+              </Link>
 
               <div className="flex min-w-0 flex-1 items-center justify-end gap-2 tablet:gap-3">
                 {!isMenuOpen && showSearch ? (
