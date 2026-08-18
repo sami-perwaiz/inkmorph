@@ -2,6 +2,8 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import dynamic from "next/dynamic";
+import { useCallback, useState } from "react";
 
 import { LazyImage } from "@/components/LazyImage/LazyImage";
 import { usePremiumAccess } from "@/hooks/usePremiumAccess";
@@ -12,7 +14,14 @@ import {
 } from "@/lib/constants";
 import { IMAGE_PREVIEW_QUALITY } from "@/lib/imageDelivery";
 import { canAccessIconPack, type IconPack } from "@/lib/iconPacks";
-import { runPurchaseAction } from "@/lib/purchaseAccess";
+
+const PurchaseProModal = dynamic(
+  () =>
+    import("@/components/Packs/PurchaseProModal").then((module) => ({
+      default: module.PurchaseProModal,
+    })),
+  { ssr: false }
+);
 
 function PackPremiumBadge() {
   return (
@@ -54,7 +63,16 @@ export function PackCard({
   priority?: boolean;
 }) {
   const { hasPremiumAccess } = usePremiumAccess();
+  const [purchaseModalOpen, setPurchaseModalOpen] = useState(false);
   const isLocked = !canAccessIconPack(pack, hasPremiumAccess);
+
+  const handleOpen = useCallback(() => {
+    setPurchaseModalOpen(true);
+  }, []);
+
+  const handleClosePurchaseModal = useCallback(() => {
+    setPurchaseModalOpen(false);
+  }, []);
 
   const thumbnailClassName = [
     "group relative block w-full min-w-0 overflow-hidden bg-[#FAFAFA] text-left",
@@ -79,44 +97,51 @@ export function PackCard({
   );
 
   return (
-    <article className="flex min-w-0 flex-col gap-5">
-      {isLocked ? (
-        <button
-          type="button"
-          onClick={() => runPurchaseAction({ returnPath: "/packs" })}
-          aria-label={`${pack.title} — premium pack, upgrade to open`}
-          className={thumbnailClassName}
-          style={{ aspectRatio: PACK_WALLPAPER_THUMB_ASPECT }}
-        >
-          {thumbnailContent}
-        </button>
-      ) : (
-        <Link
-          href={`/packs/${pack.id}`}
-          prefetch={priority}
-          aria-label={`Open ${pack.title}`}
-          className={thumbnailClassName}
-          style={{ aspectRatio: PACK_WALLPAPER_THUMB_ASPECT }}
-        >
-          {thumbnailContent}
-        </Link>
-      )}
+    <>
+      <article className="flex min-w-0 flex-col gap-5">
+        {isLocked ? (
+          <button
+            type="button"
+            onClick={handleOpen}
+            aria-label={`${pack.title} — premium pack, upgrade to open`}
+            className={thumbnailClassName}
+            style={{ aspectRatio: PACK_WALLPAPER_THUMB_ASPECT }}
+          >
+            {thumbnailContent}
+          </button>
+        ) : (
+          <Link
+            href={`/packs/${pack.id}`}
+            prefetch={priority}
+            aria-label={`Open ${pack.title}`}
+            className={thumbnailClassName}
+            style={{ aspectRatio: PACK_WALLPAPER_THUMB_ASPECT }}
+          >
+            {thumbnailContent}
+          </Link>
+        )}
 
-      <div className="flex flex-col gap-1.5">
-        <div className="flex flex-wrap items-center gap-3">
-          <h2 className="font-poppins text-xl font-medium leading-normal tracking-[-0.2px] text-black">
-            {pack.title}
-          </h2>
-          {pack.availabilityLabel && !hasPremiumAccess ? (
-            <p className="font-poppins text-base font-normal leading-normal tracking-[-0.16px] text-[#12B76A]">
-              {pack.availabilityLabel}
-            </p>
-          ) : null}
+        <div className="flex flex-col gap-1.5">
+          <div className="flex flex-wrap items-center gap-3">
+            <h2 className="font-poppins text-xl font-medium leading-normal tracking-[-0.2px] text-black">
+              {pack.title}
+            </h2>
+            {pack.availabilityLabel && !hasPremiumAccess ? (
+              <p className="font-poppins text-base font-normal leading-normal tracking-[-0.16px] text-[#12B76A]">
+                {pack.availabilityLabel}
+              </p>
+            ) : null}
+          </div>
+          <p className="font-poppins text-base font-normal leading-normal tracking-[-0.16px] text-[#494949]">
+            {pack.description}
+          </p>
         </div>
-        <p className="font-poppins text-base font-normal leading-normal tracking-[-0.16px] text-[#494949]">
-          {pack.description}
-        </p>
-      </div>
-    </article>
+      </article>
+
+      <PurchaseProModal
+        open={purchaseModalOpen}
+        onClose={handleClosePurchaseModal}
+      />
+    </>
   );
 }

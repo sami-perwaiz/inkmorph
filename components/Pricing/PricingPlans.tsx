@@ -1,10 +1,11 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
-import { useCallback } from "react";
+import { useRouter } from "next/navigation";
+import { useCallback, useState } from "react";
 
-import { getAuthEntryHref } from "@/lib/authSession";
+import { SignInToPurchaseModal } from "@/components/Pricing/SignInToPurchaseModal";
+import { isSignedIn } from "@/lib/authSession";
 import { PRICING_PLANS, type PricingPlan } from "@/lib/pricingPlans";
 import { runPurchaseAction } from "@/lib/purchaseAccess";
 
@@ -77,8 +78,9 @@ function PlanCta({
   }
 
   return (
-    <Link
-      href={getAuthEntryHref()}
+    <button
+      type="button"
+      onClick={onPurchaseClick}
       className={[
         "flex w-full items-center justify-center rounded-[6px] bg-[#F5F5F5] px-[18px] py-2.5",
         "font-poppins text-sm font-medium leading-5 text-black transition-opacity hover:opacity-80",
@@ -86,7 +88,7 @@ function PlanCta({
       ].join(" ")}
     >
       {plan.ctaLabel}
-    </Link>
+    </button>
   );
 }
 
@@ -95,7 +97,7 @@ function PricingCard({
   onPurchaseClick,
 }: {
   plan: PricingPlan;
-  onPurchaseClick: () => void;
+  onPurchaseClick: (plan: PricingPlan) => void;
 }) {
   return (
     <article className="motion-pricing-plan-card flex min-w-0 flex-1 flex-col gap-8 self-stretch rounded-[14px] border border-solid border-[#E5E5E5] bg-white p-6">
@@ -120,7 +122,7 @@ function PricingCard({
           ) : null}
         </div>
 
-        <PlanCta plan={plan} onPurchaseClick={onPurchaseClick} />
+        <PlanCta plan={plan} onPurchaseClick={() => onPurchaseClick(plan)} />
       </div>
 
       <div className="flex w-full flex-col gap-4">
@@ -144,39 +146,66 @@ function PricingCard({
 
 /** Figma 40004706:9735 — plan cards */
 export function PricingPlans() {
-  const handlePurchaseClick = useCallback(() => {
-    runPurchaseAction({ returnPath: "/pricing" });
+  const router = useRouter();
+  const [signInModalOpen, setSignInModalOpen] = useState(false);
+
+  const handlePurchaseClick = useCallback(
+    (plan: PricingPlan) => {
+      if (!isSignedIn()) {
+        setSignInModalOpen(true);
+        return;
+      }
+
+      if (plan.id === "basic") {
+        router.push("/");
+        return;
+      }
+
+      runPurchaseAction({ returnPath: "/pricing" });
+    },
+    [router]
+  );
+
+  const closeSignInModal = useCallback(() => {
+    setSignInModalOpen(false);
   }, []);
 
   return (
-    <section
-      id="pricing-plans"
-      className="relative mx-auto flex w-full max-w-[1260px] flex-col items-center gap-[50px] desktop:px-[50px]"
-      aria-labelledby="pricing-plans-heading"
-    >
-      <div className="motion-pricing-plans-copy flex w-full max-w-[660px] flex-col items-center gap-[18px] px-4 text-center tablet:px-0">
-        <h2
-          id="pricing-plans-heading"
-          className="w-full font-poppins text-[32px] font-medium leading-[38px] text-black"
-        >
-          Choose the Plan That Fits You
-        </h2>
-        <p className="w-full font-poppins text-base font-normal leading-6 text-[#797979]">
-          Start free with daily credits or unlock unlimited access to every
-          illustration, high-resolution downloads, and transparent PNG exports
-          with InkMorph.
-        </p>
-      </div>
+    <>
+      <section
+        id="pricing-plans"
+        className="relative mx-auto flex w-full max-w-[1260px] flex-col items-center gap-[50px] desktop:px-[50px]"
+        aria-labelledby="pricing-plans-heading"
+      >
+        <div className="motion-pricing-plans-copy flex w-full max-w-[660px] flex-col items-center gap-[18px] px-4 text-center tablet:px-0">
+          <h2
+            id="pricing-plans-heading"
+            className="w-full font-poppins text-[32px] font-medium leading-[38px] text-black"
+          >
+            Choose the Plan That Fits You
+          </h2>
+          <p className="w-full font-poppins text-base font-normal leading-6 text-[#797979]">
+            Start free with daily credits or unlock unlimited access to every
+            illustration, high-resolution downloads, and transparent PNG exports
+            with InkMorph.
+          </p>
+        </div>
 
-      <div className="flex w-full max-w-[1160px] flex-col items-stretch gap-6 px-4 tablet:px-[50px] desktop:flex-row desktop:items-stretch desktop:gap-6 desktop:px-0">
-        {PRICING_PLANS.map((plan) => (
-          <PricingCard
-            key={plan.id}
-            plan={plan}
-            onPurchaseClick={handlePurchaseClick}
-          />
-        ))}
-      </div>
-    </section>
+        <div className="flex w-full max-w-[1160px] flex-col items-stretch gap-6 px-4 tablet:px-[50px] desktop:flex-row desktop:items-stretch desktop:gap-6 desktop:px-0">
+          {PRICING_PLANS.map((plan) => (
+            <PricingCard
+              key={plan.id}
+              plan={plan}
+              onPurchaseClick={handlePurchaseClick}
+            />
+          ))}
+        </div>
+      </section>
+
+      <SignInToPurchaseModal
+        open={signInModalOpen}
+        onClose={closeSignInModal}
+      />
+    </>
   );
 }

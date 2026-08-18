@@ -2,10 +2,8 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useCallback, type MouseEvent } from "react";
-
-import { isSignedIn } from "@/lib/authSession";
-import { runPurchaseAction } from "@/lib/purchaseAccess";
 
 interface GoPremiumButtonProps {
   className?: string;
@@ -13,14 +11,43 @@ interface GoPremiumButtonProps {
 
 const PRICING_PLANS_HREF = "/pricing#pricing-plans";
 
+function scrollToPricingPlans() {
+  const el = document.getElementById("pricing-plans");
+  if (!el) {
+    return;
+  }
+
+  const header = document.querySelector("header");
+  const headerOffset =
+    header instanceof HTMLElement ? header.getBoundingClientRect().height : 0;
+  const top =
+    el.getBoundingClientRect().top + window.scrollY - headerOffset - 8;
+
+  const behavior: ScrollBehavior =
+    typeof window !== "undefined" &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches
+      ? "auto"
+      : "smooth";
+
+  document.documentElement.scrollTo({ top: Math.max(0, top), behavior });
+}
+
 /** Figma Go Premium control — black glass button with crown. */
 export function GoPremiumButton({ className = "" }: GoPremiumButtonProps) {
-  const handleClick = useCallback((event: MouseEvent<HTMLAnchorElement>) => {
-    if (!isSignedIn()) {
+  const pathname = usePathname();
+
+  const handleClick = useCallback(
+    (event: MouseEvent<HTMLAnchorElement>) => {
+      if (pathname !== "/pricing") {
+        return;
+      }
+
       event.preventDefault();
-      runPurchaseAction({ returnPath: "/pricing" });
-    }
-  }, []);
+      window.history.replaceState(null, "", PRICING_PLANS_HREF);
+      scrollToPricingPlans();
+    },
+    [pathname]
+  );
 
   return (
     <Link

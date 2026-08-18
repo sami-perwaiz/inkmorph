@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import {
   createContext,
   useCallback,
@@ -16,7 +17,14 @@ import {
   PREMIUM_CHANGE_EVENT,
 } from "@/lib/premiumAccess";
 import { syncPremiumDownloadSession } from "@/lib/downloadLimitApi";
-import { runPurchaseAction } from "@/lib/purchaseAccess";
+
+const PurchaseProModal = dynamic(
+  () =>
+    import("@/components/Packs/PurchaseProModal").then((module) => ({
+      default: module.PurchaseProModal,
+    })),
+  { ssr: false }
+);
 
 interface PremiumAccessContextValue {
   /** Opens the site-wide Purchase Pro modal — never navigates away. */
@@ -44,6 +52,7 @@ function readPremiumAccessSync(): boolean {
 }
 
 export function PremiumAccessProvider({ children }: { children: ReactNode }) {
+  const [isOpen, setIsOpen] = useState(false);
   const [hasPremium, setHasPremium] = useState(readPremiumAccessSync);
   const [isReady, setIsReady] = useState(
     () => typeof window !== "undefined"
@@ -67,7 +76,11 @@ export function PremiumAccessProvider({ children }: { children: ReactNode }) {
   }, [syncPremiumState]);
 
   const requestPremiumAccess = useCallback(() => {
-    runPurchaseAction();
+    setIsOpen(true);
+  }, []);
+
+  const close = useCallback(() => {
+    setIsOpen(false);
   }, []);
 
   const gateValue = useMemo(
@@ -84,6 +97,7 @@ export function PremiumAccessProvider({ children }: { children: ReactNode }) {
     <PremiumAccessStateContext.Provider value={stateValue}>
       <PremiumAccessContext.Provider value={gateValue}>
         {children}
+        <PurchaseProModal open={isOpen} onClose={close} />
       </PremiumAccessContext.Provider>
     </PremiumAccessStateContext.Provider>
   );

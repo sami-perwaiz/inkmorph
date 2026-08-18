@@ -1,8 +1,9 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 
+import { PurchaseProModal } from "@/components/Packs/PurchaseProModal";
 import { WallpaperDetailView } from "@/components/Packs/WallpaperDetailView";
 import { WallpapersView } from "@/components/Packs/WallpapersView";
 import { usePremiumAccess } from "@/hooks/usePremiumAccess";
@@ -15,21 +16,47 @@ interface WallpaperDetailGateProps {
   pack: WallpaperPack;
 }
 
-/** Blocks premium wallpaper detail — redirects to wallpapers grid without purchase flow. */
+/** Blocks premium wallpaper detail — shows purchase modal over wallpapers grid. */
 export function WallpaperDetailGate({ pack }: WallpaperDetailGateProps) {
   const router = useRouter();
   const { hasPremiumAccess, isReady } = usePremiumAccess();
-
-  const blocked = isReady && !canAccessWallpaperPack(pack, hasPremiumAccess);
+  const [allowed, setAllowed] = useState(false);
+  const [purchaseModalOpen, setPurchaseModalOpen] = useState(false);
 
   useEffect(() => {
-    if (blocked) {
-      router.replace("/wallpapers");
+    if (!isReady) {
+      return;
     }
-  }, [blocked, router]);
 
-  if (blocked) {
-    return <WallpapersView />;
+    if (!canAccessWallpaperPack(pack, hasPremiumAccess)) {
+      setPurchaseModalOpen(true);
+      setAllowed(false);
+      return;
+    }
+
+    setPurchaseModalOpen(false);
+    setAllowed(true);
+  }, [pack, hasPremiumAccess, isReady]);
+
+  const handleClosePurchaseModal = useCallback(() => {
+    setPurchaseModalOpen(false);
+    router.replace("/wallpapers");
+  }, [router]);
+
+  if (!isReady) {
+    return null;
+  }
+
+  if (!allowed) {
+    return (
+      <>
+        <WallpapersView />
+        <PurchaseProModal
+          open={purchaseModalOpen}
+          onClose={handleClosePurchaseModal}
+        />
+      </>
+    );
   }
 
   return <WallpaperDetailView pack={pack} />;

@@ -1,8 +1,9 @@
 "use client";
 
 import Image from "next/image";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 
 import { LazyImage } from "@/components/LazyImage/LazyImage";
 import { usePremiumAccess } from "@/hooks/usePremiumAccess";
@@ -17,7 +18,14 @@ import {
   canAccessWallpaperPack,
   type WallpaperPack,
 } from "@/lib/wallpaperPacks";
-import { runPurchaseAction } from "@/lib/purchaseAccess";
+
+const PurchaseProModal = dynamic(
+  () =>
+    import("@/components/Packs/PurchaseProModal").then((module) => ({
+      default: module.PurchaseProModal,
+    })),
+  { ssr: false }
+);
 
 function WallpaperPremiumBadge() {
   return (
@@ -60,40 +68,52 @@ export function WallpaperCard({
 }) {
   const router = useRouter();
   const { hasPremiumAccess } = usePremiumAccess();
+  const [purchaseModalOpen, setPurchaseModalOpen] = useState(false);
   const isLocked = !canAccessWallpaperPack(pack, hasPremiumAccess);
 
   const handleOpen = useCallback(() => {
     if (isLocked) {
-      runPurchaseAction({ returnPath: "/wallpapers" });
+      setPurchaseModalOpen(true);
       return;
     }
     router.push(`/wallpapers/${pack.id}`);
   }, [isLocked, pack.id, router]);
 
+  const handleClosePurchaseModal = useCallback(() => {
+    setPurchaseModalOpen(false);
+  }, []);
+
   return (
-    <button
-      type="button"
-      onClick={handleOpen}
-      aria-label={
-        isLocked
-          ? `${pack.title} — premium wallpaper, upgrade to open`
-          : `Open ${pack.title}`
-      }
-      className="group relative w-full min-w-0 overflow-hidden bg-[#FAFAFA] text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-900/30 focus-visible:ring-offset-2"
-      style={{ aspectRatio: PACK_WALLPAPER_THUMB_ASPECT }}
-    >
-      <LazyImage
-        src={pack.thumbnailSrc}
-        alt={buildWallpaperImageAlt(pack)}
-        sizes={PACK_WALLPAPER_THUMB_IMAGE_SIZES}
-        priority={priority}
-        quality={IMAGE_PREVIEW_QUALITY.grid}
-        className={[
-          "object-cover object-center",
-          isLocked ? "opacity-90 group-hover:opacity-100" : "",
-        ].join(" ")}
+    <>
+      <button
+        type="button"
+        onClick={handleOpen}
+        aria-label={
+          isLocked
+            ? `${pack.title} — premium wallpaper, upgrade to open`
+            : `Open ${pack.title}`
+        }
+        className="group relative w-full min-w-0 overflow-hidden bg-[#FAFAFA] text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-900/30 focus-visible:ring-offset-2"
+        style={{ aspectRatio: PACK_WALLPAPER_THUMB_ASPECT }}
+      >
+        <LazyImage
+          src={pack.thumbnailSrc}
+          alt={buildWallpaperImageAlt(pack)}
+          sizes={PACK_WALLPAPER_THUMB_IMAGE_SIZES}
+          priority={priority}
+          quality={IMAGE_PREVIEW_QUALITY.grid}
+          className={[
+            "object-cover object-center",
+            isLocked ? "opacity-90 group-hover:opacity-100" : "",
+          ].join(" ")}
+        />
+        {pack.premium && !hasPremiumAccess ? <WallpaperPremiumBadge /> : null}
+      </button>
+
+      <PurchaseProModal
+        open={purchaseModalOpen}
+        onClose={handleClosePurchaseModal}
       />
-      {pack.premium && !hasPremiumAccess ? <WallpaperPremiumBadge /> : null}
-    </button>
+    </>
   );
 }

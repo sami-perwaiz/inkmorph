@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { memo, useCallback, useEffect, useId, useLayoutEffect, useState } from "react";
 
+import { BackButton } from "@/components/BackButton/BackButton";
 import { ContentContainer } from "@/components/ContentContainer/ContentContainer";
 import { GoPremiumButton } from "@/components/GoPremiumButton/GoPremiumButton";
 import { useLegalNavigation } from "@/hooks/useLegalNavigation";
@@ -383,6 +384,11 @@ export const Navbar = memo(function Navbar({
                 <PacksNavMenu />
                 <PricingNavLink active={isPricingPage} />
               </div>
+              {isPricingPage ? (
+                <div className="ml-auto shrink-0 pl-[30px]">
+                  <BackButton href="/" ariaLabel="Back to home" />
+                </div>
+              ) : null}
             </div>
 
             <div className="flex shrink-0 items-center gap-3 desktop:gap-4">
@@ -427,6 +433,9 @@ export const Navbar = memo(function Navbar({
               </Link>
 
               <div className="flex min-w-0 flex-1 items-center justify-end gap-2 tablet:gap-3">
+                {isPricingPage && !isMenuOpen ? (
+                  <BackButton href="/" ariaLabel="Back to home" />
+                ) : null}
                 {!isMenuOpen && showSearch ? (
                   <SearchField
                     size="compact"
