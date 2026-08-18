@@ -34,6 +34,21 @@ const STATIC_PAGE_ASSETS = [
       },
     ],
   },
+  {
+    source: join(PUBLIC_DIR, "signup", "hero-bg.png"),
+    outputs: [
+      {
+        dest: join(PUBLIC_DIR, "signup", "hero-bg.webp"),
+        width: 1440,
+        quality: 82,
+      },
+      {
+        dest: join(PUBLIC_DIR, "signup", "hero-bg-sm.webp"),
+        width: 828,
+        quality: 80,
+      },
+    ],
+  },
 ];
 
 async function pathExists(targetPath) {

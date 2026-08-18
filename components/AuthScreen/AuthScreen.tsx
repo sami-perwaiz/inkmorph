@@ -1,11 +1,11 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useState } from "react";
 
 import { GoogleIcon } from "@/components/icons/GoogleIcon";
+import { BackButton } from "@/components/BackButton/BackButton";
 import { InkMorphLogo } from "@/components/InkMorphLogo/InkMorphLogo";
 import {
   AUTH_AVATARS,
@@ -69,12 +69,12 @@ function TrustAvatars() {
                 backgroundColor: avatar.bg,
               }}
             >
-              <Image
+              <img
                 src={avatar.src}
                 alt=""
-                fill
-                sizes={`${AUTH_SCREEN.avatarSize}px`}
-                className="object-cover object-top"
+                width={AUTH_SCREEN.avatarSize}
+                height={AUTH_SCREEN.avatarSize}
+                className="size-full object-cover object-top"
                 aria-hidden
               />
             </div>
@@ -172,15 +172,23 @@ export function AuthScreen({ copy }: AuthScreenProps) {
   return (
     <main className="relative flex min-h-screen flex-col bg-white tablet:flex-row">
       <section className="relative flex min-h-[420px] w-full flex-1 flex-col overflow-hidden tablet:min-h-screen tablet:w-1/2">
-        <Image
-          src={AUTH_SCREEN.heroBg}
-          alt=""
-          fill
-          priority
-          sizes="(max-width: 767px) 100vw, 50vw"
-          className="object-cover"
-          aria-hidden
-        />
+        <div className="absolute inset-0 overflow-hidden">
+          <picture>
+            <source
+              media="(max-width: 767px)"
+              srcSet={AUTH_SCREEN.heroBgSm}
+              type="image/webp"
+            />
+            <img
+              src={AUTH_SCREEN.heroBg}
+              alt=""
+              decoding="async"
+              fetchPriority="high"
+              className="h-full w-full object-cover"
+              aria-hidden
+            />
+          </picture>
+        </div>
         <BrandLogo />
 
         <div
@@ -205,78 +213,86 @@ export function AuthScreen({ copy }: AuthScreenProps) {
         </div>
       </section>
 
-      <section className="relative flex w-full flex-1 items-center justify-center bg-white px-5 py-16 tablet:min-h-screen tablet:w-1/2 tablet:px-8">
-        <div
-          className="flex w-full flex-col items-start"
-          style={{
-            maxWidth: AUTH_SCREEN.formWidth,
-            gap: AUTH_SCREEN.formStackGap,
-          }}
-        >
-          <div
-            className="flex w-full flex-col items-center text-center"
-            style={{ gap: AUTH_SCREEN.formHeaderGap }}
-          >
-            <h2
-              className="w-full font-inter text-[30px] font-medium leading-[38px] tracking-[-0.3px]"
-              style={{ color: AUTH_SCREEN.heading }}
-            >
-              {copy.formTitle}
-            </h2>
-            <p
-              className="w-full font-inter text-base font-normal leading-7"
-              style={{ color: AUTH_SCREEN.muted }}
-            >
-              {copy.formDescription}
-            </p>
-          </div>
+      <section className="relative flex w-full flex-1 flex-col bg-white tablet:min-h-screen tablet:w-1/2">
+        <div className="flex w-full shrink-0 justify-start p-[30px] pb-0">
+          <BackButton href="/" ariaLabel="Back to home" />
+        </div>
 
+        <div className="flex w-full flex-1 items-center justify-center px-5 py-16 tablet:px-8 tablet:py-8">
           <div
-            className="flex w-full flex-col"
-            style={{ gap: AUTH_SCREEN.formBodyGap }}
+            className="flex w-full flex-col items-start"
+            style={{
+              maxWidth: AUTH_SCREEN.formWidth,
+              gap: AUTH_SCREEN.formStackGap,
+            }}
           >
-            <button
-              type="button"
-              onClick={handleGoogleSignIn}
-              disabled={isAuthenticating}
-              className="inline-flex w-full items-center justify-center gap-3 border border-solid bg-white font-inter text-sm font-medium leading-[22px] transition-colors hover:bg-gray-100/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-70"
-              style={{
-                height: AUTH_SCREEN.socialButtonHeight,
-                borderRadius: AUTH_SCREEN.socialButtonRadius,
-                borderColor: AUTH_SCREEN.socialButtonBorder,
-                color: AUTH_SCREEN.socialButtonText,
-                paddingLeft: 16,
-                paddingRight: 16,
-              }}
+            <div
+              className="flex w-full flex-col items-center text-center"
+              style={{ gap: AUTH_SCREEN.formHeaderGap }}
             >
-              <GoogleIcon />
-              {isAuthenticating ? "Continuing with Google…" : "Continue with Google"}
-            </button>
-
-            {authError ? (
+              <h2
+                className="w-full font-inter text-[30px] font-medium leading-[38px] tracking-[-0.3px]"
+                style={{ color: AUTH_SCREEN.heading }}
+              >
+                {copy.formTitle}
+              </h2>
               <p
-                role="alert"
-                className="w-full text-center font-inter text-sm font-normal leading-[22px] text-[#F04438]"
+                className="w-full font-inter text-base font-normal leading-7"
+                style={{ color: AUTH_SCREEN.muted }}
               >
-                {authError}
+                {copy.formDescription}
               </p>
-            ) : null}
+            </div>
 
-            <p className="flex w-full flex-wrap items-start justify-center gap-2 text-center font-inter text-sm leading-[22px]">
-              <span
-                className="font-normal"
-                style={{ color: AUTH_SCREEN.caption }}
+            <div
+              className="flex w-full flex-col"
+              style={{ gap: AUTH_SCREEN.formBodyGap }}
+            >
+              <button
+                type="button"
+                onClick={handleGoogleSignIn}
+                disabled={isAuthenticating}
+                className="inline-flex w-full items-center justify-center gap-3 border border-solid bg-white font-inter text-sm font-medium leading-[22px] transition-colors hover:bg-gray-100/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-70"
+                style={{
+                  height: AUTH_SCREEN.socialButtonHeight,
+                  borderRadius: AUTH_SCREEN.socialButtonRadius,
+                  borderColor: AUTH_SCREEN.socialButtonBorder,
+                  color: AUTH_SCREEN.socialButtonText,
+                  paddingLeft: 16,
+                  paddingRight: 16,
+                }}
               >
-                {copy.footerPrompt}
-              </span>
-              <Link
-                href={copy.footerLinkHref}
-                className="font-medium focus-visible:outline-none focus-visible:underline"
-                style={{ color: AUTH_SCREEN.linkColor }}
-              >
-                {copy.footerLinkLabel}
-              </Link>
-            </p>
+                <GoogleIcon />
+                {isAuthenticating
+                  ? "Continuing with Google…"
+                  : "Continue with Google"}
+              </button>
+
+              {authError ? (
+                <p
+                  role="alert"
+                  className="w-full text-center font-inter text-sm font-normal leading-[22px] text-[#F04438]"
+                >
+                  {authError}
+                </p>
+              ) : null}
+
+              <p className="flex w-full flex-wrap items-start justify-center gap-2 text-center font-inter text-sm leading-[22px]">
+                <span
+                  className="font-normal"
+                  style={{ color: AUTH_SCREEN.caption }}
+                >
+                  {copy.footerPrompt}
+                </span>
+                <Link
+                  href={copy.footerLinkHref}
+                  className="font-medium focus-visible:outline-none focus-visible:underline"
+                  style={{ color: AUTH_SCREEN.linkColor }}
+                >
+                  {copy.footerLinkLabel}
+                </Link>
+              </p>
+            </div>
           </div>
         </div>
       </section>

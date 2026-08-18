@@ -26,7 +26,8 @@ export const AUTH_SCREEN = {
   muted: "#A3A3A3",
   caption: "#737373",
   heading: "#202020",
-  heroBg: "/signup/hero-bg.png",
+  heroBg: "/signup/hero-bg.webp",
+  heroBgSm: "/signup/hero-bg-sm.webp",
 } as const;
 
 export const AUTH_AVATARS = [

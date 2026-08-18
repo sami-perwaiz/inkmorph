@@ -40,7 +40,7 @@ export function WallpaperDetailView({ pack }: WallpaperDetailViewProps) {
   const { requestPremiumAccess } = usePremiumAccessGate();
   const [downloadState, setDownloadState] =
     useState<WallpaperDownloadState>("idle");
-  const [downloadLabel, setDownloadLabel] = useState("Download Wallpaper");
+  const [statusMessage, setStatusMessage] = useState("");
   const downloadInFlightRef = useRef(false);
   const abortControllerRef = useRef<AbortController | null>(null);
   const resetTimerRef = useRef<number | null>(null);
@@ -57,7 +57,7 @@ export function WallpaperDetailView({ pack }: WallpaperDetailViewProps) {
     abortControllerRef.current = null;
     downloadInFlightRef.current = false;
     setDownloadState("idle");
-    setDownloadLabel("Download Wallpaper");
+    setStatusMessage("");
   }, []);
 
   const handleDownload = useCallback(async () => {
@@ -66,7 +66,7 @@ export function WallpaperDetailView({ pack }: WallpaperDetailViewProps) {
       return;
     }
 
-    if (downloadInFlightRef.current) {
+    if (downloadInFlightRef.current || downloadState === "success") {
       return;
     }
 
@@ -81,7 +81,7 @@ export function WallpaperDetailView({ pack }: WallpaperDetailViewProps) {
     }
 
     setDownloadState("preparing");
-    setDownloadLabel("Downloading…");
+    setStatusMessage("Downloading wallpaper…");
 
     try {
       const src = getWallpaperDownloadSrc(pack);
@@ -91,7 +91,7 @@ export function WallpaperDetailView({ pack }: WallpaperDetailViewProps) {
       });
 
       setDownloadState("success");
-      setDownloadLabel("Downloaded");
+      setStatusMessage("Wallpaper downloaded");
       resetTimerRef.current = window.setTimeout(() => {
         resetDownloadUi();
       }, ACTION.successResetMs);
@@ -102,7 +102,7 @@ export function WallpaperDetailView({ pack }: WallpaperDetailViewProps) {
       }
 
       setDownloadState("error");
-      setDownloadLabel("Download failed · Try again");
+      setStatusMessage("Download failed. Try again.");
       resetTimerRef.current = window.setTimeout(() => {
         resetDownloadUi();
       }, 2200);
@@ -112,12 +112,13 @@ export function WallpaperDetailView({ pack }: WallpaperDetailViewProps) {
         abortControllerRef.current = null;
       }
     }
-  }, [hasPremiumAccess, pack, requestPremiumAccess, resetDownloadUi]);
-
-  const handleCancelDownload = useCallback(() => {
-    abortControllerRef.current?.abort();
-    resetDownloadUi();
-  }, [resetDownloadUi]);
+  }, [
+    downloadState,
+    hasPremiumAccess,
+    pack,
+    requestPremiumAccess,
+    resetDownloadUi,
+  ]);
 
   const isBusy = downloadState === "preparing";
 
@@ -139,9 +140,9 @@ export function WallpaperDetailView({ pack }: WallpaperDetailViewProps) {
 
             <div className="flex w-full min-w-0 flex-col items-center gap-10 desktop:h-[600px] desktop:flex-row desktop:items-start desktop:justify-center desktop:gap-[100px]">
               <div className="relative mx-auto aspect-[277/600] w-full max-w-[277px] shrink-0 overflow-hidden rounded-[20px] bg-[#FAFAFA] desktop:mx-0 desktop:h-[600px] desktop:w-[277px] desktop:aspect-auto">
-        <LazyImage
-          src={pack.previewSrc}
-          alt={buildWallpaperImageAlt(pack)}
+                <LazyImage
+                  src={pack.previewSrc}
+                  alt={buildWallpaperImageAlt(pack)}
                   sizes={WALLPAPER_DETAIL_IMAGE_SIZES}
                   priority
                   quality={IMAGE_PREVIEW_QUALITY.detail}
@@ -161,11 +162,8 @@ export function WallpaperDetailView({ pack }: WallpaperDetailViewProps) {
 
                 <DownloadWallpaperButton
                   onClick={handleDownload}
-                  label={downloadLabel}
-                  disabled={downloadState === "error"}
                   busy={isBusy}
                   success={downloadState === "success"}
-                  onCancel={isBusy ? handleCancelDownload : undefined}
                   className="self-center desktop:self-auto"
                 />
               </div>
@@ -179,7 +177,7 @@ export function WallpaperDetailView({ pack }: WallpaperDetailViewProps) {
       <Footer onFilterChange={handleFilterChange} />
 
       <div className="sr-only" aria-live="polite" aria-atomic="true">
-        {downloadLabel}
+        {statusMessage}
       </div>
     </div>
   );
