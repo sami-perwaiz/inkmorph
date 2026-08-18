@@ -2,7 +2,6 @@
 
 import Image from "next/image";
 
-import { backButtonClassName } from "@/components/BackButton/BackButton";
 import { PackBackButton } from "@/components/Packs/PackBackButton";
 import { CheckIcon } from "@/components/icons/ActionIcons";
 import { PACK_DOWNLOAD_LABEL } from "@/lib/downloadButtonLabels";
@@ -55,7 +54,7 @@ function CancelDownloadButton({ onClick }: { onClick: () => void }) {
     <button
       type="button"
       onClick={onClick}
-      className={`${backButtonClassName} h-auto gap-[10px] px-[9px] py-[9px] font-poppins text-[14px] font-medium leading-[20px] text-[#494949]`}
+      className="inline-flex h-[44px] shrink-0 cursor-pointer items-center gap-[10px] rounded-[6px] border border-solid border-[#EAEAEA] bg-white px-[10px] font-poppins text-[14px] font-normal leading-[16px] tracking-[-0.14px] text-black transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-900/30 focus-visible:ring-offset-2"
     >
       <Image
         src="/icons/close.svg"
@@ -76,16 +75,17 @@ function DownloadProgressGroup({ percent }: { percent: number }) {
 
   return (
     <div
-      className="flex w-full min-w-0 max-w-[220px] items-center gap-3"
+      className="flex w-[220px] shrink-0 items-center gap-3"
       role="progressbar"
       aria-valuenow={clampedProgress}
       aria-valuemin={0}
       aria-valuemax={100}
       aria-label={`Download progress ${percentLabel}`}
     >
-      <div className="h-2 min-w-0 flex-1 overflow-hidden rounded-[4px] bg-[#F5F5F5]">
+      <div className="relative h-2 min-w-0 flex-1 rounded-[8px]">
+        <div className="absolute inset-0 rounded-[4px] bg-[#F5F5F5]" />
         <div
-          className="h-full rounded-[4px] bg-black transition-[width] duration-150 ease-out"
+          className="absolute inset-y-0 left-0 rounded-[4px] bg-black transition-[width] duration-150 ease-out"
           style={{ width: `${clampedProgress}%` }}
         />
       </div>
