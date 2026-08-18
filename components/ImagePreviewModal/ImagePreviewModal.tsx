@@ -24,8 +24,9 @@ import {
   CrownGoldIcon,
   DownloadIcon,
   LockIcon,
+  SpinnerIcon,
 } from "@/components/icons/ActionIcons";
-import { useCardAction } from "@/hooks/useCardAction";
+import { usePreviewCardAction } from "@/hooks/usePreviewCardAction";
 import { usePremiumAccess } from "@/hooks/usePremiumAccess";
 import { usePremiumAccessGate } from "@/components/PremiumAccessProvider/PremiumAccessProvider";
 import { shouldProtectGalleryAsset, requiresPremiumForDownloadSize } from "@/lib/premiumFeatureAccess";
@@ -50,12 +51,8 @@ import {
   getPreviewCopyLabel,
   getPreviewDownloadLabel,
 } from "@/lib/downloadButtonLabels";
-import {
-  getCopyButtonState,
-  getDownloadButtonState,
-  type ActionButtonState,
-} from "@/types/action";
 import type { Illustration } from "@/types/illustration";
+import type { PreviewActionState } from "@/hooks/usePreviewCardAction";
 
 /** Figma Images Open State — 40004699:9098 / 40004699:9408 (+ tags 40004900:12643) */
 const PREVIEW_MODAL = {
@@ -135,20 +132,34 @@ function getFocusableElements(container: HTMLElement): HTMLElement[] {
 }
 
 function PreviewActionIcon({
-  state,
+  actionState,
+  failedAction,
   locked,
+  showCopySpinner = false,
+  successState,
   defaultIcon,
 }: {
-  state: ActionButtonState;
+  actionState: PreviewActionState;
+  failedAction: "copy" | "download" | null;
   locked: boolean;
+  showCopySpinner?: boolean;
+  successState: PreviewActionState;
   defaultIcon: ReactNode;
 }) {
-  if (locked && (state === "default" || state === "error")) {
+  if (locked && (actionState === "idle" || actionState === "error")) {
     return <LockIcon />;
   }
 
-  if (state === "success") {
+  if (showCopySpinner) {
+    return <SpinnerIcon />;
+  }
+
+  if (actionState === successState) {
     return <CheckIcon />;
+  }
+
+  if (actionState === "error" && failedAction) {
+    return defaultIcon;
   }
 
   return defaultIcon;
@@ -205,12 +216,12 @@ function ImagePreviewModalComponent({
   const {
     actionState,
     failedAction,
-    statusMessage,
     isLocked,
+    showCopySpinner,
     handleCopy,
     handleDownload,
     handleLockedAction,
-  } = useCardAction(illustration);
+  } = usePreviewCardAction(illustration);
 
   const { hasPremiumAccess, isReady } = usePremiumAccess();
   const { requestPremiumAccess } = usePremiumAccessGate();
@@ -229,14 +240,11 @@ function ImagePreviewModalComponent({
     hasFullLibraryAccess
   );
 
-  const copyState = getCopyButtonState(actionState, failedAction);
-  const downloadState = getDownloadButtonState(actionState, failedAction);
   const copyLabel = getPreviewCopyLabel(actionState, failedAction);
   const downloadLabel = getPreviewDownloadLabel(actionState, failedAction);
   const mutedMeta = isLocked ? "text-[#797979]" : "text-[#0a0a0a]";
-  const isBusy =
-    actionState === "copying" ||
-    actionState === "downloading";
+  const copySucceeded = actionState === "copied";
+  const downloadSucceeded = actionState === "downloaded";
 
   useEffect(() => {
     setIsImageLoaded(hasIllustrationImageLoaded(previewSrc));
@@ -461,24 +469,24 @@ function ImagePreviewModalComponent({
       return;
     }
 
-    if (isBusy) {
+    if (isLocked || copySucceeded || downloadSucceeded) {
       return;
     }
 
     handleDownload(selectedSize);
-  }, [handleDownload, handleLockedAction, isBusy, isLocked, selectedSize]);
+  }, [copySucceeded, downloadSucceeded, handleDownload, handleLockedAction, isLocked, selectedSize]);
 
   const handleMenuToggle = useCallback(
     (event: ReactMouseEvent<HTMLButtonElement>) => {
       event.stopPropagation();
 
-      if (isLocked || isBusy) {
+      if (isLocked || copySucceeded || downloadSucceeded) {
         return;
       }
 
       setMenuOpen((open) => !open);
     },
-    [isBusy, isLocked]
+    [copySucceeded, downloadSucceeded, isLocked]
   );
 
   const handleSelectSize = useCallback(
@@ -639,10 +647,7 @@ function ImagePreviewModalComponent({
               className={[rowClass, "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-900/30 focus-visible:ring-offset-2"].join(" ")}
               style={rowStyle}
               aria-label={isLocked ? "Unlock to copy" : "Copy image"}
-              disabled={
-                !isLocked &&
-                (copyState === "loading" || copyState === "success")
-              }
+              disabled={!isLocked && copySucceeded}
               onClick={handleCopyClick}
             >
               <span
@@ -650,8 +655,11 @@ function ImagePreviewModalComponent({
                 style={{ gap: PREVIEW_MODAL.iconLabelGap }}
               >
                 <PreviewActionIcon
-                  state={copyState}
+                  actionState={actionState}
+                  failedAction={failedAction}
                   locked={isLocked}
+                  showCopySpinner={showCopySpinner}
+                  successState="copied"
                   defaultIcon={<CopyIcon />}
                 />
                 <span className="min-w-[5.5rem]">{copyLabel}</span>
@@ -667,10 +675,7 @@ function ImagePreviewModalComponent({
                   aria-label={
                     isLocked ? "Unlock to download" : downloadLabel
                   }
-                  disabled={
-                    !isLocked &&
-                    (downloadState === "loading" || downloadState === "success")
-                  }
+                  disabled={!isLocked && downloadSucceeded}
                   onClick={handleDownloadClick}
                 >
                   <span
@@ -678,8 +683,10 @@ function ImagePreviewModalComponent({
                     style={{ gap: PREVIEW_MODAL.iconLabelGap }}
                   >
                     <PreviewActionIcon
-                      state={downloadState}
+                      actionState={actionState}
+                      failedAction={failedAction}
                       locked={isLocked}
+                      successState="downloaded"
                       defaultIcon={<DownloadIcon />}
                     />
                     <span className="truncate">{downloadLabel}</span>
@@ -701,7 +708,7 @@ function ImagePreviewModalComponent({
                     aria-haspopup={isLocked ? undefined : "menu"}
                     aria-expanded={isLocked ? undefined : menuOpen}
                     aria-controls={isLocked ? undefined : menuId}
-                    disabled={isLocked || isBusy}
+                    disabled={isLocked || copySucceeded || downloadSucceeded}
                     onClick={handleMenuToggle}
                   >
                     <ChevronDownIcon />
@@ -759,9 +766,15 @@ function ImagePreviewModalComponent({
         </p>
 
         <span className="sr-only" aria-live="polite">
-          {actionState === "copied" || actionState === "error"
-            ? statusMessage
-            : null}
+          {copySucceeded
+            ? "Copied"
+            : downloadSucceeded
+              ? "Downloaded"
+              : actionState === "error"
+                ? failedAction === "copy"
+                  ? "Copy failed"
+                  : "Download failed"
+                : null}
         </span>
       </div>
     </div>,

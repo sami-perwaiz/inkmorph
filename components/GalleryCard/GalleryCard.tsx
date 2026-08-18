@@ -37,6 +37,7 @@ interface GalleryCardProps {
   illustration: Illustration;
   isDesktop: boolean | null;
   onPreview: (illustration: Illustration) => void;
+  previewModalOpen?: boolean;
   priority?: boolean;
   /** Paid peek row — visual only (no hover, badge, or interaction). */
   teaser?: boolean;
@@ -163,6 +164,7 @@ function GalleryInteractiveCard({
   illustration,
   isDesktop,
   onPreview,
+  previewModalOpen = false,
   priority = false,
 }: Omit<GalleryCardProps, "teaser">) {
   const { id, src, alt } = illustration;
@@ -199,13 +201,14 @@ function GalleryInteractiveCard({
     setIsHovered(false);
   }, [src, setIsHovered]);
 
-  const showDesktopOverlay = isDesktop === true;
+  const showDesktopOverlay = isDesktop === true && !previewModalOpen;
   const canShowOverlay = showDesktopOverlay && isLoaded;
   const overlayVisible = canShowOverlay && showOverlay;
 
   const handleOpenPreview = useCallback(() => {
+    setIsHovered(false);
     onPreview(illustration);
-  }, [illustration, onPreview]);
+  }, [illustration, onPreview, setIsHovered]);
 
   const handleKeyDown = useCallback(
     (event: KeyboardEvent<HTMLElement>) => {
@@ -293,6 +296,7 @@ function GalleryCardComponent({
   illustration,
   isDesktop,
   onPreview,
+  previewModalOpen = false,
   priority = false,
   teaser = false,
 }: GalleryCardProps) {
@@ -305,6 +309,7 @@ function GalleryCardComponent({
       illustration={illustration}
       isDesktop={isDesktop}
       onPreview={onPreview}
+      previewModalOpen={previewModalOpen}
       priority={priority}
     />
   );
@@ -321,6 +326,7 @@ function areGalleryCardPropsEqual(
     prev.illustration.paywalled === next.illustration.paywalled &&
     prev.isDesktop === next.isDesktop &&
     prev.onPreview === next.onPreview &&
+    prev.previewModalOpen === next.previewModalOpen &&
     prev.priority === next.priority &&
     prev.teaser === next.teaser
   );

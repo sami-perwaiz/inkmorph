@@ -164,6 +164,7 @@ export function Gallery({
             searchGeneration={searchGeneration}
             isDesktop={isDesktop}
             onPreview={preview.open}
+            previewModalOpen={preview.visible}
           />
         </ContentContainer>
 

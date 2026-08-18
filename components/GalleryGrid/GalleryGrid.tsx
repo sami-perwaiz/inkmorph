@@ -39,6 +39,8 @@ interface GalleryGridProps {
   searchGeneration?: number;
   isDesktop: boolean | null;
   onPreview: (illustration: Illustration) => void;
+  /** Hide grid hover overlays while the preview modal is open. */
+  previewModalOpen?: boolean;
   /** Soft white fade over the paid peek row (Figma 40004723:10672). */
   showBottomFade?: boolean;
 }
@@ -133,6 +135,7 @@ export const GalleryGrid = memo(function GalleryGrid({
   searchGeneration = 0,
   isDesktop,
   onPreview,
+  previewModalOpen = false,
   showBottomFade = true,
 }: GalleryGridProps) {
   const [renderedFilter, setRenderedFilter] = useState(activeFilter);
@@ -376,6 +379,7 @@ export const GalleryGrid = memo(function GalleryGrid({
               illustration={illustration}
               isDesktop={isDesktop}
               onPreview={onPreview}
+              previewModalOpen={previewModalOpen}
               priority={priorityIds.has(illustration.id)}
               teaser={shouldShowPaywalledTeaser(
                 illustration,
