@@ -24,7 +24,6 @@ import {
   CrownGoldIcon,
   DownloadIcon,
   LockIcon,
-  SpinnerIcon,
 } from "@/components/icons/ActionIcons";
 import { useCardAction } from "@/hooks/useCardAction";
 import { usePremiumAccess } from "@/hooks/usePremiumAccess";
@@ -146,10 +145,6 @@ function PreviewActionIcon({
 }) {
   if (locked && (state === "default" || state === "error")) {
     return <LockIcon />;
-  }
-
-  if (state === "loading") {
-    return <SpinnerIcon />;
   }
 
   if (state === "success") {
