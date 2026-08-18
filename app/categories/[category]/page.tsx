@@ -13,7 +13,7 @@ import { buildPageMetadata } from "@/lib/seo/metadata";
 import { isCategorySlug } from "@/lib/seo/routes";
 import {
   buildGalleryCatalog,
-  resolveGalleryList,
+  getLcpGalleryIllustration,
 } from "@/lib/filterIllustrations";
 import { getIllustrations } from "@/lib/getIllustrations";
 import { getPreviewAssetUrl } from "@/lib/previewAsset";
@@ -63,13 +63,13 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
   }
 
   const galleryData = buildGalleryCatalog(getIllustrations());
-  const firstVisible = resolveGalleryList(
-    galleryData.catalog,
-    galleryData.lists[config.filter]
-  ).find((item) => !item.paywalled);
+  const lcpIllustration = getLcpGalleryIllustration(
+    galleryData,
+    config.filter
+  );
 
-  if (firstVisible) {
-    preload(getPreviewAssetUrl(firstVisible, "grid"), {
+  if (lcpIllustration) {
+    preload(getPreviewAssetUrl(lcpIllustration, "grid"), {
       as: "image",
       fetchPriority: "high",
     });

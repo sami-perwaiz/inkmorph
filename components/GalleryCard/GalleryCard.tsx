@@ -46,7 +46,8 @@ interface GalleryCardProps {
 function useGalleryImageLoad(
   src: string,
   containerRef: RefObject<HTMLDivElement | null>,
-  enabled = true
+  enabled = true,
+  priority = false
 ) {
   const [isLoaded, setIsLoaded] = useState(() => hasIllustrationImageLoaded(src));
   const srcRef = useRef(src);
@@ -78,6 +79,11 @@ function useGalleryImageLoad(
         return;
       }
 
+      if (priority) {
+        revealImage();
+        return;
+      }
+
       if (typeof img.decode === "function") {
         img.decode().then(revealImage).catch(revealImage);
         return;
@@ -85,7 +91,7 @@ function useGalleryImageLoad(
 
       revealImage();
     },
-    [revealImage, src]
+    [priority, revealImage, src]
   );
 
   /** Cached / unoptimized images may finish before `onLoad` attaches. */
@@ -120,9 +126,10 @@ function GalleryTeaserCard({
   const { isLoaded, handleImageLoad } = useGalleryImageLoad(
     previewSrc,
     ref,
-    shouldFetch
+    shouldFetch,
+    priority
   );
-  const showSkeleton = !isLoaded;
+  const showSkeleton = !isLoaded && !priority;
 
   return (
     <article
@@ -191,11 +198,12 @@ function GalleryInteractiveCard({
   const { isLoaded, handleImageLoad } = useGalleryImageLoad(
     previewSrc,
     ref,
-    shouldFetch
+    shouldFetch,
+    priority
   );
   const showPremiumBadge =
     Boolean(illustration.premium) && isLoaded && !hasFullLibraryAccess;
-  const showSkeleton = !isLoaded;
+  const showSkeleton = !isLoaded && !priority;
 
   useEffect(() => {
     setIsHovered(false);

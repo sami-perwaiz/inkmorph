@@ -19,6 +19,7 @@ const inter = Inter({
   weight: ["400", "500", "600"],
   variable: "--font-inter",
   display: "swap",
+  preload: false,
 });
 
 const lora = Lora({
@@ -26,6 +27,7 @@ const lora = Lora({
   weight: ["400"],
   variable: "--font-lora",
   display: "swap",
+  preload: false,
 });
 
 const siteUrl = resolveSiteUrl();

@@ -191,6 +191,28 @@ export function buildGalleryCatalog(items: Illustration[]): GalleryCatalogData {
   return { catalog, lists: idLists };
 }
 
+/** First tile eligible for LCP preload — mirrors free-plan mobile gallery filtering. */
+export function getLcpGalleryIllustration(
+  galleryData: GalleryCatalogData,
+  filter: FilterValue = "all",
+  columnCount = 3
+): Illustration | undefined {
+  const items = resolveGalleryList(
+    galleryData.catalog,
+    galleryData.lists[filter]
+  );
+
+  if (items.length === 0) {
+    return undefined;
+  }
+
+  if (filter === "all") {
+    return items.find((item) => !item.paywalled) ?? items[0];
+  }
+
+  return getVisibleGalleryItems(items, columnCount)[0];
+}
+
 export function filterIllustrations(
   items: Illustration[],
   filter: FilterValue

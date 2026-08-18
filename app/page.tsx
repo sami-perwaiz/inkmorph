@@ -6,7 +6,7 @@ import { JsonLdScript } from "@/components/Seo/JsonLdScript";
 import { Gallery } from "@/components/Gallery/Gallery";
 import {
   buildGalleryCatalog,
-  resolveGalleryList,
+  getLcpGalleryIllustration,
 } from "@/lib/filterIllustrations";
 import { getIllustrations } from "@/lib/getIllustrations";
 import { getPreviewAssetUrl } from "@/lib/previewAsset";
@@ -50,13 +50,10 @@ export async function generateMetadata({
 
 export default function Home() {
   const galleryData = buildGalleryCatalog(getIllustrations());
-  const firstVisible = resolveGalleryList(
-    galleryData.catalog,
-    galleryData.lists.all
-  ).find((item) => !item.paywalled);
+  const lcpIllustration = getLcpGalleryIllustration(galleryData, "all");
 
-  if (firstVisible) {
-    preload(getPreviewAssetUrl(firstVisible, "grid"), {
+  if (lcpIllustration) {
+    preload(getPreviewAssetUrl(lcpIllustration, "grid"), {
       as: "image",
       fetchPriority: "high",
     });
