@@ -1,26 +1,16 @@
 "use client";
 
 import Image from "next/image";
-import {
-  memo,
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  type SyntheticEvent,
-} from "react";
+import { memo } from "react";
 
 import { useLazyPreviewFetch } from "@/hooks/useLazyPreviewFetch";
+import { usePreviewImageLoad } from "@/hooks/usePreviewImageLoad";
 import { PACK_ICON } from "@/lib/constants";
 import {
   getPreviewImageProps,
   IMAGE_PREVIEW_QUALITY,
   PACK_ICON_IMAGE_SIZES,
 } from "@/lib/imageDelivery";
-import {
-  hasIllustrationImageLoaded,
-  markIllustrationImageLoaded,
-} from "@/lib/illustrationImageCache";
 
 interface PackIconImageProps {
   /** Original asset path — optimized by Next.js for display; downloads use this path directly. */
@@ -39,55 +29,8 @@ function PackIconImageComponent({
     priority,
     PACK_ICON.viewportRootMargin
   );
-  const [isLoaded, setIsLoaded] = useState(() =>
-    hasIllustrationImageLoaded(src)
-  );
-  const [hasError, setHasError] = useState(false);
-  const srcRef = useRef(src);
-
-  useEffect(() => {
-    if (srcRef.current === src) {
-      return;
-    }
-
-    srcRef.current = src;
-    const wasCached = hasIllustrationImageLoaded(src);
-    setIsLoaded(wasCached);
-    setHasError(false);
-  }, [src]);
-
-  const revealImage = useCallback(() => {
-    markIllustrationImageLoaded(src);
-    setIsLoaded(true);
-  }, [src]);
-
-  const handleImageLoad = useCallback(
-    (event: SyntheticEvent<HTMLImageElement>) => {
-      const img = event.currentTarget;
-
-      if (!(img.complete && img.naturalWidth > 0)) {
-        return;
-      }
-
-      if (hasIllustrationImageLoaded(src)) {
-        setIsLoaded(true);
-        return;
-      }
-
-      if (typeof img.decode === "function") {
-        img.decode().then(revealImage).catch(revealImage);
-        return;
-      }
-
-      revealImage();
-    },
-    [revealImage, src]
-  );
-
-  const handleImageError = useCallback(() => {
-    setHasError(true);
-    setIsLoaded(false);
-  }, []);
+  const { isLoaded, hasError, handleImageLoad, handleImageError } =
+    usePreviewImageLoad(src, ref, shouldFetch);
 
   return (
     <div ref={ref} className="absolute inset-0">
@@ -115,7 +58,7 @@ function PackIconImageComponent({
           sizes={PACK_ICON_IMAGE_SIZES}
           quality={IMAGE_PREVIEW_QUALITY.tile}
           className={[
-            "pack-icon-image gallery-card-image size-full object-contain object-center transition-opacity duration-200 ease-out",
+            "pack-icon-image gallery-card-image size-full object-contain object-center transition-opacity duration-300 ease-out",
             isLoaded ? "opacity-100" : "opacity-0",
           ].join(" ")}
           {...getPreviewImageProps(priority)}

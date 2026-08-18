@@ -17,7 +17,7 @@ import { usePremiumAccessGate } from "@/components/PremiumAccessProvider/Premium
 import { usePremiumAccess } from "@/hooks/usePremiumAccess";
 import { ACTION } from "@/lib/constants";
 import {
-  formatPackDownloadPercent,
+  getPackDownloadPercent,
   PACK_DOWNLOAD_LABEL,
 } from "@/lib/downloadButtonLabels";
 import { downloadPackIcons } from "@/lib/packIconDownloads";
@@ -53,7 +53,8 @@ export function IconPackDetailView({
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
   const [downloadState, setDownloadState] = useState<PackDownloadState>("idle");
-  const [downloadStatusLabel, setDownloadStatusLabel] = useState<string>();
+  const [downloadProgressPercent, setDownloadProgressPercent] = useState(0);
+  const [downloadErrorLabel, setDownloadErrorLabel] = useState<string>();
   const [downloadError, setDownloadError] = useState<string | null>(null);
   const downloadInFlightRef = useRef(false);
   const downloadResetTimeoutRef = useRef<number | null>(null);
@@ -162,6 +163,10 @@ export function IconPackDetailView({
     [freeRemaining, hasPremiumAccess, showExhaustedLimitModal, showPartialLimitModal]
   );
 
+  const handleCancelDownload = useCallback(() => {
+    abortControllerRef.current?.abort();
+  }, []);
+
   const runPackDownload = useCallback(
     async (items: Illustration[], wasSelecting: boolean) => {
       if (downloadInFlightRef.current || items.length === 0) {
@@ -171,17 +176,18 @@ export function IconPackDetailView({
       downloadInFlightRef.current = true;
       clearDownloadResetTimeout();
       setDownloadError(null);
+      setDownloadErrorLabel(undefined);
 
       abortControllerRef.current?.abort();
       const controller = new AbortController();
       abortControllerRef.current = controller;
 
-      flushSync(() => {
-        setDownloadState("downloading");
-        setDownloadStatusLabel(formatPackDownloadPercent(0, items.length));
-      });
-
       try {
+        flushSync(() => {
+          setDownloadState("downloading");
+          setDownloadProgressPercent(0);
+        });
+
         if (!hasPremiumAccess) {
           const latest = await refreshStatus();
           const currentRemaining = latest?.remaining ?? 0;
@@ -189,14 +195,14 @@ export function IconPackDetailView({
           if (currentRemaining <= 0) {
             showExhaustedLimitModal();
             setDownloadState("idle");
-            setDownloadStatusLabel(undefined);
+            setDownloadProgressPercent(0);
             return;
           }
 
           if (items.length > currentRemaining) {
             showPartialLimitModal(currentRemaining);
             setDownloadState("idle");
-            setDownloadStatusLabel(undefined);
+            setDownloadProgressPercent(0);
             return;
           }
         }
@@ -215,8 +221,8 @@ export function IconPackDetailView({
 
             flushSync(() => {
               setDownloadState("downloading");
-              setDownloadStatusLabel(
-                formatPackDownloadPercent(completedItems, totalItems)
+              setDownloadProgressPercent(
+                getPackDownloadPercent(completedItems, totalItems)
               );
             });
           },
@@ -227,15 +233,22 @@ export function IconPackDetailView({
           if (!consume.ok) {
             setDownloadError("Unable to update download allowance.");
             setDownloadState("error");
-            setDownloadStatusLabel(PACK_DOWNLOAD_LABEL.error);
+            setDownloadErrorLabel(PACK_DOWNLOAD_LABEL.error);
             downloadResetTimeoutRef.current = window.setTimeout(() => {
               downloadResetTimeoutRef.current = null;
               setDownloadState("idle");
-              setDownloadStatusLabel(undefined);
+              setDownloadErrorLabel(undefined);
+              setDownloadProgressPercent(0);
             }, DOWNLOAD_ERROR_RESET_MS);
             return;
           }
         }
+
+        flushSync(() => {
+          setDownloadProgressPercent(100);
+        });
+
+        await new Promise((resolve) => window.setTimeout(resolve, 300));
 
         if (wasSelecting) {
           setSelectionMode(false);
@@ -244,28 +257,29 @@ export function IconPackDetailView({
 
         flushSync(() => {
           setDownloadState("success");
-          setDownloadStatusLabel(PACK_DOWNLOAD_LABEL.downloaded);
         });
         downloadResetTimeoutRef.current = window.setTimeout(() => {
           downloadResetTimeoutRef.current = null;
           setDownloadState("idle");
-          setDownloadStatusLabel(undefined);
+          setDownloadProgressPercent(0);
         }, DOWNLOAD_SUCCESS_RESET_MS);
       } catch (error) {
         if (controller.signal.aborted) {
           setDownloadState("idle");
-          setDownloadStatusLabel(undefined);
+          setDownloadProgressPercent(0);
           setDownloadError(null);
+          setDownloadErrorLabel(undefined);
           return;
         }
 
         setDownloadError("Unable to prepare download. Please try again.");
         setDownloadState("error");
-        setDownloadStatusLabel(PACK_DOWNLOAD_LABEL.error);
+        setDownloadErrorLabel(PACK_DOWNLOAD_LABEL.error);
         downloadResetTimeoutRef.current = window.setTimeout(() => {
           downloadResetTimeoutRef.current = null;
           setDownloadState("idle");
-          setDownloadStatusLabel(undefined);
+          setDownloadErrorLabel(undefined);
+          setDownloadProgressPercent(0);
           setDownloadError(null);
         }, DOWNLOAD_ERROR_RESET_MS);
       } finally {
@@ -345,7 +359,8 @@ export function IconPackDetailView({
         selectedCount={selectedIds.size}
         selectionMode={selectionMode}
         downloadState={downloadState}
-        downloadStatusLabel={downloadStatusLabel}
+        downloadProgressPercent={downloadProgressPercent}
+        downloadErrorLabel={downloadErrorLabel}
         isPremiumDownloadAll={hasPremiumAccess}
         onEnterSelectionMode={() => {
           void handleEnterSelectionMode();
@@ -353,6 +368,7 @@ export function IconPackDetailView({
         onExitSelection={handleExitSelection}
         onDownloadAll={handleToolbarDownload}
         onDownloadAllPremiumGate={handleDownloadAllPremiumGate}
+        onCancelDownload={handleCancelDownload}
       />
 
       <main className="flex w-full flex-col pt-[169px] desktop:pt-[205px]">
@@ -370,10 +386,11 @@ export function IconPackDetailView({
 
       <div className="sr-only" aria-live="polite" aria-atomic="true">
         {downloadError ??
-          downloadStatusLabel ??
-          (downloadState === "success"
-            ? "Download started"
-            : `Viewing ${pack.title} pack with ${visibleIllustrations.length} icons`)}
+          (downloadState === "downloading"
+            ? `${downloadProgressPercent}% downloaded`
+            : downloadState === "success"
+              ? "Download started"
+              : `Viewing ${pack.title} pack with ${visibleIllustrations.length} icons`)}
       </div>
     </div>
   );

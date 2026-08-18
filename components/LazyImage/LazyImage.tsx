@@ -1,19 +1,9 @@
 "use client";
 
 import Image from "next/image";
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  type SyntheticEvent,
-} from "react";
 
 import { useLazyPreviewFetch } from "@/hooks/useLazyPreviewFetch";
-import {
-  hasIllustrationImageLoaded,
-  markIllustrationImageLoaded,
-} from "@/lib/illustrationImageCache";
+import { usePreviewImageLoad } from "@/hooks/usePreviewImageLoad";
 import {
   getPreviewImageProps,
   IMAGE_PREVIEW_QUALITY,
@@ -41,57 +31,27 @@ export function LazyImage({
   quality = IMAGE_PREVIEW_QUALITY.grid,
 }: LazyImageProps) {
   const { ref, shouldFetch } = useLazyPreviewFetch(src, priority);
-  const [isLoaded, setIsLoaded] = useState(() =>
-    hasIllustrationImageLoaded(src)
-  );
-  const srcRef = useRef(src);
-
-  useEffect(() => {
-    if (srcRef.current === src) {
-      return;
-    }
-
-    srcRef.current = src;
-    setIsLoaded(hasIllustrationImageLoaded(src));
-  }, [src]);
-
-  const revealImage = useCallback(() => {
-    markIllustrationImageLoaded(src);
-    setIsLoaded(true);
-  }, [src]);
-
-  const handleImageLoad = useCallback(
-    (event: SyntheticEvent<HTMLImageElement>) => {
-      const img = event.currentTarget;
-
-      if (!(img.complete && img.naturalWidth > 0)) {
-        return;
-      }
-
-      if (hasIllustrationImageLoaded(src)) {
-        setIsLoaded(true);
-        return;
-      }
-
-      if (typeof img.decode === "function") {
-        img.decode().then(revealImage).catch(revealImage);
-        return;
-      }
-
-      revealImage();
-    },
-    [revealImage, src]
-  );
+  const { isLoaded, hasError, handleImageLoad, handleImageError } =
+    usePreviewImageLoad(src, ref, shouldFetch);
 
   return (
     <div ref={ref} className="absolute inset-0">
-      {!isLoaded ? (
+      {!isLoaded && !hasError ? (
         <div
           className="gallery-card-skeleton gallery-card-skeleton-shimmer absolute inset-0"
           aria-hidden
         />
       ) : null}
-      {shouldFetch ? (
+
+      {hasError ? (
+        <div
+          className="gallery-card-skeleton absolute inset-0"
+          role="img"
+          aria-label={`${alt} failed to load`}
+        />
+      ) : null}
+
+      {shouldFetch && !hasError ? (
         <Image
           src={src}
           alt={alt}
@@ -99,13 +59,14 @@ export function LazyImage({
           sizes={sizes}
           quality={quality}
           className={[
-            "gallery-card-image absolute inset-0 transition-opacity duration-200 ease-out",
+            "gallery-card-image absolute inset-0 transition-opacity duration-300 ease-out",
             isLoaded ? "opacity-100" : "opacity-0",
             className,
           ].join(" ")}
           {...getPreviewImageProps(priority)}
           decoding="async"
           onLoad={handleImageLoad}
+          onError={handleImageError}
         />
       ) : null}
     </div>

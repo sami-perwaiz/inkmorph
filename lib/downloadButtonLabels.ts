@@ -1,8 +1,13 @@
 /** Shared download button copy — single source for visible button states. */
 
+export const PREVIEW_COPY_LABEL = {
+  idle: "Copy Image",
+  copied: "Copied",
+  error: "Copy failed · Try again",
+} as const;
+
 export const PREVIEW_DOWNLOAD_LABEL = {
   idle: "Download",
-  downloading: "Downloading...",
   downloaded: "Downloaded",
   error: "Download failed · Try again",
 } as const;
@@ -10,34 +15,39 @@ export const PREVIEW_DOWNLOAD_LABEL = {
 export const PACK_DOWNLOAD_LABEL = {
   downloaded: "Downloaded",
   error: "Download failed · Try again",
-  singleDownloading: "Downloading...",
 } as const;
 
-/** Multi-file pack downloads — percentage only, never file counts or names. */
-export function formatPackDownloadPercent(
+/** Pack multi-download progress — percentage only, never file counts or names. */
+export function getPackDownloadPercent(
   completedItems: number,
   totalItems: number
-): string {
+): number {
   if (totalItems <= 0) {
-    return PACK_DOWNLOAD_LABEL.singleDownloading;
+    return 0;
   }
 
-  const percent = Math.min(
-    100,
-    Math.round((completedItems / totalItems) * 100)
-  );
+  return Math.min(100, Math.round((completedItems / totalItems) * 100));
+}
 
-  return `Downloading ${percent}%`;
+export function getPreviewCopyLabel(
+  actionState: string,
+  failedAction: "copy" | "download" | null
+): string {
+  if (actionState === "copied") {
+    return PREVIEW_COPY_LABEL.copied;
+  }
+
+  if (actionState === "error" && failedAction === "copy") {
+    return PREVIEW_COPY_LABEL.error;
+  }
+
+  return PREVIEW_COPY_LABEL.idle;
 }
 
 export function getPreviewDownloadLabel(
   actionState: string,
   failedAction: "copy" | "download" | null
 ): string {
-  if (actionState === "downloading") {
-    return PREVIEW_DOWNLOAD_LABEL.downloading;
-  }
-
   if (actionState === "downloaded") {
     return PREVIEW_DOWNLOAD_LABEL.downloaded;
   }

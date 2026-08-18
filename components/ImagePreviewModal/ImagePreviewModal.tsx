@@ -47,11 +47,13 @@ import {
 import { MOTION } from "@/lib/motion";
 import { preloadOriginalAsset } from "@/lib/originalAssetCache";
 import { getModalBackdropStyle } from "@/lib/modalBackdrop";
-import { getPreviewDownloadLabel } from "@/lib/downloadButtonLabels";
+import {
+  getPreviewCopyLabel,
+  getPreviewDownloadLabel,
+} from "@/lib/downloadButtonLabels";
 import {
   getCopyButtonState,
   getDownloadButtonState,
-  getCopyButtonLabel,
   type ActionButtonState,
 } from "@/types/action";
 import type { Illustration } from "@/types/illustration";
@@ -133,7 +135,7 @@ function getFocusableElements(container: HTMLElement): HTMLElement[] {
   });
 }
 
-function ActionStateIcon({
+function PreviewActionIcon({
   state,
   locked,
   defaultIcon,
@@ -213,7 +215,6 @@ function ImagePreviewModalComponent({
     handleCopy,
     handleDownload,
     handleLockedAction,
-    cancelAction,
   } = useCardAction(illustration);
 
   const { hasPremiumAccess, isReady } = usePremiumAccess();
@@ -233,13 +234,12 @@ function ImagePreviewModalComponent({
 
   const copyState = getCopyButtonState(actionState, failedAction);
   const downloadState = getDownloadButtonState(actionState, failedAction);
-  const copyLabel = getCopyButtonLabel(actionState, failedAction, statusMessage);
+  const copyLabel = getPreviewCopyLabel(actionState, failedAction);
   const downloadLabel = getPreviewDownloadLabel(actionState, failedAction);
   const mutedMeta = isLocked ? "text-[#797979]" : "text-[#0a0a0a]";
   const isBusy =
     actionState === "copying" ||
     actionState === "downloading";
-  const showCancel = actionState === "copying";
 
   useEffect(() => {
     setIsImageLoaded(hasIllustrationImageLoaded(illustration.src));
@@ -670,12 +670,12 @@ function ImagePreviewModalComponent({
                 className="inline-flex items-center"
                 style={{ gap: PREVIEW_MODAL.iconLabelGap }}
               >
-                <ActionStateIcon
+                <PreviewActionIcon
                   state={copyState}
                   locked={isLocked}
                   defaultIcon={<CopyIcon />}
                 />
-                <span>{copyLabel}</span>
+                <span className="min-w-[5.5rem]">{copyLabel}</span>
               </span>
               <span className={["leading-5", mutedMeta].join(" ")}>PNG</span>
             </button>
@@ -698,11 +698,11 @@ function ImagePreviewModalComponent({
                     className="inline-flex min-w-0 items-center"
                     style={{ gap: PREVIEW_MODAL.iconLabelGap }}
                   >
-                    {isLocked ? (
-                      <LockIcon />
-                    ) : downloadState === "success" ? (
-                      <CheckIcon />
-                    ) : null}
+                    <PreviewActionIcon
+                      state={downloadState}
+                      locked={isLocked}
+                      defaultIcon={<DownloadIcon />}
+                    />
                     <span className="truncate">{downloadLabel}</span>
                   </span>
                 </button>
@@ -772,25 +772,6 @@ function ImagePreviewModalComponent({
                 </button>
               </AnimatedDropdownPanel>
             </div>
-
-            {showCancel ? (
-              <button
-                type="button"
-                onClick={cancelAction}
-                className="self-start font-inter text-xs font-normal leading-[18px] text-[#797979] underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-900/30 focus-visible:ring-offset-2"
-              >
-                Cancel
-              </button>
-            ) : null}
-
-            {!showCancel && statusMessage && copyState === "loading" ? (
-              <p
-                aria-live="polite"
-                className="font-inter text-xs font-normal leading-[18px] text-[#797979]"
-              >
-                {statusMessage}
-              </p>
-            ) : null}
           </div>
         </div>
 
@@ -799,7 +780,9 @@ function ImagePreviewModalComponent({
         </p>
 
         <span className="sr-only" aria-live="polite">
-          {statusMessage}
+          {actionState === "copied" || actionState === "error"
+            ? statusMessage
+            : null}
         </span>
       </div>
     </div>,

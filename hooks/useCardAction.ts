@@ -12,7 +12,6 @@ import {
   MIN_SINGLE_DOWNLOAD_UI_MS,
 } from "@/lib/illustrationActions";
 import { getCanonicalFilename } from "@/lib/canonicalAsset";
-import { formatCopyProgress } from "@/lib/downloadProgress";
 import { preloadOriginalAsset } from "@/lib/originalAssetCache";
 import { trackImageCopy, trackImageDownload } from "@/lib/analytics";
 import { ACTION, type DownloadSize } from "@/lib/constants";
@@ -131,8 +130,11 @@ export function useCardAction(illustration: Illustration) {
     abortControllerRef.current = controller;
 
     setFailedAction(null);
-    setActionState("copying");
-    setStatusMessage("Preparing…");
+
+    flushSync(() => {
+      setActionState("copying");
+      setStatusMessage("");
+    });
 
     try {
       if (!(await ensureCreditsAvailable())) {
@@ -144,9 +146,6 @@ export function useCardAction(illustration: Illustration) {
 
       await copyImageToClipboard(src, id, {
         signal: controller.signal,
-        onProgress: (update) => {
-          setStatusMessage(formatCopyProgress(update));
-        },
       });
 
       if (!(await consumeCreditAfterSuccess())) {
@@ -155,8 +154,10 @@ export function useCardAction(illustration: Illustration) {
       }
 
       trackImageCopy(id, category);
-      setActionState("copied");
-      setStatusMessage("Copied");
+      flushSync(() => {
+        setActionState("copied");
+        setStatusMessage("Copied");
+      });
       scheduleReset();
     } catch (error) {
       if (controller.signal.aborted) {
@@ -216,7 +217,7 @@ export function useCardAction(illustration: Illustration) {
       flushSync(() => {
         setFailedAction(null);
         setActionState("downloading");
-        setStatusMessage("Downloading...");
+        setStatusMessage("");
       });
 
       try {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 
 import { WallpaperDetailView } from "@/components/Packs/WallpaperDetailView";
 import { WallpapersView } from "@/components/Packs/WallpapersView";
@@ -19,27 +19,16 @@ interface WallpaperDetailGateProps {
 export function WallpaperDetailGate({ pack }: WallpaperDetailGateProps) {
   const router = useRouter();
   const { hasPremiumAccess, isReady } = usePremiumAccess();
-  const [allowed, setAllowed] = useState(false);
+
+  const blocked = isReady && !canAccessWallpaperPack(pack, hasPremiumAccess);
 
   useEffect(() => {
-    if (!isReady) {
-      return;
-    }
-
-    if (!canAccessWallpaperPack(pack, hasPremiumAccess)) {
-      setAllowed(false);
+    if (blocked) {
       router.replace("/wallpapers");
-      return;
     }
+  }, [blocked, router]);
 
-    setAllowed(true);
-  }, [pack, hasPremiumAccess, isReady, router]);
-
-  if (!isReady) {
-    return null;
-  }
-
-  if (!allowed) {
+  if (blocked) {
     return <WallpapersView />;
   }
 
