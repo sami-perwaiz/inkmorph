@@ -26,6 +26,7 @@ import {
   getPreviewImageProps,
   IMAGE_PREVIEW_QUALITY,
 } from "@/lib/imageDelivery";
+import { getPreviewAssetUrl } from "@/lib/previewAsset";
 import {
   hasIllustrationImageLoaded,
   markIllustrationImageLoaded,
@@ -112,10 +113,11 @@ function GalleryTeaserCard({
   illustration: Illustration;
   priority?: boolean;
 }) {
-  const { id, src } = illustration;
-  const { ref, shouldFetch } = useLazyPreviewFetch(src, priority);
+  const { id } = illustration;
+  const previewSrc = getPreviewAssetUrl(illustration, "grid");
+  const { ref, shouldFetch } = useLazyPreviewFetch(previewSrc, priority);
   const { isLoaded, handleImageLoad } = useGalleryImageLoad(
-    src,
+    previewSrc,
     ref,
     shouldFetch
   );
@@ -137,14 +139,14 @@ function GalleryTeaserCard({
         {shouldFetch ? (
           <Image
             key={id}
-            src={src}
+            src={previewSrc}
             alt=""
             fill
             sizes={GALLERY_CARD_IMAGE_SIZES}
             quality={IMAGE_PREVIEW_QUALITY.grid}
             className={[
               "gallery-card-image object-contain object-center",
-              isLoaded ? "opacity-100" : "opacity-0",
+              isLoaded || priority ? "opacity-100" : "opacity-0",
             ].join(" ")}
             {...getPreviewImageProps(priority)}
             decoding="async"
@@ -164,6 +166,7 @@ function GalleryInteractiveCard({
   priority = false,
 }: Omit<GalleryCardProps, "teaser">) {
   const { id, src, alt } = illustration;
+  const previewSrc = getPreviewAssetUrl(illustration, "grid");
   const {
     actionState,
     failedAction,
@@ -182,9 +185,9 @@ function GalleryInteractiveCard({
     illustration,
     hasFullLibraryAccess
   );
-  const { ref, shouldFetch } = useLazyPreviewFetch(src, priority);
+  const { ref, shouldFetch } = useLazyPreviewFetch(previewSrc, priority);
   const { isLoaded, handleImageLoad } = useGalleryImageLoad(
-    src,
+    previewSrc,
     ref,
     shouldFetch
   );
@@ -249,14 +252,14 @@ function GalleryInteractiveCard({
           {shouldFetch ? (
             <Image
               key={id}
-              src={src}
+              src={previewSrc}
               alt={alt}
               fill
               sizes={GALLERY_CARD_IMAGE_SIZES}
               quality={IMAGE_PREVIEW_QUALITY.grid}
               className={[
                 "gallery-card-image object-contain object-center",
-                isLoaded ? "opacity-100" : "opacity-0",
+                isLoaded || priority ? "opacity-100" : "opacity-0",
               ].join(" ")}
               {...getPreviewImageProps(priority)}
               decoding="async"

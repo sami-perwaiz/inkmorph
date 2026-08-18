@@ -1,10 +1,15 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import { preload } from "react-dom";
 
 import { JsonLdScript } from "@/components/Seo/JsonLdScript";
 import { Gallery } from "@/components/Gallery/Gallery";
-import { buildGalleryCatalog } from "@/lib/filterIllustrations";
+import {
+  buildGalleryCatalog,
+  resolveGalleryList,
+} from "@/lib/filterIllustrations";
 import { getIllustrations } from "@/lib/getIllustrations";
+import { getPreviewAssetUrl } from "@/lib/previewAsset";
 import {
   buildOrganizationJsonLd,
   buildWebSiteJsonLd,
@@ -45,6 +50,17 @@ export async function generateMetadata({
 
 export default function Home() {
   const galleryData = buildGalleryCatalog(getIllustrations());
+  const firstVisible = resolveGalleryList(
+    galleryData.catalog,
+    galleryData.lists.all
+  ).find((item) => !item.paywalled);
+
+  if (firstVisible) {
+    preload(getPreviewAssetUrl(firstVisible, "grid"), {
+      as: "image",
+      fetchPriority: "high",
+    });
+  }
 
   return (
     <>

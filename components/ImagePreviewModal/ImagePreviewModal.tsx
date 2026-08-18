@@ -44,7 +44,7 @@ import {
   getPreviewImageProps,
 } from "@/lib/imageDelivery";
 import { MOTION } from "@/lib/motion";
-import { preloadOriginalAsset } from "@/lib/originalAssetCache";
+import { getPreviewAssetUrl } from "@/lib/previewAsset";
 import { getModalBackdropStyle } from "@/lib/modalBackdrop";
 import {
   getPreviewCopyLabel,
@@ -215,8 +215,10 @@ function ImagePreviewModalComponent({
   const { hasPremiumAccess, isReady } = usePremiumAccess();
   const { requestPremiumAccess } = usePremiumAccessGate();
 
+  const previewSrc = getPreviewAssetUrl(illustration, "modal");
+
   const [isImageLoaded, setIsImageLoaded] = useState(() =>
-    hasIllustrationImageLoaded(illustration.src)
+    hasIllustrationImageLoaded(previewSrc)
   );
   const [menuOpen, setMenuOpen] = useState(false);
   const [selectedSize, setSelectedSize] = useState<DownloadSize>("1x");
@@ -237,28 +239,10 @@ function ImagePreviewModalComponent({
     actionState === "downloading";
 
   useEffect(() => {
-    setIsImageLoaded(hasIllustrationImageLoaded(illustration.src));
+    setIsImageLoaded(hasIllustrationImageLoaded(previewSrc));
     setMenuOpen(false);
     setSelectedSize("1x");
-  }, [illustration.src]);
-
-  useEffect(() => {
-    if (!visible || isLocked) {
-      return;
-    }
-
-    const preload = () => {
-      preloadOriginalAsset(illustration.src);
-    };
-
-    if (typeof window.requestIdleCallback === "function") {
-      const idleId = window.requestIdleCallback(preload, { timeout: 1500 });
-      return () => window.cancelIdleCallback(idleId);
-    }
-
-    const timeoutId = window.setTimeout(preload, 600);
-    return () => window.clearTimeout(timeoutId);
-  }, [visible, isLocked, illustration.src]);
+  }, [previewSrc]);
 
   useEffect(() => {
     if (!visible) {
@@ -302,11 +286,11 @@ function ImagePreviewModalComponent({
       }
 
       const reveal = () => {
-        markIllustrationImageLoaded(illustration.src);
+        markIllustrationImageLoaded(previewSrc);
         setIsImageLoaded(true);
       };
 
-      if (hasIllustrationImageLoaded(illustration.src)) {
+      if (hasIllustrationImageLoaded(previewSrc)) {
         setIsImageLoaded(true);
         return;
       }
@@ -318,7 +302,7 @@ function ImagePreviewModalComponent({
 
       reveal();
     },
-    [illustration.src]
+    [previewSrc]
   );
 
   useEffect(() => {
@@ -589,7 +573,7 @@ function ImagePreviewModalComponent({
             <ProtectedPremiumImage enabled={protectImage} className="absolute inset-0">
               <Image
                 key={illustration.id}
-                src={illustration.src}
+                src={previewSrc}
                 alt={illustration.alt}
                 fill
                 sizes={IMAGE_PREVIEW_MODAL_SIZES}

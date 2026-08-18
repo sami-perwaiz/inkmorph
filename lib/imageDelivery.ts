@@ -52,11 +52,23 @@ export const PREVIEW_IMAGE_PROPS = {
   loading: "lazy" as const,
 } as const;
 
+/** Pre-generated WebP previews — serve as-is (no runtime optimization API). */
+const STATIC_PREVIEW_IMAGE_PROPS = {
+  unoptimized: true as const,
+} as const;
+
 /** Priority LCP tiles must not combine with native lazy loading. */
 export function getPreviewImageProps(priority: boolean) {
   return priority
-    ? { priority: true as const, fetchPriority: "high" as const }
-    : PREVIEW_IMAGE_PROPS;
+    ? {
+        priority: true as const,
+        fetchPriority: "high" as const,
+        ...STATIC_PREVIEW_IMAGE_PROPS,
+      }
+    : {
+        ...PREVIEW_IMAGE_PROPS,
+        ...STATIC_PREVIEW_IMAGE_PROPS,
+      };
 }
 
 /**

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
+import { preload } from "react-dom";
 
 import { JsonLdScript } from "@/components/Seo/JsonLdScript";
 import { Gallery } from "@/components/Gallery/Gallery";
@@ -10,8 +11,12 @@ import {
 import { buildBreadcrumbJsonLd } from "@/lib/seo/jsonLd";
 import { buildPageMetadata } from "@/lib/seo/metadata";
 import { isCategorySlug } from "@/lib/seo/routes";
-import { buildGalleryCatalog } from "@/lib/filterIllustrations";
+import {
+  buildGalleryCatalog,
+  resolveGalleryList,
+} from "@/lib/filterIllustrations";
 import { getIllustrations } from "@/lib/getIllustrations";
+import { getPreviewAssetUrl } from "@/lib/previewAsset";
 
 interface CategoryPageProps {
   params: Promise<{ category: string }>;
@@ -58,6 +63,17 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
   }
 
   const galleryData = buildGalleryCatalog(getIllustrations());
+  const firstVisible = resolveGalleryList(
+    galleryData.catalog,
+    galleryData.lists[config.filter]
+  ).find((item) => !item.paywalled);
+
+  if (firstVisible) {
+    preload(getPreviewAssetUrl(firstVisible, "grid"), {
+      as: "image",
+      fetchPriority: "high",
+    });
+  }
 
   return (
     <>

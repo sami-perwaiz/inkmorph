@@ -1,3 +1,5 @@
+import { getWallpaperPreviewUrl } from "@/lib/previewAsset";
+
 export interface WallpaperPack {
   id: string;
   title: string;
@@ -19,7 +21,7 @@ export const WALLPAPER_PACKS: WallpaperPack[] = [
     title: "Crimson Geometry",
     author: "Private Talky",
     thumbnailSrc: "/wallpapers/geometric-red.png",
-    previewSrc: "/wallpapers/downloads/crimson-geometry.png",
+    previewSrc: getWallpaperPreviewUrl("crimson-geometry"),
     downloadSrc: "/wallpapers/downloads/crimson-geometry.png",
   },
   {
@@ -27,7 +29,7 @@ export const WALLPAPER_PACKS: WallpaperPack[] = [
     title: "Chrome Noir",
     author: "InkMorph Studio",
     thumbnailSrc: "/wallpapers/metallic-head.png",
-    previewSrc: "/wallpapers/downloads/chrome-noir.png",
+    previewSrc: getWallpaperPreviewUrl("chrome-noir"),
     downloadSrc: "/wallpapers/downloads/chrome-noir.png",
   },
   {
@@ -35,7 +37,7 @@ export const WALLPAPER_PACKS: WallpaperPack[] = [
     title: "Obsidian Orbit",
     author: "InkMorph Studio",
     thumbnailSrc: "/wallpapers/orange-rings.png",
-    previewSrc: "/wallpapers/downloads/obsidian-orbit.png",
+    previewSrc: getWallpaperPreviewUrl("obsidian-orbit"),
     downloadSrc: "/wallpapers/downloads/obsidian-orbit.png",
   },
   {
@@ -43,7 +45,7 @@ export const WALLPAPER_PACKS: WallpaperPack[] = [
     title: "Pastel Horizon",
     author: "InkMorph Studio",
     thumbnailSrc: "/wallpapers/apple-wood.png",
-    previewSrc: "/wallpapers/downloads/pastel-horizon.png",
+    previewSrc: getWallpaperPreviewUrl("pastel-horizon"),
     downloadSrc: "/wallpapers/downloads/pastel-horizon.png",
   },
   {
@@ -51,7 +53,7 @@ export const WALLPAPER_PACKS: WallpaperPack[] = [
     title: "Neon Pebbles",
     author: "InkMorph Studio",
     thumbnailSrc: "/wallpapers/purple-stones.png",
-    previewSrc: "/wallpapers/downloads/neon-pebbles.png",
+    previewSrc: getWallpaperPreviewUrl("neon-pebbles"),
     downloadSrc: "/wallpapers/downloads/neon-pebbles.png",
   },
   {
@@ -59,7 +61,7 @@ export const WALLPAPER_PACKS: WallpaperPack[] = [
     title: "Liquid Chrome",
     author: "InkMorph Studio",
     thumbnailSrc: "/wallpapers/grey-stones.png",
-    previewSrc: "/wallpapers/downloads/liquid-chrome.png",
+    previewSrc: getWallpaperPreviewUrl("liquid-chrome"),
     downloadSrc: "/wallpapers/downloads/liquid-chrome.png",
   },
   {
@@ -67,7 +69,7 @@ export const WALLPAPER_PACKS: WallpaperPack[] = [
     title: "Monochrome Motion",
     author: "InkMorph Studio",
     thumbnailSrc: "/wallpapers/build-with-purpose.png",
-    previewSrc: "/wallpapers/downloads/monochrome-motion.png",
+    previewSrc: getWallpaperPreviewUrl("monochrome-motion"),
     downloadSrc: "/wallpapers/downloads/monochrome-motion.png",
   },
   {
@@ -75,7 +77,7 @@ export const WALLPAPER_PACKS: WallpaperPack[] = [
     title: "Dreamscape Profile",
     author: "InkMorph Studio",
     thumbnailSrc: "/wallpapers/flare-gaze.png",
-    previewSrc: "/wallpapers/downloads/dreamscape-profile.png",
+    previewSrc: getWallpaperPreviewUrl("dreamscape-profile"),
     downloadSrc: "/wallpapers/downloads/dreamscape-profile.png",
   },
   {
@@ -83,7 +85,7 @@ export const WALLPAPER_PACKS: WallpaperPack[] = [
     title: "Mountain Solitude",
     author: "InkMorph Studio",
     thumbnailSrc: "/wallpapers/flare-summit.png",
-    previewSrc: "/wallpapers/downloads/mountain-solitude.png",
+    previewSrc: getWallpaperPreviewUrl("mountain-solitude"),
     downloadSrc: "/wallpapers/downloads/mountain-solitude.png",
   },
   {
@@ -91,7 +93,7 @@ export const WALLPAPER_PACKS: WallpaperPack[] = [
     title: "Azure Curves",
     author: "InkMorph Studio",
     thumbnailSrc: "/wallpapers/flare-prism.png",
-    previewSrc: "/wallpapers/downloads/azure-curves.png",
+    previewSrc: getWallpaperPreviewUrl("azure-curves"),
     downloadSrc: "/wallpapers/downloads/azure-curves.png",
   },
 ];

@@ -4,6 +4,7 @@ import { memo, useMemo } from "react";
 
 import { PackIconImage } from "@/components/Packs/PackIconImage";
 import { usePackIconColumnCount } from "@/hooks/usePackIconColumnCount";
+import { getPreviewAssetUrl } from "@/lib/previewAsset";
 import type { Illustration } from "@/types/illustration";
 
 interface PackIconCellProps {
@@ -47,7 +48,7 @@ const PackIconCell = memo(function PackIconCell({
       ].join(" ")}
     >
       <PackIconImage
-        src={illustration.src}
+        src={getPreviewAssetUrl(illustration, "tile")}
         alt={illustration.alt}
         priority={priority}
       />
@@ -76,12 +77,9 @@ export function PackIconGrid({
 }: PackIconGridProps) {
   const columnCount = usePackIconColumnCount();
   const priorityIds = useMemo(() => {
-    const ids = new Set<string>();
-    for (const item of illustrations.slice(0, columnCount)) {
-      ids.add(item.id);
-    }
-    return ids;
-  }, [columnCount, illustrations]);
+    const first = illustrations[0];
+    return first ? new Set([first.id]) : new Set<string>();
+  }, [illustrations]);
 
   return (
     <section

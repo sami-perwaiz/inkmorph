@@ -3,19 +3,55 @@
  *
  * PREVIEW (display only)
  * - Gallery grids, pack icons, modals, wallpaper previews
- * - Served through Next.js Image → WebP/AVIF at viewport-appropriate sizes
- * - Configured in `lib/imageDelivery.ts`
+ * - Build-time WebP files under `/previews/` (+ wallpaper `/wallpapers/previews/`)
+ * - Optional Next.js Image optimization for responsive srcset
  *
  * ORIGINAL (download / copy only)
- * - Full-resolution PNG fetched on demand via `lib/originalAssetCache.ts`
- * - Used exclusively by `lib/illustrationActions.ts` and `lib/packIconDownloads.ts`
- *
- * Preview optimization never affects downloaded file quality.
+ * - Full-resolution PNG via canonical `/assets/` URLs
+ * - Used exclusively by download/copy pipelines
  */
+
+import { getCanonicalFilename } from "@/lib/canonicalAsset";
+import type { Illustration } from "@/types/illustration";
 
 export type PreviewContext = "grid" | "tile" | "detail" | "modal" | "thumb";
 
-/** Canonical original URL — use only for download/copy pipelines, never for `<Image src>`. */
+/** Max display widths — previews are generated at 2× for retina. */
+export const PREVIEW_VARIANT = {
+  sm: "sm",
+  lg: "lg",
+} as const;
+
+export type PreviewVariant = (typeof PREVIEW_VARIANT)[keyof typeof PREVIEW_VARIANT];
+
+const PREVIEW_CONTEXT_VARIANT: Record<PreviewContext, PreviewVariant> = {
+  grid: "sm",
+  tile: "sm",
+  thumb: "sm",
+  detail: "sm",
+  modal: "lg",
+};
+
+/** Public preview URL — use for `<Image src>` only, never for download/copy. */
+export function getPreviewAssetUrl(
+  illustration: Pick<Illustration, "id" | "filename">,
+  context: PreviewContext = "grid"
+): string {
+  const variant = PREVIEW_CONTEXT_VARIANT[context];
+  const basename = getCanonicalFilename(illustration).replace(/\.[^.]+$/i, "");
+  return `/previews/${basename}-${variant}.webp`;
+}
+
+/** Wallpaper detail/listing preview — separate from full download file. */
+export function getWallpaperPreviewUrl(
+  wallpaperId: string,
+  context: "thumb" | "detail" = "detail"
+): string {
+  const variant = context === "thumb" ? "sm" : "sm";
+  return `/wallpapers/previews/${wallpaperId}-${variant}.webp`;
+}
+
+/** Canonical original URL — download/copy pipelines only. */
 export function getOriginalAssetUrl(canonicalSrc: string): string {
   return canonicalSrc;
 }

@@ -13,7 +13,7 @@ import {
 } from "@/lib/imageDelivery";
 
 interface PackIconImageProps {
-  /** Original asset path — optimized by Next.js for display; downloads use this path directly. */
+  /** Build-time WebP preview path — downloads use the canonical original separately. */
   src: string;
   alt: string;
   priority?: boolean;
@@ -59,7 +59,7 @@ function PackIconImageComponent({
           quality={IMAGE_PREVIEW_QUALITY.tile}
           className={[
             "pack-icon-image gallery-card-image size-full object-contain object-center transition-opacity duration-300 ease-out",
-            isLoaded ? "opacity-100" : "opacity-0",
+            isLoaded || priority ? "opacity-100" : "opacity-0",
           ].join(" ")}
           {...getPreviewImageProps(priority)}
           decoding="async"
