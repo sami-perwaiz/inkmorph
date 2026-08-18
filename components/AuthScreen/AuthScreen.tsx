@@ -213,19 +213,19 @@ export function AuthScreen({ copy }: AuthScreenProps) {
         </div>
       </section>
 
-      <section className="relative flex w-full flex-1 flex-col bg-white tablet:min-h-screen tablet:w-1/2">
-        <div className="flex w-full shrink-0 justify-start p-[30px] pb-0">
-          <BackButton href="/" ariaLabel="Back to home" />
-        </div>
-
-        <div className="flex w-full flex-1 items-center justify-center px-5 py-16 tablet:px-8 tablet:py-8">
-          <div
-            className="flex w-full flex-col items-start"
-            style={{
-              maxWidth: AUTH_SCREEN.formWidth,
-              gap: AUTH_SCREEN.formStackGap,
-            }}
-          >
+      <section className="relative flex w-full flex-1 items-center justify-center bg-white px-5 py-16 tablet:min-h-screen tablet:w-1/2 tablet:px-8">
+        <BackButton
+          href="/"
+          ariaLabel="Back to home"
+          className="absolute left-[30px] top-[30px] z-10"
+        />
+        <div
+          className="flex w-full flex-col items-start"
+          style={{
+            maxWidth: AUTH_SCREEN.formWidth,
+            gap: AUTH_SCREEN.formStackGap,
+          }}
+        >
             <div
               className="flex w-full flex-col items-center text-center"
               style={{ gap: AUTH_SCREEN.formHeaderGap }}
@@ -294,7 +294,6 @@ export function AuthScreen({ copy }: AuthScreenProps) {
               </p>
             </div>
           </div>
-        </div>
       </section>
     </main>
   );
