@@ -14,6 +14,7 @@ import {
 } from "@/lib/constants";
 import { IMAGE_PREVIEW_QUALITY } from "@/lib/imageDelivery";
 import { canAccessIconPack, type IconPack } from "@/lib/iconPacks";
+import { getListingCardThumbnailUrl } from "@/lib/previewAsset";
 
 const PurchaseProModal = dynamic(
   () =>
@@ -82,7 +83,7 @@ export function PackCard({
   const thumbnailContent = (
     <>
       <LazyImage
-        src={pack.thumbnailSrc}
+        src={getListingCardThumbnailUrl(pack.thumbnailSrc)}
         alt={`${pack.title} 3D icon pack preview`}
         sizes={PACK_WALLPAPER_THUMB_IMAGE_SIZES}
         priority={priority}

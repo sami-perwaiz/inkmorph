@@ -18,6 +18,7 @@ import {
   canAccessWallpaperPack,
   type WallpaperPack,
 } from "@/lib/wallpaperPacks";
+import { getListingCardThumbnailUrl } from "@/lib/previewAsset";
 
 const PurchaseProModal = dynamic(
   () =>
@@ -97,7 +98,7 @@ export function WallpaperCard({
         style={{ aspectRatio: PACK_WALLPAPER_THUMB_ASPECT }}
       >
         <LazyImage
-          src={pack.thumbnailSrc}
+          src={getListingCardThumbnailUrl(pack.thumbnailSrc)}
           alt={buildWallpaperImageAlt(pack)}
           sizes={PACK_WALLPAPER_THUMB_IMAGE_SIZES}
           priority={priority}

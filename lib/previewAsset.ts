@@ -51,6 +51,20 @@ export function getWallpaperPreviewUrl(
   return `/wallpapers/previews/${wallpaperId}-${variant}.webp`;
 }
 
+/**
+ * Pack / wallpaper listing card thumbnail — build-time WebP only.
+ * Detail pages keep `previewSrc` and download originals unchanged.
+ */
+export function getListingCardThumbnailUrl(publicPngPath: string): string {
+  const match = publicPngPath.match(/^(\/(?:packs|wallpapers))\/(.+)\.png$/i);
+
+  if (!match) {
+    return publicPngPath;
+  }
+
+  return `${match[1]}/thumbs/${match[2]}.webp`;
+}
+
 /** Canonical original URL — download/copy pipelines only. */
 export function getOriginalAssetUrl(canonicalSrc: string): string {
   return canonicalSrc;
