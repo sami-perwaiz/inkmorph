@@ -2,7 +2,7 @@ import { AUTH_CHANGE_EVENT } from "@/lib/authSession";
 import { PREMIUM_CHANGE_EVENT } from "@/lib/premiumAccess";
 
 /** Bump to wipe all client auth/account/premium state on next visit. */
-export const AUTH_STORAGE_VERSION = 1;
+export const AUTH_STORAGE_VERSION = 2;
 
 const VERSION_KEY = "inkmorph-auth-storage-version";
 
