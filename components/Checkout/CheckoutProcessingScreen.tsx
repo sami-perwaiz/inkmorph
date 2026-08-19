@@ -10,6 +10,8 @@ import { LockIcon } from "@/components/icons/ActionIcons";
 import { getAuthEntryHref, isSignedIn } from "@/lib/authSession";
 import { isPaidCheckoutPlan } from "@/lib/checkoutForm";
 import { CHECKOUT } from "@/lib/checkoutTokens";
+import { completeMockPurchase } from "@/lib/mockCheckout";
+import { grantPremiumAccess } from "@/lib/premiumAccess";
 
 interface ProcessingStepProps {
   iconSrc: string;
@@ -72,7 +74,20 @@ export function CheckoutProcessingScreen() {
 
     if (!isPaidCheckoutPlan(planId)) {
       router.replace("/pricing#pricing-plans");
+      return;
     }
+
+    const timer = window.setTimeout(() => {
+      try {
+        completeMockPurchase(planId);
+        grantPremiumAccess();
+        router.replace(`/checkout/success?plan=${encodeURIComponent(planId)}`);
+      } catch {
+        router.replace("/pricing#pricing-plans");
+      }
+    }, 2500);
+
+    return () => window.clearTimeout(timer);
   }, [planId, router]);
 
   if (!isPaidCheckoutPlan(planId)) {

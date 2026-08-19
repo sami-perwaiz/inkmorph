@@ -17,10 +17,12 @@ import {
 import { BackButton } from "@/components/BackButton/BackButton";
 import { InkMorphLogo } from "@/components/InkMorphLogo/InkMorphLogo";
 import {
+  buildAuthFlowHref,
   getAuthEntryHref,
   getAuthUser,
   isSignedIn,
   markProfileComplete,
+  needsPasswordSetup,
 } from "@/lib/authSession";
 import {
   COMPLETE_PROFILE,
@@ -55,8 +57,18 @@ export function CompleteProfileScreen() {
       return;
     }
 
-    const profile = readUserProfile();
     const authUser = getAuthUser();
+    if (authUser && needsPasswordSetup(authUser)) {
+      router.replace(
+        buildAuthFlowHref("/set-password", {
+          setup: isSetupFlow,
+          next: searchParams.get("next"),
+        })
+      );
+      return;
+    }
+
+    const profile = readUserProfile();
     const savedName = profile.fullName.trim();
 
     setFullName(savedName || authUser?.name || "");
@@ -78,7 +90,7 @@ export function CompleteProfileScreen() {
     ) {
       setSelectedPreset(profile.avatarSrc);
     }
-  }, [router]);
+  }, [isSetupFlow, router, searchParams]);
 
   const clearPhoto = useCallback(() => {
     setAvatarSrc(DEFAULT_PROFILE_AVATAR);

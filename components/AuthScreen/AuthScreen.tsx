@@ -15,8 +15,12 @@ import {
 } from "@/lib/authScreenTokens";
 import {
   AuthConflictError,
+  buildAuthFlowHref,
   completeGoogleSignIn,
+  needsPasswordSetup,
   needsProfileSetup,
+  resolveNextPath,
+  signInWithEmailPassword,
 } from "@/lib/authSession";
 import { signInWithGoogle } from "@/lib/googleAuth";
 
@@ -153,14 +157,6 @@ function TrustAvatars() {
   );
 }
 
-function resolveNextPath(raw: string | null): string {
-  if (!raw || !raw.startsWith("/") || raw.startsWith("//")) {
-    return "/";
-  }
-
-  return raw;
-}
-
 function resolveAuthErrorMessage(error: unknown): string | null {
   if (!(error instanceof Error)) {
     return "Google sign-in failed. Please try again.";
@@ -219,10 +215,13 @@ export function AuthScreen({ copy, variant = "signup" }: AuthScreenProps) {
     try {
       const googleProfile = await signInWithGoogle();
       const { user, isNewAccount } = completeGoogleSignIn(googleProfile);
-      const destination =
-        isNewAccount || needsProfileSetup(user)
-          ? "/complete-profile?setup=1"
-          : resolveNextPath(searchParams.get("next"));
+      const next = searchParams.get("next");
+
+      const destination = needsPasswordSetup(user)
+        ? buildAuthFlowHref("/set-password", { setup: true, next })
+        : isNewAccount || needsProfileSetup(user)
+          ? buildAuthFlowHref("/complete-profile", { setup: true, next })
+          : resolveNextPath(next);
 
       router.push(destination);
     } catch (error) {
@@ -239,7 +238,7 @@ export function AuthScreen({ copy, variant = "signup" }: AuthScreenProps) {
   }, [isAuthenticating, router, searchParams]);
 
   const handleSignInSubmit = useCallback(
-    (event: FormEvent<HTMLFormElement>) => {
+    async (event: FormEvent<HTMLFormElement>) => {
       event.preventDefault();
 
       const trimmedEmail = email.trim();
@@ -262,13 +261,35 @@ export function AuthScreen({ copy, variant = "signup" }: AuthScreenProps) {
         setPasswordError(null);
       }
 
-      if (hasError) {
+      if (hasError || isAuthenticating) {
         return;
       }
 
-      setAuthError("Email sign-in is not available yet. Please use Sign in with Google.");
+      setIsAuthenticating(true);
+      setAuthError(null);
+
+      try {
+        const user = await signInWithEmailPassword(trimmedEmail, password);
+        const next = searchParams.get("next");
+
+        const destination = needsPasswordSetup(user)
+          ? buildAuthFlowHref("/set-password", { setup: true, next })
+          : needsProfileSetup(user)
+            ? buildAuthFlowHref("/complete-profile", { setup: true, next })
+            : resolveNextPath(next);
+
+        router.push(destination);
+      } catch (error) {
+        const message =
+          error instanceof AuthConflictError
+            ? error.message
+            : "Sign-in failed. Please try again.";
+        setAuthError(message);
+      } finally {
+        setIsAuthenticating(false);
+      }
     },
-    [email, password],
+    [email, isAuthenticating, password, router, searchParams],
   );
 
   const googleButtonLabel = isSignIn

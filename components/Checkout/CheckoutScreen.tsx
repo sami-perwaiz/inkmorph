@@ -32,6 +32,7 @@ import {
   type CheckoutFormValues,
 } from "@/lib/checkoutForm";
 import { CHECKOUT } from "@/lib/checkoutTokens";
+import { saveMockCheckoutDraft } from "@/lib/mockCheckout";
 import { PRICING_PLANS } from "@/lib/pricingPlans";
 
 const EMPTY_FORM: CheckoutFormValues = {
@@ -168,6 +169,12 @@ export function CheckoutScreen() {
         setSubmitError("Select a valid plan before continuing to payment.");
         return;
       }
+
+      saveMockCheckoutDraft(planId, {
+        fullName: values.fullName,
+        email: values.email,
+        country: values.country,
+      });
 
       router.push(`/checkout/processing?plan=${encodeURIComponent(planId)}`);
     },

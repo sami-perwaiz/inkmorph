@@ -20,6 +20,9 @@ export interface AuthUser {
 interface StoredAccount extends AuthUser {
   createdAt: string;
   profileComplete: boolean;
+  /** When true, user must set a password before continuing. Google-only accounts stay false. */
+  passwordRequired: boolean;
+  passwordHash?: string;
 }
 
 interface AccountsStore {
@@ -49,6 +52,43 @@ function normalizeEmail(email: string): string {
   return email.trim().toLowerCase();
 }
 
+async function hashPassword(password: string, sub: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(`${sub}:${password}`);
+  const digest = await crypto.subtle.digest("SHA-256", data);
+
+  return Array.from(new Uint8Array(digest))
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+export function resolveNextPath(raw: string | null): string {
+  if (!raw || !raw.startsWith("/") || raw.startsWith("//")) {
+    return "/";
+  }
+
+  return raw;
+}
+
+export function buildAuthFlowHref(
+  path: string,
+  options?: { setup?: boolean; next?: string | null }
+): string {
+  const params = new URLSearchParams();
+
+  if (options?.setup) {
+    params.set("setup", "1");
+  }
+
+  const next = options?.next;
+  if (next && next.startsWith("/") && !next.startsWith("//")) {
+    params.set("next", next);
+  }
+
+  const query = params.toString();
+  return query ? `${path}?${query}` : path;
+}
+
 function migrateAccountsStore(raw: Partial<AccountsStore>): AccountsStore {
   const bySub: Record<string, StoredAccount> = {};
   const byEmail: Record<string, string> = {};
@@ -72,6 +112,14 @@ function migrateAccountsStore(raw: Partial<AccountsStore>): AccountsStore {
           typeof account.profileComplete === "boolean"
             ? account.profileComplete
             : hasCompletedProfile(account.sub),
+        passwordRequired:
+          typeof account.passwordRequired === "boolean"
+            ? account.passwordRequired
+            : false,
+        passwordHash:
+          typeof account.passwordHash === "string"
+            ? account.passwordHash
+            : undefined,
       };
 
       bySub[sub] = stored;
@@ -246,6 +294,170 @@ export function needsProfileSetup(user: AuthUser): boolean {
   return !hasCompletedProfile(user.sub);
 }
 
+export function needsPasswordSetup(user: AuthUser): boolean {
+  const store = readAccountsStore();
+  const account = store.bySub[user.sub];
+  if (!account?.passwordRequired) {
+    return false;
+  }
+
+  return !account.passwordHash;
+}
+
+export function markPasswordRequired(sub?: string): void {
+  const activeSub = sub ?? getAuthUser()?.sub;
+  if (!activeSub || !isBrowser()) {
+    return;
+  }
+
+  const store = readAccountsStore();
+  const account = store.bySub[activeSub];
+  if (!account) {
+    return;
+  }
+
+  store.bySub[activeSub] = {
+    ...account,
+    passwordRequired: true,
+  };
+  writeAccountsStore(store);
+}
+
+export async function setAccountPassword(
+  password: string,
+  sub?: string
+): Promise<void> {
+  const activeSub = sub ?? getAuthUser()?.sub;
+  if (!activeSub || !isBrowser()) {
+    throw new AuthConflictError("Sign in before setting a password.");
+  }
+
+  const store = readAccountsStore();
+  const account = store.bySub[activeSub];
+  if (!account) {
+    throw new AuthConflictError("Account not found.");
+  }
+
+  const passwordHash = await hashPassword(password, activeSub);
+
+  store.bySub[activeSub] = {
+    ...account,
+    passwordRequired: true,
+    passwordHash,
+  };
+  writeAccountsStore(store);
+}
+
+export async function verifyAccountPassword(
+  password: string,
+  sub?: string
+): Promise<boolean> {
+  const activeSub = sub ?? getAuthUser()?.sub;
+  if (!activeSub) {
+    return false;
+  }
+
+  const account = readAccountsStore().bySub[activeSub];
+  if (!account?.passwordHash) {
+    return false;
+  }
+
+  const passwordHash = await hashPassword(password, activeSub);
+  return passwordHash === account.passwordHash;
+}
+
+function persistSignedInSession(user: AuthUser): void {
+  if (!isBrowser()) {
+    return;
+  }
+
+  window.localStorage.setItem(STORAGE_KEY, "1");
+  window.localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
+  notifyAuthChange();
+}
+
+/**
+ * Registers an email account that still needs a password.
+ * Used by email sign-up; Google accounts do not call this.
+ */
+export function registerEmailAccount(email: string, name?: string): AuthUser {
+  const trimmedEmail = email.trim();
+  const normalized = normalizeEmail(trimmedEmail);
+
+  if (!trimmedEmail || !normalized.includes("@")) {
+    throw new AuthConflictError("Enter a valid email address.");
+  }
+
+  const store = readAccountsStore();
+  const existingSub = store.byEmail[normalized];
+  if (existingSub && store.bySub[existingSub]) {
+    throw new AuthConflictError("An account with this email already exists.");
+  }
+
+  const sub = `email:${normalized}`;
+  const user: AuthUser = {
+    sub,
+    email: trimmedEmail,
+    name: name?.trim() || trimmedEmail,
+    picture: "",
+  };
+
+  store.bySub[sub] = {
+    ...user,
+    createdAt: new Date().toISOString(),
+    profileComplete: false,
+    passwordRequired: true,
+  };
+  store.byEmail[normalized] = sub;
+  writeAccountsStore(store);
+  persistSignedInSession(user);
+
+  return user;
+}
+
+/** Signs in with email + password, or resumes setup when a password is still required. */
+export async function signInWithEmailPassword(
+  email: string,
+  password: string
+): Promise<AuthUser> {
+  const normalized = normalizeEmail(email.trim());
+  const store = readAccountsStore();
+  const sub = store.byEmail[normalized];
+  const account = sub ? store.bySub[sub] : null;
+
+  if (!account) {
+    throw new AuthConflictError(
+      "No account found for this email. Sign in with Google or create an account."
+    );
+  }
+
+  const user: AuthUser = {
+    sub: account.sub,
+    email: account.email,
+    name: account.name,
+    picture: account.picture,
+  };
+
+  if (!account.passwordHash) {
+    if (!account.passwordRequired) {
+      throw new AuthConflictError(
+        "This account uses Google sign-in. Continue with Google instead."
+      );
+    }
+
+    persistSignedInSession(user);
+    return user;
+  }
+
+  const isValid = await verifyAccountPassword(password, account.sub);
+  if (!isValid) {
+    throw new AuthConflictError("Incorrect password.");
+  }
+
+  persistSignedInSession(user);
+  return user;
+}
+
 /**
  * Registers or reuses a Google account, then persists the signed-in session.
  * Matches by Google `sub` first, then verified email — never creates duplicates.
@@ -284,6 +496,8 @@ export function completeGoogleSignIn(profile: GoogleUserProfile): {
       ...user,
       createdAt: existing?.createdAt ?? new Date().toISOString(),
       profileComplete,
+      passwordRequired: existing?.passwordRequired ?? false,
+      passwordHash: existing?.passwordHash,
     };
 
     if (profile.sub !== canonicalSub) {
