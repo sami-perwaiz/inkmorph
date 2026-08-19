@@ -45,5 +45,5 @@ export function SignInScreen() {
     return null;
   }
 
-  return <AuthScreen copy={SIGN_IN_COPY} />;
+  return <AuthScreen copy={SIGN_IN_COPY} variant="signin" />;
 }

@@ -54,7 +54,7 @@ function CancelDownloadButton({ onClick }: { onClick: () => void }) {
     <button
       type="button"
       onClick={onClick}
-      className="inline-flex h-[44px] shrink-0 cursor-pointer items-center gap-[10px] rounded-[6px] border border-solid border-[#EAEAEA] bg-white px-[10px] font-poppins text-[14px] font-normal leading-[16px] tracking-[-0.14px] text-black transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-900/30 focus-visible:ring-offset-2"
+      className="inline-flex shrink-0 cursor-pointer items-center gap-[10px] rounded-[6px] border border-solid border-[#EAEAEA] bg-white p-[9px] font-poppins text-[14px] font-normal leading-[16px] tracking-[-0.14px] text-black transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-900/30 focus-visible:ring-offset-2"
     >
       <Image
         src="/icons/close.svg"
@@ -77,7 +77,7 @@ function DownloadProgressGroup({ percent }: { percent: number }) {
 
   return (
     <div
-      className="flex h-5 w-[220px] shrink-0 items-center gap-[12px]"
+      className="flex h-5 w-[190px] shrink-0 items-center gap-3"
       role="progressbar"
       aria-valuenow={clampedProgress}
       aria-valuemin={0}
