@@ -1,5 +1,11 @@
 import { getApp, getApps, initializeApp, type FirebaseApp } from "firebase/app";
-import { getAuth, type Auth } from "firebase/auth";
+import {
+  browserLocalPersistence,
+  browserPopupRedirectResolver,
+  getAuth,
+  initializeAuth,
+  type Auth,
+} from "firebase/auth";
 
 export interface FirebasePublicConfig {
   apiKey: string;
@@ -67,7 +73,17 @@ export function getFirebaseAuth(): Auth {
   }
 
   if (!firebaseAuth) {
-    firebaseAuth = getAuth(getFirebaseApp());
+    const app = getFirebaseApp();
+    try {
+      // Firebase 12.17.x closes IndexedDB on visibilitychange during OAuth popups,
+      // throwing "Database is closing/hidden". localStorage persistence avoids that.
+      firebaseAuth = initializeAuth(app, {
+        persistence: browserLocalPersistence,
+        popupRedirectResolver: browserPopupRedirectResolver,
+      });
+    } catch {
+      firebaseAuth = getAuth(app);
+    }
   }
 
   return firebaseAuth;

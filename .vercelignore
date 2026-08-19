@@ -1,0 +1,6 @@
+source-images
+node_modules
+.next
+.git
+public/previews
+public/wallpapers/previews

@@ -4,6 +4,8 @@ import { useLayoutEffect, type ReactNode } from "react";
 
 import {
   AUTH_CHANGE_EVENT,
+  mapFirebaseUser,
+  migrateLegacyProfileCompletion,
   setAuthReadyState,
   syncAuthUserFromFirebase,
 } from "@/lib/authSession";
@@ -19,6 +21,9 @@ export function FirebaseAuthProvider({ children }: { children: ReactNode }) {
       const auth = getFirebaseAuth();
       unsubscribe = onAuthStateChanged(auth, (user) => {
         syncAuthUserFromFirebase(user);
+        if (user) {
+          migrateLegacyProfileCompletion(mapFirebaseUser(user));
+        }
         setAuthReadyState(true);
         window.dispatchEvent(new Event(AUTH_CHANGE_EVENT));
       });

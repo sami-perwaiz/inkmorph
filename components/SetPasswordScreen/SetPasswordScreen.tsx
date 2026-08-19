@@ -204,7 +204,8 @@ export function SetPasswordScreen() {
       try {
         await setAccountPassword(password);
 
-        if (needsProfileSetup(user)) {
+        const updatedUser = getAuthUser() ?? user;
+        if (needsProfileSetup(updatedUser)) {
           router.push(
             buildAuthFlowHref("/complete-profile", {
               setup: true,

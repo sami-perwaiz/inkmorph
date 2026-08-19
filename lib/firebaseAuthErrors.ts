@@ -38,6 +38,12 @@ export function mapFirebaseAuthError(error: unknown): AuthConflictError {
       return new AuthConflictError(
         "This sign-in method is not enabled for InkMorph yet."
       );
+    case "auth/provider-already-linked":
+      return new AuthConflictError("A password is already linked to this account.");
+    case "auth/requires-recent-login":
+      return new AuthConflictError(
+        "For security, sign out and sign in again before setting a password."
+      );
     default:
       break;
   }

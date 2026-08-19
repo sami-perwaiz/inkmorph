@@ -12,3 +12,4 @@ source-images
 public/previews/
 public/wallpapers/previews/
 lib/preview-manifest.json
+.env*

@@ -5,7 +5,16 @@ import { useEffect, useState } from "react";
 
 import { AuthScreen } from "@/components/AuthScreen/AuthScreen";
 import type { AuthScreenCopy } from "@/lib/authScreenTokens";
-import { AUTH_CHANGE_EVENT, isAuthReady, isSignedIn, resolveNextPath } from "@/lib/authSession";
+import {
+  AUTH_CHANGE_EVENT,
+  buildAuthFlowHref,
+  getAuthUser,
+  isAuthReady,
+  isSignedIn,
+  needsPasswordSetup,
+  needsProfileSetup,
+  resolveNextPath,
+} from "@/lib/authSession";
 
 /** Figma 40004799:9080 — Sign Up Screen */
 const SIGN_UP_COPY: AuthScreenCopy = {
@@ -31,7 +40,20 @@ export function SignUpScreen() {
       }
 
       if (isSignedIn()) {
-        router.replace(resolveNextPath(searchParams.get("next")));
+        const user = getAuthUser();
+        const next = searchParams.get("next");
+
+        if (user && needsPasswordSetup(user)) {
+          router.replace(buildAuthFlowHref("/set-password", { setup: true, next }));
+          return;
+        }
+
+        if (user && needsProfileSetup(user)) {
+          router.replace(buildAuthFlowHref("/complete-profile", { setup: true, next }));
+          return;
+        }
+
+        router.replace(resolveNextPath(next));
         return;
       }
 

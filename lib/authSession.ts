@@ -1,6 +1,8 @@
 import {
   createUserWithEmailAndPassword,
+  EmailAuthProvider,
   GoogleAuthProvider,
+  linkWithCredential,
   signInWithEmailAndPassword,
   signInWithPopup,
   signOut as firebaseSignOut,
@@ -167,15 +169,52 @@ export function markProfileComplete(sub?: string): void {
 }
 
 export function needsProfileSetup(user: AuthUser): boolean {
+  return !readProfileCompleteStore()[user.sub];
+}
+
+/** One-time migration for profiles saved before completion tracking existed. */
+export function migrateLegacyProfileCompletion(user: AuthUser): void {
   if (readProfileCompleteStore()[user.sub]) {
+    return;
+  }
+
+  if (hasCompletedProfile(user.sub)) {
+    markProfileComplete(user.sub);
+  }
+}
+
+function getFirebaseUserForAuthUser(user: AuthUser): User | null {
+  if (!isBrowser() || !authReady) {
+    return null;
+  }
+
+  const firebaseUser = tryGetFirebaseAuth()?.currentUser;
+  if (!firebaseUser || firebaseUser.uid !== user.sub) {
+    return null;
+  }
+
+  return firebaseUser;
+}
+
+function userHasPasswordProvider(firebaseUser: User): boolean {
+  return firebaseUser.providerData.some(
+    (provider) => provider.providerId === "password"
+  );
+}
+
+export function needsPasswordSetup(user: AuthUser): boolean {
+  const firebaseUser = getFirebaseUserForAuthUser(user);
+  if (!firebaseUser) {
     return false;
   }
 
-  return !hasCompletedProfile(user.sub);
-}
+  if (userHasPasswordProvider(firebaseUser)) {
+    return false;
+  }
 
-export function needsPasswordSetup(_user: AuthUser): boolean {
-  return false;
+  return firebaseUser.providerData.some(
+    (provider) => provider.providerId === "google.com"
+  );
 }
 
 export async function setAccountPassword(password: string): Promise<void> {
@@ -184,8 +223,24 @@ export async function setAccountPassword(password: string): Promise<void> {
     throw new AuthConflictError("Sign in before setting a password.");
   }
 
+  const email = firebaseUser.email?.trim();
+  if (!email) {
+    throw new AuthConflictError(
+      "Your account must include a verified email address to set a password."
+    );
+  }
+
   try {
-    await updatePassword(firebaseUser, password);
+    if (userHasPasswordProvider(firebaseUser)) {
+      await updatePassword(firebaseUser, password);
+    } else {
+      const credential = EmailAuthProvider.credential(email, password);
+      await linkWithCredential(firebaseUser, credential);
+    }
+
+    await firebaseUser.reload();
+    cachedUser = mapFirebaseUser(firebaseUser);
+    notifyAuthChange();
   } catch (error) {
     throw mapFirebaseAuthError(error);
   }
@@ -253,14 +308,9 @@ export async function signInWithGoogle(): Promise<{
     cachedUser = user;
     const isNewAccount = additional?.isNewUser ?? false;
 
-    if (isNewAccount) {
-      writeUserProfile(
-        {
-          fullName: user.name,
-          ...(user.picture ? { avatarSrc: user.picture } : {}),
-        },
-        user.sub
-      );
+    if (isNewAccount && user.picture) {
+      // Seed avatar only — Complete Profile collects/confirms the display name.
+      writeUserProfile({ avatarSrc: user.picture }, user.sub);
     }
 
     notifyAuthChange();
