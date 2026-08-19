@@ -216,12 +216,45 @@ function acquireSignInLock(): () => void {
   );
 }
 
-export function isSignedIn(): boolean {
+export function getAuthUser(): AuthUser | null {
   if (!isBrowser()) {
-    return false;
+    return null;
   }
 
-  return window.localStorage.getItem(STORAGE_KEY) === "1";
+  if (window.localStorage.getItem(STORAGE_KEY) !== "1") {
+    return null;
+  }
+
+  try {
+    const raw = window.localStorage.getItem(USER_STORAGE_KEY);
+    if (!raw) {
+      return null;
+    }
+    const parsed = JSON.parse(raw) as Partial<AuthUser>;
+    if (!parsed.sub || !parsed.email) {
+      return null;
+    }
+
+    const user: AuthUser = {
+      sub: parsed.sub,
+      email: parsed.email,
+      name: typeof parsed.name === "string" ? parsed.name : parsed.email,
+      picture: typeof parsed.picture === "string" ? parsed.picture : "",
+    };
+
+    const account = readAccountsStore().bySub[user.sub];
+    if (!account) {
+      return null;
+    }
+
+    return user;
+  } catch {
+    return null;
+  }
+}
+
+export function isSignedIn(): boolean {
+  return getAuthUser() !== null;
 }
 
 /** True when at least one Google account has been registered on this device. */
@@ -238,31 +271,6 @@ export function getAuthEntryHref(nextPath?: string | null): string {
   }
 
   return `${base}?next=${encodeURIComponent(nextPath)}`;
-}
-
-export function getAuthUser(): AuthUser | null {
-  if (!isBrowser() || !isSignedIn()) {
-    return null;
-  }
-
-  try {
-    const raw = window.localStorage.getItem(USER_STORAGE_KEY);
-    if (!raw) {
-      return null;
-    }
-    const parsed = JSON.parse(raw) as Partial<AuthUser>;
-    if (!parsed.sub || !parsed.email) {
-      return null;
-    }
-    return {
-      sub: parsed.sub,
-      email: parsed.email,
-      name: typeof parsed.name === "string" ? parsed.name : parsed.email,
-      picture: typeof parsed.picture === "string" ? parsed.picture : "",
-    };
-  } catch {
-    return null;
-  }
 }
 
 export function markProfileComplete(sub?: string): void {
