@@ -1,21 +1,26 @@
+import { signOut as firebaseSignOut } from "firebase/auth";
+
 import { AUTH_CHANGE_EVENT } from "@/lib/authSession";
+import { getFirebaseAuth } from "@/lib/firebase";
 import { PREMIUM_CHANGE_EVENT } from "@/lib/premiumAccess";
 
-/** Bump to wipe all client auth/account/premium state on next visit. */
-export const AUTH_STORAGE_VERSION = 2;
+/** Bump to wipe legacy client auth/account/premium state on next visit. */
+export const AUTH_STORAGE_VERSION = 3;
 
 const VERSION_KEY = "inkmorph-auth-storage-version";
 
-const LOCAL_STORAGE_KEYS = [
+/** Legacy keys from the pre-Firebase local account registry. */
+const LEGACY_LOCAL_STORAGE_KEYS = [
   "inkmorph-signed-in",
   "inkmorph-auth-user",
   "inkmorph-google-accounts",
   "inkmorph-user-profiles-by-sub",
   "inkmorph-user-profile",
   "inkmorph-mock-purchases",
+  "inkmorph-profile-complete-by-sub",
 ] as const;
 
-const SESSION_STORAGE_KEYS = [
+const LEGACY_SESSION_STORAGE_KEYS = [
   "inkmorph-google-access-token",
   "inkmorph-google-signin-lock",
   "inkmorph-mock-checkout-draft",
@@ -25,18 +30,24 @@ function isBrowser(): boolean {
   return typeof window !== "undefined";
 }
 
-/** Removes every InkMorph auth, profile, and mock purchase record from the browser. */
+/** Removes legacy InkMorph auth/profile/purchase records from the browser. */
 export function clearAllInkMorphClientAuthState(): void {
   if (!isBrowser()) {
     return;
   }
 
-  for (const key of LOCAL_STORAGE_KEYS) {
+  for (const key of LEGACY_LOCAL_STORAGE_KEYS) {
     window.localStorage.removeItem(key);
   }
 
-  for (const key of SESSION_STORAGE_KEYS) {
+  for (const key of LEGACY_SESSION_STORAGE_KEYS) {
     window.sessionStorage.removeItem(key);
+  }
+
+  try {
+    void firebaseSignOut(getFirebaseAuth());
+  } catch {
+    // Firebase may not be configured during tests.
   }
 
   void fetch("/api/downloads/premium", { method: "DELETE" }).catch(() => {});
@@ -53,7 +64,7 @@ function notifyClientStateReset(): void {
 }
 
 /**
- * Clears legacy test/seeded auth when the storage version changes.
+ * Clears legacy local auth storage when the storage version changes.
  * Returns true when a reset was applied.
  */
 export function ensureFreshAuthStorage(): boolean {

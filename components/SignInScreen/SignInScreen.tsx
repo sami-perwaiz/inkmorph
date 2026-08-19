@@ -6,8 +6,10 @@ import { useEffect, useState } from "react";
 import { AuthScreen } from "@/components/AuthScreen/AuthScreen";
 import type { AuthScreenCopy } from "@/lib/authScreenTokens";
 import {
+  AUTH_CHANGE_EVENT,
   buildAuthFlowHref,
   getAuthUser,
+  isAuthReady,
   isSignedIn,
   needsPasswordSetup,
   needsProfileSetup,
@@ -32,25 +34,35 @@ export function SignInScreen() {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    if (isSignedIn()) {
-      const user = getAuthUser();
-      const next = searchParams.get("next");
-
-      if (user && needsPasswordSetup(user)) {
-        router.replace(buildAuthFlowHref("/set-password", { setup: true, next }));
+    const evaluate = () => {
+      if (!isAuthReady()) {
         return;
       }
 
-      if (user && needsProfileSetup(user)) {
-        router.replace(buildAuthFlowHref("/complete-profile", { setup: true, next }));
+      if (isSignedIn()) {
+        const user = getAuthUser();
+        const next = searchParams.get("next");
+
+        if (user && needsPasswordSetup(user)) {
+          router.replace(buildAuthFlowHref("/set-password", { setup: true, next }));
+          return;
+        }
+
+        if (user && needsProfileSetup(user)) {
+          router.replace(buildAuthFlowHref("/complete-profile", { setup: true, next }));
+          return;
+        }
+
+        router.replace(resolveNextPath(next));
         return;
       }
 
-      router.replace(resolveNextPath(next));
-      return;
-    }
+      setReady(true);
+    };
 
-    setReady(true);
+    evaluate();
+    window.addEventListener(AUTH_CHANGE_EVENT, evaluate);
+    return () => window.removeEventListener(AUTH_CHANGE_EVENT, evaluate);
   }, [router, searchParams]);
 
   if (!ready) {

@@ -1,14 +1,18 @@
 import {
-  revokeGoogleAccess,
-  type GoogleUserProfile,
-} from "@/lib/googleAuth";
-import { hasCompletedProfile, writeUserProfile } from "@/lib/userProfile";
+  createUserWithEmailAndPassword,
+  GoogleAuthProvider,
+  signInWithEmailAndPassword,
+  signInWithPopup,
+  signOut as firebaseSignOut,
+  updatePassword,
+  getAdditionalUserInfo,
+  type User,
+} from "firebase/auth";
 
-const STORAGE_KEY = "inkmorph-signed-in";
-const USER_STORAGE_KEY = "inkmorph-auth-user";
-const ACCOUNTS_STORAGE_KEY = "inkmorph-google-accounts";
-const SIGN_IN_LOCK_KEY = "inkmorph-google-signin-lock";
-export const AUTH_CHANGE_EVENT = "inkmorph-auth-change";
+import { AuthConflictError } from "@/lib/authErrors";
+import { getFirebaseAuth, tryGetFirebaseAuth } from "@/lib/firebase";
+import { mapFirebaseAuthError } from "@/lib/firebaseAuthErrors";
+import { hasCompletedProfile, writeUserProfile } from "@/lib/userProfile";
 
 export interface AuthUser {
   sub: string;
@@ -17,25 +21,12 @@ export interface AuthUser {
   picture: string;
 }
 
-interface StoredAccount extends AuthUser {
-  createdAt: string;
-  profileComplete: boolean;
-  /** When true, user must set a password before continuing. Google-only accounts stay false. */
-  passwordRequired: boolean;
-  passwordHash?: string;
-}
+export const AUTH_CHANGE_EVENT = "inkmorph-auth-change";
 
-interface AccountsStore {
-  bySub: Record<string, StoredAccount>;
-  byEmail: Record<string, string>;
-}
+const PROFILE_COMPLETE_STORAGE_KEY = "inkmorph-profile-complete-by-sub";
 
-export class AuthConflictError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "AuthConflictError";
-  }
-}
+let cachedUser: AuthUser | null = null;
+let authReady = false;
 
 function isBrowser(): boolean {
   return typeof window !== "undefined";
@@ -45,21 +36,63 @@ function notifyAuthChange(): void {
   if (!isBrowser()) {
     return;
   }
+
   window.dispatchEvent(new Event(AUTH_CHANGE_EVENT));
 }
 
-function normalizeEmail(email: string): string {
-  return email.trim().toLowerCase();
+export function mapFirebaseUser(user: User): AuthUser {
+  return {
+    sub: user.uid,
+    email: user.email ?? "",
+    name: user.displayName ?? user.email ?? "",
+    picture: user.photoURL ?? "",
+  };
 }
 
-async function hashPassword(password: string, sub: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(`${sub}:${password}`);
-  const digest = await crypto.subtle.digest("SHA-256", data);
+export function syncAuthUserFromFirebase(user: User | null): void {
+  cachedUser = user ? mapFirebaseUser(user) : null;
+}
 
-  return Array.from(new Uint8Array(digest))
-    .map((byte) => byte.toString(16).padStart(2, "0"))
-    .join("");
+export function setAuthReadyState(ready: boolean): void {
+  authReady = ready;
+}
+
+export function isAuthReady(): boolean {
+  return authReady;
+}
+
+function readProfileCompleteStore(): Record<string, boolean> {
+  if (!isBrowser()) {
+    return {};
+  }
+
+  try {
+    const raw = window.localStorage.getItem(PROFILE_COMPLETE_STORAGE_KEY);
+    if (!raw) {
+      return {};
+    }
+
+    const parsed = JSON.parse(raw) as Record<string, unknown>;
+    const store: Record<string, boolean> = {};
+
+    for (const [sub, value] of Object.entries(parsed)) {
+      if (value === true) {
+        store[sub] = true;
+      }
+    }
+
+    return store;
+  } catch {
+    return {};
+  }
+}
+
+function writeProfileCompleteStore(store: Record<string, boolean>): void {
+  if (!isBrowser()) {
+    return;
+  }
+
+  window.localStorage.setItem(PROFILE_COMPLETE_STORAGE_KEY, JSON.stringify(store));
 }
 
 export function resolveNextPath(raw: string | null): string {
@@ -89,180 +122,29 @@ export function buildAuthFlowHref(
   return query ? `${path}?${query}` : path;
 }
 
-function migrateAccountsStore(raw: Partial<AccountsStore>): AccountsStore {
-  const bySub: Record<string, StoredAccount> = {};
-  const byEmail: Record<string, string> = {};
-
-  if (raw.bySub && typeof raw.bySub === "object") {
-    for (const [sub, account] of Object.entries(raw.bySub)) {
-      if (!account?.sub || !account.email) {
-        continue;
-      }
-
-      const stored: StoredAccount = {
-        sub: account.sub,
-        email: account.email,
-        name: typeof account.name === "string" ? account.name : account.email,
-        picture: typeof account.picture === "string" ? account.picture : "",
-        createdAt:
-          typeof account.createdAt === "string"
-            ? account.createdAt
-            : new Date().toISOString(),
-        profileComplete:
-          typeof account.profileComplete === "boolean"
-            ? account.profileComplete
-            : hasCompletedProfile(account.sub),
-        passwordRequired:
-          typeof account.passwordRequired === "boolean"
-            ? account.passwordRequired
-            : false,
-        passwordHash:
-          typeof account.passwordHash === "string"
-            ? account.passwordHash
-            : undefined,
-      };
-
-      bySub[sub] = stored;
-      byEmail[normalizeEmail(stored.email)] = stored.sub;
-    }
-  }
-
-  if (raw.byEmail && typeof raw.byEmail === "object") {
-    for (const [email, sub] of Object.entries(raw.byEmail)) {
-      if (typeof sub === "string" && bySub[sub]) {
-        byEmail[normalizeEmail(email)] = sub;
-      }
-    }
-  }
-
-  return { bySub, byEmail };
-}
-
-function readAccountsStore(): AccountsStore {
-  if (!isBrowser()) {
-    return { bySub: {}, byEmail: {} };
-  }
-
-  try {
-    const raw = window.localStorage.getItem(ACCOUNTS_STORAGE_KEY);
-    if (!raw) {
-      return { bySub: {}, byEmail: {} };
-    }
-
-    return migrateAccountsStore(JSON.parse(raw) as Partial<AccountsStore>);
-  } catch {
-    return { bySub: {}, byEmail: {} };
-  }
-}
-
-function writeAccountsStore(store: AccountsStore): void {
-  if (!isBrowser()) {
-    return;
-  }
-  window.localStorage.setItem(ACCOUNTS_STORAGE_KEY, JSON.stringify(store));
-}
-
-function toAuthUser(profile: GoogleUserProfile): AuthUser {
-  return {
-    sub: profile.sub,
-    email: profile.email,
-    name: profile.name,
-    picture: profile.picture,
-  };
-}
-
-function findExistingAccount(
-  profile: GoogleUserProfile,
-  store: AccountsStore
-): StoredAccount | null {
-  const bySub = store.bySub[profile.sub];
-  if (bySub) {
-    return bySub;
-  }
-
-  const emailKey = normalizeEmail(profile.email);
-  const linkedSub = store.byEmail[emailKey];
-  if (!linkedSub) {
-    return null;
-  }
-
-  return store.bySub[linkedSub] ?? null;
-}
-
-function acquireSignInLock(): () => void {
-  if (!isBrowser()) {
-    return () => undefined;
-  }
-
-  const lockId = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-  const deadline = Date.now() + 3000;
-
-  while (Date.now() < deadline) {
-    const current = window.sessionStorage.getItem(SIGN_IN_LOCK_KEY);
-    if (!current) {
-      window.sessionStorage.setItem(SIGN_IN_LOCK_KEY, lockId);
-      if (window.sessionStorage.getItem(SIGN_IN_LOCK_KEY) === lockId) {
-        return () => {
-          if (window.sessionStorage.getItem(SIGN_IN_LOCK_KEY) === lockId) {
-            window.sessionStorage.removeItem(SIGN_IN_LOCK_KEY);
-          }
-        };
-      }
-    }
-  }
-
-  throw new AuthConflictError(
-    "Another sign-in is already in progress. Please try again."
-  );
-}
-
 export function getAuthUser(): AuthUser | null {
-  if (!isBrowser()) {
+  if (!isBrowser() || !authReady) {
     return null;
   }
 
-  if (window.localStorage.getItem(STORAGE_KEY) !== "1") {
+  const auth = tryGetFirebaseAuth();
+  if (!auth) {
     return null;
   }
 
-  try {
-    const raw = window.localStorage.getItem(USER_STORAGE_KEY);
-    if (!raw) {
-      return null;
-    }
-    const parsed = JSON.parse(raw) as Partial<AuthUser>;
-    if (!parsed.sub || !parsed.email) {
-      return null;
-    }
-
-    const user: AuthUser = {
-      sub: parsed.sub,
-      email: parsed.email,
-      name: typeof parsed.name === "string" ? parsed.name : parsed.email,
-      picture: typeof parsed.picture === "string" ? parsed.picture : "",
-    };
-
-    const account = readAccountsStore().bySub[user.sub];
-    if (!account) {
-      return null;
-    }
-
-    return user;
-  } catch {
-    return null;
+  const current = auth.currentUser;
+  if (current) {
+    cachedUser = mapFirebaseUser(current);
+    return cachedUser;
   }
+
+  return cachedUser;
 }
 
 export function isSignedIn(): boolean {
   return getAuthUser() !== null;
 }
 
-/** True when at least one Google account has been registered on this device. */
-export function hasRegisteredAccounts(): boolean {
-  return Object.keys(readAccountsStore().bySub).length > 0;
-}
-
-/** Unified auth entry — Google handles both new and returning users. */
 export function getAuthEntryHref(nextPath?: string | null): string {
   const base = "/signin";
 
@@ -279,248 +161,97 @@ export function markProfileComplete(sub?: string): void {
     return;
   }
 
-  const store = readAccountsStore();
-  const account = store.bySub[activeSub];
-  if (!account) {
-    return;
-  }
-
-  store.bySub[activeSub] = {
-    ...account,
-    profileComplete: true,
-  };
-  writeAccountsStore(store);
+  const store = readProfileCompleteStore();
+  store[activeSub] = true;
+  writeProfileCompleteStore(store);
 }
 
 export function needsProfileSetup(user: AuthUser): boolean {
-  const store = readAccountsStore();
-  const account = store.bySub[user.sub];
-  if (account?.profileComplete) {
+  if (readProfileCompleteStore()[user.sub]) {
     return false;
   }
 
   return !hasCompletedProfile(user.sub);
 }
 
-export function needsPasswordSetup(user: AuthUser): boolean {
-  const store = readAccountsStore();
-  const account = store.bySub[user.sub];
-  if (!account?.passwordRequired) {
-    return false;
-  }
-
-  return !account.passwordHash;
+export function needsPasswordSetup(_user: AuthUser): boolean {
+  return false;
 }
 
-export function markPasswordRequired(sub?: string): void {
-  const activeSub = sub ?? getAuthUser()?.sub;
-  if (!activeSub || !isBrowser()) {
-    return;
-  }
-
-  const store = readAccountsStore();
-  const account = store.bySub[activeSub];
-  if (!account) {
-    return;
-  }
-
-  store.bySub[activeSub] = {
-    ...account,
-    passwordRequired: true,
-  };
-  writeAccountsStore(store);
-}
-
-export async function setAccountPassword(
-  password: string,
-  sub?: string
-): Promise<void> {
-  const activeSub = sub ?? getAuthUser()?.sub;
-  if (!activeSub || !isBrowser()) {
+export async function setAccountPassword(password: string): Promise<void> {
+  const firebaseUser = getFirebaseAuth().currentUser;
+  if (!firebaseUser) {
     throw new AuthConflictError("Sign in before setting a password.");
   }
 
-  const store = readAccountsStore();
-  const account = store.bySub[activeSub];
-  if (!account) {
-    throw new AuthConflictError("Account not found.");
+  try {
+    await updatePassword(firebaseUser, password);
+  } catch (error) {
+    throw mapFirebaseAuthError(error);
   }
-
-  const passwordHash = await hashPassword(password, activeSub);
-
-  store.bySub[activeSub] = {
-    ...account,
-    passwordRequired: true,
-    passwordHash,
-  };
-  writeAccountsStore(store);
 }
 
-export async function verifyAccountPassword(
-  password: string,
-  sub?: string
-): Promise<boolean> {
-  const activeSub = sub ?? getAuthUser()?.sub;
-  if (!activeSub) {
-    return false;
-  }
-
-  const account = readAccountsStore().bySub[activeSub];
-  if (!account?.passwordHash) {
-    return false;
-  }
-
-  const passwordHash = await hashPassword(password, activeSub);
-  return passwordHash === account.passwordHash;
-}
-
-function persistSignedInSession(user: AuthUser): void {
-  if (!isBrowser()) {
-    return;
-  }
-
-  window.localStorage.setItem(STORAGE_KEY, "1");
-  window.localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
-  notifyAuthChange();
-}
-
-/**
- * Registers an email account that still needs a password.
- * Used by email sign-up; Google accounts do not call this.
- */
-export function registerEmailAccount(email: string, name?: string): AuthUser {
-  const trimmedEmail = email.trim();
-  const normalized = normalizeEmail(trimmedEmail);
-
-  if (!trimmedEmail || !normalized.includes("@")) {
-    throw new AuthConflictError("Enter a valid email address.");
-  }
-
-  const store = readAccountsStore();
-  const existingSub = store.byEmail[normalized];
-  if (existingSub && store.bySub[existingSub]) {
-    throw new AuthConflictError("An account with this email already exists.");
-  }
-
-  const sub = `email:${normalized}`;
-  const user: AuthUser = {
-    sub,
-    email: trimmedEmail,
-    name: name?.trim() || trimmedEmail,
-    picture: "",
-  };
-
-  store.bySub[sub] = {
-    ...user,
-    createdAt: new Date().toISOString(),
-    profileComplete: false,
-    passwordRequired: true,
-  };
-  store.byEmail[normalized] = sub;
-  writeAccountsStore(store);
-  persistSignedInSession(user);
-
-  return user;
-}
-
-/** Signs in with email + password, or resumes setup when a password is still required. */
 export async function signInWithEmailPassword(
   email: string,
   password: string
 ): Promise<AuthUser> {
-  const normalized = normalizeEmail(email.trim());
-  const store = readAccountsStore();
-  const sub = store.byEmail[normalized];
-  const account = sub ? store.bySub[sub] : null;
-
-  if (!account) {
-    throw new AuthConflictError(
-      "No account found for this email. Sign in with Google or create an account."
+  try {
+    const credential = await signInWithEmailAndPassword(
+      getFirebaseAuth(),
+      email.trim(),
+      password
     );
-  }
-
-  const user: AuthUser = {
-    sub: account.sub,
-    email: account.email,
-    name: account.name,
-    picture: account.picture,
-  };
-
-  if (!account.passwordHash) {
-    if (!account.passwordRequired) {
-      throw new AuthConflictError(
-        "This account uses Google sign-in. Continue with Google instead."
-      );
-    }
-
-    persistSignedInSession(user);
+    const user = mapFirebaseUser(credential.user);
+    cachedUser = user;
+    notifyAuthChange();
     return user;
+  } catch (error) {
+    throw mapFirebaseAuthError(error);
   }
-
-  const isValid = await verifyAccountPassword(password, account.sub);
-  if (!isValid) {
-    throw new AuthConflictError("Incorrect password.");
-  }
-
-  persistSignedInSession(user);
-  return user;
 }
 
-/**
- * Registers or reuses a Google account, then persists the signed-in session.
- * Matches by Google `sub` first, then verified email — never creates duplicates.
- */
-export function completeGoogleSignIn(profile: GoogleUserProfile): {
+export async function registerEmailAccount(
+  email: string,
+  password: string,
+  name?: string
+): Promise<AuthUser> {
+  try {
+    const credential = await createUserWithEmailAndPassword(
+      getFirebaseAuth(),
+      email.trim(),
+      password
+    );
+
+    const user = mapFirebaseUser(credential.user);
+    cachedUser = user;
+
+    writeUserProfile(
+      {
+        fullName: name?.trim() || user.name,
+      },
+      user.sub
+    );
+
+    notifyAuthChange();
+    return user;
+  } catch (error) {
+    throw mapFirebaseAuthError(error);
+  }
+}
+
+export async function signInWithGoogle(): Promise<{
   user: AuthUser;
   isNewAccount: boolean;
-} {
-  if (!profile.sub?.trim()) {
-    throw new AuthConflictError("Google account is missing a user identifier.");
-  }
-
-  if (!profile.email?.trim()) {
-    throw new AuthConflictError(
-      "Google account does not include a usable email address."
-    );
-  }
-
-  const releaseLock = acquireSignInLock();
-
+}> {
   try {
-    const store = readAccountsStore();
-    const existing = findExistingAccount(profile, store);
-    const isNewAccount = !existing;
+    const provider = new GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: "select_account" });
 
-    const canonicalSub = existing?.sub ?? profile.sub;
-    const user: AuthUser = {
-      ...toAuthUser(profile),
-      sub: canonicalSub,
-    };
-
-    const profileComplete =
-      existing?.profileComplete ?? hasCompletedProfile(canonicalSub);
-
-    store.bySub[canonicalSub] = {
-      ...user,
-      createdAt: existing?.createdAt ?? new Date().toISOString(),
-      profileComplete,
-      passwordRequired: existing?.passwordRequired ?? false,
-      passwordHash: existing?.passwordHash,
-    };
-
-    if (profile.sub !== canonicalSub) {
-      delete store.bySub[profile.sub];
-    }
-
-    store.byEmail[normalizeEmail(user.email)] = canonicalSub;
-    writeAccountsStore(store);
-
-    if (!isBrowser()) {
-      return { user, isNewAccount };
-    }
-
-    window.localStorage.setItem(STORAGE_KEY, "1");
-    window.localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
+    const result = await signInWithPopup(getFirebaseAuth(), provider);
+    const additional = getAdditionalUserInfo(result);
+    const user = mapFirebaseUser(result.user);
+    cachedUser = user;
+    const isNewAccount = additional?.isNewUser ?? false;
 
     if (isNewAccount) {
       writeUserProfile(
@@ -528,43 +259,46 @@ export function completeGoogleSignIn(profile: GoogleUserProfile): {
           fullName: user.name,
           ...(user.picture ? { avatarSrc: user.picture } : {}),
         },
-        canonicalSub
+        user.sub
       );
     }
 
     notifyAuthChange();
     return { user, isNewAccount };
-  } finally {
-    releaseLock();
+  } catch (error) {
+    throw mapFirebaseAuthError(error);
   }
 }
 
-/** @deprecated Prefer completeGoogleSignIn / signOut — kept for existing call sites. */
+/** @deprecated Prefer Firebase signOut — kept for existing call sites. */
 export function setSignedIn(value: boolean): void {
-  if (!isBrowser()) {
-    return;
+  if (!value) {
+    void signOut();
   }
-
-  if (value) {
-    window.localStorage.setItem(STORAGE_KEY, "1");
-  } else {
-    signOut();
-    return;
-  }
-
-  notifyAuthChange();
 }
 
-/** Ends the authenticated session and revokes the Google access token when possible. */
 export function signOut(): void {
   if (!isBrowser()) {
     return;
   }
 
-  revokeGoogleAccess();
-  window.localStorage.removeItem(STORAGE_KEY);
-  window.localStorage.removeItem(USER_STORAGE_KEY);
-  void fetch("/api/downloads/premium", { method: "DELETE" }).catch(() => {});
-  void fetch("/api/downloads/session", { method: "DELETE" }).catch(() => {});
-  notifyAuthChange();
+  cachedUser = null;
+
+  const auth = tryGetFirebaseAuth();
+  if (!auth) {
+    void fetch("/api/downloads/premium", { method: "DELETE" }).catch(() => {});
+    void fetch("/api/downloads/session", { method: "DELETE" }).catch(() => {});
+    notifyAuthChange();
+    return;
+  }
+
+  void firebaseSignOut(auth)
+    .catch(() => undefined)
+    .finally(() => {
+      void fetch("/api/downloads/premium", { method: "DELETE" }).catch(() => {});
+      void fetch("/api/downloads/session", { method: "DELETE" }).catch(() => {});
+      notifyAuthChange();
+    });
 }
+
+export { AuthConflictError } from "@/lib/authErrors";

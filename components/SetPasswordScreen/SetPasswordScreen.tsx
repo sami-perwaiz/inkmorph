@@ -16,9 +16,11 @@ import { BackButton } from "@/components/BackButton/BackButton";
 import { InkMorphLogo } from "@/components/InkMorphLogo/InkMorphLogo";
 import { AUTH_SCREEN } from "@/lib/authScreenTokens";
 import {
+  AUTH_CHANGE_EVENT,
   buildAuthFlowHref,
   getAuthEntryHref,
   getAuthUser,
+  isAuthReady,
   isSignedIn,
   needsPasswordSetup,
   needsProfileSetup,
@@ -124,33 +126,43 @@ export function SetPasswordScreen() {
   const nextPath = resolveNextPath(searchParams.get("next"));
 
   useEffect(() => {
-    if (!isSignedIn()) {
-      router.replace(getAuthEntryHref(buildAuthFlowHref("/set-password", { next: nextPath })));
-      return;
-    }
-
-    const user = getAuthUser();
-    if (!user) {
-      router.replace(getAuthEntryHref(buildAuthFlowHref("/set-password", { next: nextPath })));
-      return;
-    }
-
-    if (!needsPasswordSetup(user)) {
-      if (needsProfileSetup(user)) {
-        router.replace(
-          buildAuthFlowHref("/complete-profile", {
-            setup: true,
-            next: nextPath,
-          })
-        );
+    const evaluate = () => {
+      if (!isAuthReady()) {
         return;
       }
 
-      router.replace(nextPath);
-      return;
-    }
+      if (!isSignedIn()) {
+        router.replace(getAuthEntryHref(buildAuthFlowHref("/set-password", { next: nextPath })));
+        return;
+      }
 
-    setReady(true);
+      const user = getAuthUser();
+      if (!user) {
+        router.replace(getAuthEntryHref(buildAuthFlowHref("/set-password", { next: nextPath })));
+        return;
+      }
+
+      if (!needsPasswordSetup(user)) {
+        if (needsProfileSetup(user)) {
+          router.replace(
+            buildAuthFlowHref("/complete-profile", {
+              setup: true,
+              next: nextPath,
+            })
+          );
+          return;
+        }
+
+        router.replace(nextPath);
+        return;
+      }
+
+      setReady(true);
+    };
+
+    evaluate();
+    window.addEventListener(AUTH_CHANGE_EVENT, evaluate);
+    return () => window.removeEventListener(AUTH_CHANGE_EVENT, evaluate);
   }, [nextPath, router]);
 
   const handleSubmit = useCallback(
@@ -190,7 +202,7 @@ export function SetPasswordScreen() {
       setSubmitError(null);
 
       try {
-        await setAccountPassword(password, user.sub);
+        await setAccountPassword(password);
 
         if (needsProfileSetup(user)) {
           router.push(

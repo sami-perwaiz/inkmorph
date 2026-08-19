@@ -16,13 +16,12 @@ import {
 import {
   AuthConflictError,
   buildAuthFlowHref,
-  completeGoogleSignIn,
   needsPasswordSetup,
   needsProfileSetup,
   resolveNextPath,
   signInWithEmailPassword,
+  signInWithGoogle,
 } from "@/lib/authSession";
-import { signInWithGoogle } from "@/lib/googleAuth";
 
 export type AuthScreenVariant = "signin" | "signup";
 
@@ -168,8 +167,8 @@ function resolveAuthErrorMessage(error: unknown): string | null {
     return null;
   }
 
-  if (/GOOGLE_CLIENT_ID|Client ID/i.test(message)) {
-    return "Google sign-in is not configured yet. Add NEXT_PUBLIC_GOOGLE_CLIENT_ID and redeploy.";
+  if (/GOOGLE_CLIENT_ID|Client ID|Firebase configuration|NEXT_PUBLIC_FIREBASE/i.test(message)) {
+    return "Authentication is not configured yet. Add Firebase environment variables and redeploy.";
   }
 
   if (error instanceof AuthConflictError) {
@@ -213,8 +212,7 @@ export function AuthScreen({ copy, variant = "signup" }: AuthScreenProps) {
     setAuthError(null);
 
     try {
-      const googleProfile = await signInWithGoogle();
-      const { user, isNewAccount } = completeGoogleSignIn(googleProfile);
+      const { user, isNewAccount } = await signInWithGoogle();
       const next = searchParams.get("next");
 
       const destination = needsPasswordSetup(user)

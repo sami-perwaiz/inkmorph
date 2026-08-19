@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { CheckoutPageShell } from "@/components/Checkout/CheckoutPageShell";
-import { getAuthEntryHref, isSignedIn } from "@/lib/authSession";
+import { getAuthEntryHref, isAuthReady, isSignedIn } from "@/lib/authSession";
 import { isPaidCheckoutPlan } from "@/lib/checkoutForm";
 import { CHECKOUT } from "@/lib/checkoutTokens";
 import { getMockPurchase, type MockPurchaseRecord } from "@/lib/mockCheckout";
@@ -31,6 +31,10 @@ export function CheckoutSuccessScreen() {
   const [purchase, setPurchase] = useState<MockPurchaseRecord | null>(null);
 
   useEffect(() => {
+    if (!isAuthReady()) {
+      return;
+    }
+
     if (!isSignedIn()) {
       const returnPath = planId
         ? `/checkout/success?plan=${encodeURIComponent(planId)}`

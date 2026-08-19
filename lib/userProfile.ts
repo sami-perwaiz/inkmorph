@@ -1,3 +1,5 @@
+import { tryGetFirebaseAuth } from "@/lib/firebase";
+
 const PROFILES_STORAGE_KEY = "inkmorph-user-profiles-by-sub";
 const LEGACY_PROFILE_KEY = "inkmorph-user-profile";
 export const PROFILE_CHANGE_EVENT = "inkmorph-profile-change";
@@ -19,18 +21,12 @@ function isBrowser(): boolean {
 }
 
 function getActiveUserSub(): string | null {
-  if (!isBrowser() || window.localStorage.getItem("inkmorph-signed-in") !== "1") {
+  if (!isBrowser()) {
     return null;
   }
 
   try {
-    const raw = window.localStorage.getItem("inkmorph-auth-user");
-    if (!raw) {
-      return null;
-    }
-
-    const parsed = JSON.parse(raw) as { sub?: string };
-    return typeof parsed.sub === "string" ? parsed.sub : null;
+    return tryGetFirebaseAuth()?.currentUser?.uid ?? null;
   } catch {
     return null;
   }

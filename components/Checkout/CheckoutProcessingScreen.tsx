@@ -7,7 +7,7 @@ import { useEffect } from "react";
 
 import { CheckoutPageShell } from "@/components/Checkout/CheckoutPageShell";
 import { LockIcon } from "@/components/icons/ActionIcons";
-import { getAuthEntryHref, isSignedIn } from "@/lib/authSession";
+import { getAuthEntryHref, isAuthReady, isSignedIn } from "@/lib/authSession";
 import { isPaidCheckoutPlan } from "@/lib/checkoutForm";
 import { CHECKOUT } from "@/lib/checkoutTokens";
 import { completeMockPurchase } from "@/lib/mockCheckout";
@@ -64,6 +64,10 @@ export function CheckoutProcessingScreen() {
   const planId = searchParams.get("plan");
 
   useEffect(() => {
+    if (!isAuthReady()) {
+      return;
+    }
+
     if (!isSignedIn()) {
       const returnPath = planId
         ? `/checkout/processing?plan=${encodeURIComponent(planId)}`

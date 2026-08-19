@@ -17,9 +17,11 @@ import {
 import { BackButton } from "@/components/BackButton/BackButton";
 import { InkMorphLogo } from "@/components/InkMorphLogo/InkMorphLogo";
 import {
+  AUTH_CHANGE_EVENT,
   buildAuthFlowHref,
   getAuthEntryHref,
   getAuthUser,
+  isAuthReady,
   isSignedIn,
   markProfileComplete,
   needsPasswordSetup,
@@ -52,44 +54,54 @@ export function CompleteProfileScreen() {
   const [selectedPreset, setSelectedPreset] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!isSignedIn()) {
-      router.replace(getAuthEntryHref());
-      return;
-    }
+    const evaluate = () => {
+      if (!isAuthReady()) {
+        return;
+      }
 
-    const authUser = getAuthUser();
-    if (authUser && needsPasswordSetup(authUser)) {
-      router.replace(
-        buildAuthFlowHref("/set-password", {
-          setup: isSetupFlow,
-          next: searchParams.get("next"),
-        })
+      if (!isSignedIn()) {
+        router.replace(getAuthEntryHref());
+        return;
+      }
+
+      const authUser = getAuthUser();
+      if (authUser && needsPasswordSetup(authUser)) {
+        router.replace(
+          buildAuthFlowHref("/set-password", {
+            setup: isSetupFlow,
+            next: searchParams.get("next"),
+          })
+        );
+        return;
+      }
+
+      const profile = readUserProfile();
+      const savedName = profile.fullName.trim();
+
+      setFullName(savedName || authUser?.name || "");
+      setEmail(authUser?.email ?? "");
+
+      const savedAvatar =
+        profile.avatarSrc && profile.avatarSrc !== DEFAULT_PROFILE_AVATAR
+          ? profile.avatarSrc
+          : null;
+
+      setAvatarSrc(
+        savedAvatar || authUser?.picture || DEFAULT_PROFILE_AVATAR
       );
-      return;
-    }
 
-    const profile = readUserProfile();
-    const savedName = profile.fullName.trim();
+      if (
+        PROFILE_PRESETS.includes(
+          profile.avatarSrc as (typeof PROFILE_PRESETS)[number]
+        )
+      ) {
+        setSelectedPreset(profile.avatarSrc);
+      }
+    };
 
-    setFullName(savedName || authUser?.name || "");
-    setEmail(authUser?.email ?? "");
-
-    const savedAvatar =
-      profile.avatarSrc && profile.avatarSrc !== DEFAULT_PROFILE_AVATAR
-        ? profile.avatarSrc
-        : null;
-
-    setAvatarSrc(
-      savedAvatar || authUser?.picture || DEFAULT_PROFILE_AVATAR
-    );
-
-    if (
-      PROFILE_PRESETS.includes(
-        profile.avatarSrc as (typeof PROFILE_PRESETS)[number]
-      )
-    ) {
-      setSelectedPreset(profile.avatarSrc);
-    }
+    evaluate();
+    window.addEventListener(AUTH_CHANGE_EVENT, evaluate);
+    return () => window.removeEventListener(AUTH_CHANGE_EVENT, evaluate);
   }, [isSetupFlow, router, searchParams]);
 
   const clearPhoto = useCallback(() => {

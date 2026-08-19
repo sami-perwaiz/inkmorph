@@ -20,7 +20,7 @@ import {
   CheckoutSelect,
 } from "@/components/Checkout/CheckoutField";
 import { LockIcon } from "@/components/icons/ActionIcons";
-import { getAuthEntryHref, getAuthUser, isSignedIn } from "@/lib/authSession";
+import { getAuthEntryHref, getAuthUser, isAuthReady, isSignedIn } from "@/lib/authSession";
 import { CHECKOUT_COUNTRIES } from "@/lib/checkoutCountries";
 import {
   formatCardNumber,
@@ -117,6 +117,10 @@ export function CheckoutScreen() {
   );
 
   useEffect(() => {
+    if (!isAuthReady()) {
+      return;
+    }
+
     if (!isSignedIn()) {
       const returnPath = planId
         ? `/checkout?plan=${encodeURIComponent(planId)}`

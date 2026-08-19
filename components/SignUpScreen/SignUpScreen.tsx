@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 
 import { AuthScreen } from "@/components/AuthScreen/AuthScreen";
 import type { AuthScreenCopy } from "@/lib/authScreenTokens";
-import { isSignedIn } from "@/lib/authSession";
+import { AUTH_CHANGE_EVENT, isAuthReady, isSignedIn, resolveNextPath } from "@/lib/authSession";
 
 /** Figma 40004799:9080 — Sign Up Screen */
 const SIGN_UP_COPY: AuthScreenCopy = {
@@ -19,26 +19,28 @@ const SIGN_UP_COPY: AuthScreenCopy = {
   footerLinkHref: "/signin",
 };
 
-function resolveNextPath(raw: string | null): string {
-  if (!raw || !raw.startsWith("/") || raw.startsWith("//")) {
-    return "/";
-  }
-
-  return raw;
-}
-
 export function SignUpScreen() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    if (isSignedIn()) {
-      router.replace(resolveNextPath(searchParams.get("next")));
-      return;
-    }
+    const evaluate = () => {
+      if (!isAuthReady()) {
+        return;
+      }
 
-    setReady(true);
+      if (isSignedIn()) {
+        router.replace(resolveNextPath(searchParams.get("next")));
+        return;
+      }
+
+      setReady(true);
+    };
+
+    evaluate();
+    window.addEventListener(AUTH_CHANGE_EVENT, evaluate);
+    return () => window.removeEventListener(AUTH_CHANGE_EVENT, evaluate);
   }, [router, searchParams]);
 
   if (!ready) {
