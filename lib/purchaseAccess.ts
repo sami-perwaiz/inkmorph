@@ -1,12 +1,18 @@
 import { getAuthEntryHref, isSignedIn } from "@/lib/authSession";
+import type { PricingPlan } from "@/lib/pricingPlans";
 
 export interface PurchaseActionOptions {
   returnPath?: string;
+  planId?: Exclude<PricingPlan["id"], "basic">;
+}
+
+export function getCheckoutHref(planId: Exclude<PricingPlan["id"], "basic">): string {
+  return `/checkout?plan=${encodeURIComponent(planId)}`;
 }
 
 /**
  * Shared purchase / upgrade CTA handler.
- * Signed-out users → sign-in flow. Signed-in users → no purchase until checkout ships.
+ * Signed-out users → sign-in flow. Signed-in users → checkout (payment provider TBD).
  */
 export function runPurchaseAction(options?: PurchaseActionOptions): void {
   if (typeof window === "undefined") {
@@ -14,13 +20,14 @@ export function runPurchaseAction(options?: PurchaseActionOptions): void {
   }
 
   if (!isSignedIn()) {
+    const planId = options?.planId ?? "full-pack";
     const returnPath =
-      options?.returnPath ??
-      (window.location.pathname + window.location.search + window.location.hash);
+      options?.returnPath ?? getCheckoutHref(planId);
 
     window.location.assign(getAuthEntryHref(returnPath));
     return;
   }
 
-  // Checkout not live — keep UI, do not grant premium or complete a purchase.
+  const planId = options?.planId ?? "full-pack";
+  window.location.assign(getCheckoutHref(planId));
 }

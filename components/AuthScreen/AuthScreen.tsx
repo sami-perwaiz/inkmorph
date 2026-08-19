@@ -19,16 +19,19 @@ import {
 } from "@/lib/authSession";
 import { signInWithGoogle } from "@/lib/googleAuth";
 
-function BrandLogo() {
+function BrandLogo({
+  className = "",
+  style,
+}: {
+  className?: string;
+  style?: React.CSSProperties;
+}) {
   return (
     <Link
       href="/"
       aria-label="InkMorph home"
-      className="absolute z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 focus-visible:ring-offset-2"
-      style={{
-        top: AUTH_SCREEN.logoInset,
-        left: AUTH_SCREEN.logoInset,
-      }}
+      className={`focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 focus-visible:ring-offset-2 ${className}`}
+      style={style}
     >
       <InkMorphLogo
         size={AUTH_SCREEN.logoSize}
@@ -170,26 +173,33 @@ export function AuthScreen({ copy }: AuthScreenProps) {
   }, [isAuthenticating, router, searchParams]);
 
   return (
-    <main className="relative flex min-h-screen flex-col bg-white tablet:flex-row">
-      <section className="relative flex min-h-[420px] w-full flex-1 flex-col overflow-hidden tablet:min-h-screen tablet:w-1/2">
+    <main className="relative flex min-h-screen flex-col bg-white desktop:flex-row">
+      <BackButton
+        ariaLabel="Back to home"
+        useHistoryBack
+        fallbackHref="/"
+        className="fixed left-[30px] top-[30px] z-20 desktop:hidden"
+      />
+      <BrandLogo className="fixed right-[30px] top-[30px] z-20 desktop:hidden" />
+
+      <section className="relative hidden min-h-screen w-1/2 flex-col overflow-hidden bg-white desktop:flex">
         <div className="absolute inset-0 overflow-hidden">
-          <picture>
-            <source
-              media="(max-width: 767px)"
-              srcSet={AUTH_SCREEN.heroBgSm}
-              type="image/webp"
-            />
-            <img
-              src={AUTH_SCREEN.heroBg}
-              alt=""
-              decoding="async"
-              fetchPriority="high"
-              className="h-full w-full object-cover"
-              aria-hidden
-            />
-          </picture>
+          <img
+            src={AUTH_SCREEN.heroBg}
+            alt=""
+            decoding="async"
+            fetchPriority="high"
+            className="h-full w-full object-cover"
+            aria-hidden
+          />
         </div>
-        <BrandLogo />
+        <BrandLogo
+          className="absolute z-10"
+          style={{
+            top: AUTH_SCREEN.logoInset,
+            left: AUTH_SCREEN.logoInset,
+          }}
+        />
 
         <div
           className="relative z-10 mt-auto flex w-full max-w-[404px] flex-col"
@@ -200,7 +210,7 @@ export function AuthScreen({ copy }: AuthScreenProps) {
         >
           <TrustAvatars />
           <div className="flex w-full flex-col gap-2">
-            <h1 className="font-inter text-[40px] font-normal leading-[48px] tracking-[-1.2px] text-black tablet:text-[48px] tablet:leading-[56px] tablet:tracking-[-1.44px]">
+            <h1 className="font-inter text-[48px] font-normal leading-[56px] tracking-[-1.44px] text-black">
               {copy.brandTitle}
             </h1>
             <p
@@ -213,16 +223,16 @@ export function AuthScreen({ copy }: AuthScreenProps) {
         </div>
       </section>
 
-      <section className="relative flex w-full flex-1 items-center justify-center bg-white px-5 py-16 tablet:min-h-screen tablet:w-1/2 tablet:px-8">
+      <section className="relative flex min-h-screen w-full flex-1 items-center justify-center bg-white px-5 desktop:min-h-screen desktop:w-1/2 desktop:px-8 desktop:py-16">
         <BackButton
-          href="/"
           ariaLabel="Back to home"
-          className="absolute left-[30px] top-[30px] z-10"
+          useHistoryBack
+          fallbackHref="/"
+          className="absolute left-[30px] top-[30px] z-10 hidden desktop:inline-flex"
         />
         <div
-          className="flex w-full flex-col items-start"
+          className="mx-auto flex w-full max-w-[408px] flex-col items-center desktop:items-start"
           style={{
-            maxWidth: AUTH_SCREEN.formWidth,
             gap: AUTH_SCREEN.formStackGap,
           }}
         >
@@ -245,21 +255,19 @@ export function AuthScreen({ copy }: AuthScreenProps) {
             </div>
 
             <div
-              className="flex w-full flex-col"
+              className="flex w-full flex-col items-center desktop:items-stretch"
               style={{ gap: AUTH_SCREEN.formBodyGap }}
             >
               <button
                 type="button"
                 onClick={handleGoogleSignIn}
                 disabled={isAuthenticating}
-                className="inline-flex w-full items-center justify-center gap-3 border border-solid bg-white font-inter text-sm font-medium leading-[22px] transition-colors hover:bg-gray-100/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-70"
+                className="inline-flex w-fit max-w-full items-center justify-center gap-3 border border-solid bg-white px-4 font-inter text-sm font-medium leading-[22px] transition-colors hover:bg-gray-100/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-70 desktop:w-full"
                 style={{
                   height: AUTH_SCREEN.socialButtonHeight,
                   borderRadius: AUTH_SCREEN.socialButtonRadius,
                   borderColor: AUTH_SCREEN.socialButtonBorder,
                   color: AUTH_SCREEN.socialButtonText,
-                  paddingLeft: 16,
-                  paddingRight: 16,
                 }}
               >
                 <GoogleIcon />
@@ -277,7 +285,7 @@ export function AuthScreen({ copy }: AuthScreenProps) {
                 </p>
               ) : null}
 
-              <p className="flex w-full flex-wrap items-start justify-center gap-2 text-center font-inter text-sm leading-[22px]">
+              <p className="flex w-full flex-wrap items-center justify-center gap-2 text-center font-inter text-sm leading-[22px]">
                 <span
                   className="font-normal"
                   style={{ color: AUTH_SCREEN.caption }}

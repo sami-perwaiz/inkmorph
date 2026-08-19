@@ -161,7 +161,7 @@ export function PricingPlans() {
         return;
       }
 
-      runPurchaseAction({ returnPath: "/pricing" });
+      runPurchaseAction({ planId: plan.id });
     },
     [router]
   );

@@ -72,24 +72,26 @@ function CancelDownloadButton({ onClick }: { onClick: () => void }) {
 function DownloadProgressGroup({ percent }: { percent: number }) {
   const clampedProgress = Math.max(0, Math.min(100, percent));
   const percentLabel = `${Math.round(clampedProgress)}%`;
+  // Figma 40005086:9118 shows a ~3% sliver at 0% (right-[97.18%] on the fill).
+  const visualProgress = clampedProgress === 0 ? 2.82 : clampedProgress;
 
   return (
     <div
-      className="flex w-[220px] shrink-0 items-center gap-3"
+      className="flex h-5 w-[220px] shrink-0 items-center gap-[12px]"
       role="progressbar"
       aria-valuenow={clampedProgress}
       aria-valuemin={0}
       aria-valuemax={100}
       aria-label={`Download progress ${percentLabel}`}
     >
-      <div className="relative h-2 min-w-0 flex-1 rounded-[8px]">
-        <div className="absolute inset-0 rounded-[4px] bg-[#F5F5F5]" />
+      <div className="relative h-2 min-w-px flex-[1_0_0] rounded-[8px]">
+        <div className="absolute inset-x-0 top-0 h-2 rounded-[4px] bg-[#F5F5F5]" />
         <div
-          className="absolute inset-y-0 left-0 rounded-[4px] bg-black transition-[width] duration-150 ease-out"
-          style={{ width: `${clampedProgress}%` }}
+          className="absolute left-0 top-0 h-2 rounded-[4px] bg-black transition-[width] duration-150 ease-out"
+          style={{ width: `${visualProgress}%` }}
         />
       </div>
-      <span className="shrink-0 font-inter text-[14px] font-medium leading-[20px] text-[#494949]">
+      <span className="shrink-0 whitespace-nowrap font-inter text-[14px] font-medium leading-[20px] text-[#494949]">
         {percentLabel}
       </span>
     </div>
